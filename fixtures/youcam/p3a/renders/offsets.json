@@ -97,6 +97,30 @@
         1575
       ]
     },
+    "sim_counterfactual.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": 0.039,
+      "dyMean": -0.153,
+      "dxSd": 0.168,
+      "dySd": 0.986,
+      "patches": 38,
+      "minNcc": 0.84,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1575
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    },
     "sim_spots05_redness05.png": {
       "dx": 0,
       "dy": 0,

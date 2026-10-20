@@ -1,0 +1,29 @@
+{
+  "convention": "out(x + dx, y + dy) = in(x, y). dx, dy are the rounded means of patch-wise registration against input.jpg (scripts/personas/register-check.ts)",
+  "renders": {
+    "sim_counterfactual.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.017,
+      "dyMean": -0.052,
+      "dxSd": 0.207,
+      "dySd": 0.279,
+      "patches": 35,
+      "minNcc": 0.853,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1350
+      ],
+      "inputSize": [
+        1080,
+        1350
+      ]
+    }
+  }
+}

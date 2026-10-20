@@ -65,4 +65,12 @@ export interface WhatIf {
   render: RenderResult;
   beforeDistanceM: number;
   afterDistanceM: number;
+  /**
+   * "Worth it?": how far away the *difference* between the photo and this simulated improvement stays detectable
+   * (bound). Uses strength 0.5, a realistic improvement; 1.0 beautifies beyond natural (spike, 2026-10-21).
+   * Small features usually give a short distance (nobody would notice); large soft areas give a long one.
+   */
+  differenceMaxDistanceM?: number;
+  differenceMedianDistanceM?: number;
+  differenceProfile?: { distanceM: number; count: number; fraction: number }[];
 }

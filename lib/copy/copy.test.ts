@@ -12,7 +12,9 @@ import {
   DISTANCE_ANCHORS,
   MAX_HEADLINE_CHARS,
   anchorFor,
+  WORTH_IT_CREDIT,
   describeConcern,
+  describeWorthIt,
   formatDistance,
   formatInterval,
   orderReliefFirst,
@@ -21,6 +23,8 @@ import {
   reachM,
   stepBackCounter,
   summaryLine,
+  youcamScoreLine,
+  youcamScoreOf,
 } from "./index";
 import { lintFiles, lintText } from "./lint";
 
@@ -160,6 +164,71 @@ describe("describeConcern", () => {
   test("a spread-out concern says where most of it fades", () => {
     const d = describeConcern(cv("age_spot", 3, { medianDistanceM: 0.8, targetCount: 6 }));
     expect(d.detail).toContain("Most of them fade from view beyond 80 cm.");
+  });
+});
+
+describe("large soft areas and YouCam's own rating", () => {
+  test("far under-eye areas say why the distance is long, and show YouCam's rating for context", () => {
+    const far = describeConcern(cv("dark_circle", MAX_DISTANCE_M), { youcamScore: 69 });
+    expect(far.headline).toBe("Your under-eye shadows are visible from 10 m or more.");
+    expect(far.detail).toBe(
+      "Under-eye shadows are a large, soft area. At that size, even a little darkening can show from across a room, on anyone's face. " +
+        "YouCam rates yours 69/100, where higher is healthier. See what would make them disappear at 1 m.",
+    );
+    expect(describeConcern(cv("eye_bag", 6)).detail).toContain("Under-eye puffiness is a large, soft area.");
+    // Nearer than across a room the usual wording holds, and other concerns never get the note.
+    expect(describeConcern(cv("dark_circle", 2)).detail).toMatch(/^That's across a table/);
+    expect(describeConcern(cv("redness", 8)).detail).not.toMatch(/soft area/);
+    expect(describeConcern(cv("dark_circle", 0.4), { youcamScore: 92 }).detail).toContain("YouCam rates yours 92/100, where higher is healthier.");
+  });
+
+  test("the rating is read from the analysis, whole face first", () => {
+    const results = [
+      { concern: "dark_circle" as const, region: "left", rawScore: 1, uiScore: 40, maskRef: null },
+      { concern: "dark_circle" as const, region: "whole", rawScore: 1, uiScore: 69, maskRef: null },
+    ];
+    expect(youcamScoreOf(results, "dark_circle")).toBe(69);
+    expect(youcamScoreOf(results, "pore")).toBeUndefined();
+    expect(youcamScoreLine(101.4)).toBe("YouCam rates yours 100/100, where higher is healthier.");
+  });
+});
+
+describe("describeWorthIt", () => {
+  const w = (concern: ConcernId, d: number, o: Partial<Parameters<typeof describeWorthIt>[0]> = {}) =>
+    describeWorthIt({ concern, targetCount: 1, differenceMaxDistanceM: d, ...o });
+
+  test("near changes wouldn't show beyond a distance; far ones could show up to one; both credit the simulation", () => {
+    const near = w("pore", 0.4);
+    expect(near.headline).toBe("A half-strength change wouldn't show beyond 40 cm.");
+    expect(near.detail).toBe("Refining your pores by half wouldn't show beyond 40 cm. (YouCam Skin Simulation, half strength)");
+    expect(w("pore", 0.3).detail).toContain("That's a change for the mirror, not for other people.");
+    expect(w("pore", 0.05).headline).toBe("A half-strength change wouldn't show, even up close.");
+    const far = w("dark_circle", MAX_DISTANCE_M);
+    expect(far.headline).toBe("A half-strength change could show from up to 10 m or more.");
+    expect(far.detail).toBe(
+      "Brightening your under-eye shadows by half could show from up to 10 m or more, across a room and beyond, for sharp eyes looking right at it. " +
+        "It's a large, soft area, so even a small change reaches far. (YouCam Skin Simulation, half strength)",
+    );
+    expect(w("wrinkle", 2).detail).toMatch(/^Softening your lines by half could show from up to 2 m, across a table, /);
+    for (const x of [near, far, w("age_spot", 3)]) expect(x.detail.endsWith(WORTH_IT_CREDIT)).toBe(true);
+  });
+
+  test("many-feature concerns count with 'at most' from the profile", () => {
+    const profile = profileOf(656, [656, 656, 600, 300, 12, 2, 0, 0]);
+    const d = w("pore", 2.8, { targetCount: 656, differenceProfile: profile });
+    expect(d.headline).toBe("The change shows on at most 12 of 656 pores.");
+    expect(d.detail).toBe(
+      "Refining your pores by half could show on at most 12 of your 656 pores from across a table, even for sharp eyes looking right at them. " + WORTH_IT_CREDIT,
+    );
+    // Nothing reaching a table is a near change, whatever the count.
+    expect(w("pore", 1.2, { targetCount: 656, differenceProfile: profileOf(656, [656, 656, 600, 300, 0, 0, 0, 0]) }).headline).toBe(
+      "A half-strength change wouldn't show beyond 1.2 m.",
+    );
+  });
+
+  test("nothing measured", () => {
+    expect(w("acne", 0, { targetCount: 0 }).headline).toBe("There's no change to compare for this one.");
+    expect(w("texture", 3).headline).toBe("There's no change to compare for this one.");
   });
 });
 
@@ -383,6 +452,19 @@ describe("generated copy is clean", () => {
         }
       }
     }
+    for (const id of IDS) {
+      for (const score of [undefined, 0, 69, 100]) {
+        for (const d of DISTANCES) strings.push(describeConcern(cv(id, d), { youcamScore: score }).detail);
+      }
+      for (const d of DISTANCES) {
+        for (const targetCount of [0, 1, 6, 656]) {
+          const profile = profileOf(Math.max(1, targetCount), PROFILE_DISTANCES_M.map((x) => (x <= d ? Math.max(1, targetCount) : 0)));
+          const out = describeWorthIt({ concern: id, targetCount, differenceMaxDistanceM: d, differenceProfile: profile });
+          headlines.push(out.headline);
+          strings.push(out.headline, out.detail);
+        }
+      }
+    }
     for (const a of DISTANCE_ANCHORS) strings.push(a.label, a.phrase ?? "");
     for (const d of DISTANCES) {
       for (const confidence of ["high", "low"] as const) {
@@ -400,7 +482,7 @@ describe("generated copy is clean", () => {
 
   test("no banned word anywhere, and headlines fit on a card line", () => {
     const { strings, headlines } = everything();
-    expect(strings.length).toBeGreaterThan(5000);
+    expect(strings.length).toBeGreaterThan(6000);
     const bad = strings.flatMap((s) => lintText(s).map((v) => `${v.word} in "${s}"`));
     expect(bad).toEqual([]);
     const long = headlines.filter((h) => h.length > MAX_HEADLINE_CHARS);

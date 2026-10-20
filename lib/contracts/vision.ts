@@ -83,4 +83,4 @@ export type DistanceRenderer = (
   distanceM: number,
 ) => import("./measure").RgbaImage;
 
-export const DEFAULT_VIEWING: ViewingConditions = { luminanceCdM2: 100, acuityScale: 1, label: "indoor", marginDb: 6 };
+export const DEFAULT_VIEWING: ViewingConditions = { luminanceCdM2: 45, acuityScale: 1, label: "indoor", marginDb: 6 };

@@ -1,0 +1,184 @@
+"use client";
+
+import type { CSSProperties } from "react";
+import {
+  DEFAULT_AXIS,
+  distanceToStep,
+  formatDistance,
+  percent,
+  stepToDistance,
+  toUnit,
+  type LogAxis,
+} from "@/app/_lib/axis";
+import type { DistanceAnchor } from "@/components/results/types";
+
+export const TAPE_STEPS = 160;
+
+/** Ticks between the anchors, like the marks on a tape measure. */
+const MINOR_TICKS = [0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6];
+
+export interface TapeMark {
+  id: string;
+  label: string;
+  distanceM: number;
+}
+
+interface DistanceTapeProps {
+  value: number;
+  onChange: (distanceM: number) => void;
+  anchors: DistanceAnchor[];
+  /** Where each concern fades; drawn above the tape on wide screens. */
+  marks?: TapeMark[];
+  /** Spoken value, e.g. "1.5 metres, across a table". */
+  valueText: string;
+  label?: string;
+  disabled?: boolean;
+  axis?: LogAxis;
+  /** Called on any pointer or keyboard input, so the caller can stop an intro animation. */
+  onUserInput?: () => void;
+}
+
+// Vertical layout, px from the top of the tape zone (the zone starts below the mark labels).
+const BASE = 28; // baseline
+const ZONE = 56; // height of the draggable zone
+const LABEL_TOP = 60;
+const LABEL_ROW = 34;
+
+/**
+ * A measuring tape you can drag. The real control is a native range input (keyboard, touch and screen
+ * readers for free); everything drawn here is decoration that follows its value on a log axis.
+ */
+export function DistanceTape({
+  value,
+  onChange,
+  anchors,
+  marks = [],
+  valueText,
+  label = "Viewing distance",
+  disabled,
+  axis = DEFAULT_AXIS,
+  onUserInput,
+}: DistanceTapeProps) {
+  const u = toUnit(value, axis);
+  const step = distanceToStep(value, TAPE_STEPS, axis);
+  const left = (d: number) => percent(toUnit(d, axis) * 100);
+  const sortedMarks = [...marks].sort((a, b) => a.distanceM - b.distanceM);
+  const zoneTop = (extra: number) => `calc(var(--marks-h) + ${extra}px)`;
+
+  return (
+    <div
+      className="relative select-none [--marks-h:0px] md:[--marks-h:3.5rem]"
+      style={{ height: `calc(var(--marks-h) + ${LABEL_TOP + LABEL_ROW + 34}px)` } as CSSProperties}
+    >
+      {/* concern thresholds: label, leader, dot */}
+      <div aria-hidden="true" className="hidden md:block">
+        {sortedMarks.map((m, i) => {
+          const row = i % 2;
+          const labelTop = row === 0 ? 0 : 20;
+          const passed = value >= m.distanceM;
+          return (
+            <div key={m.id}>
+              <span
+                className={`absolute whitespace-nowrap text-[0.75rem] leading-none transition-opacity duration-300 ${passed ? "text-muted" : "text-ink"}`}
+                style={{ left: left(m.distanceM), top: labelTop, transform: "translateX(-50%)" }}
+              >
+                {m.label}
+              </span>
+              <span
+                className="absolute w-px bg-ink/30"
+                style={{ left: left(m.distanceM), top: labelTop + 16, height: `calc(var(--marks-h) + ${BASE}px - ${labelTop + 16}px)` }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* tape */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0" style={{ top: zoneTop(0), height: ZONE }}>
+        <div className="absolute inset-x-0 h-px bg-ink/30" style={{ top: BASE }} />
+        <div className="absolute left-0 bg-ink" style={{ top: BASE - 1, height: 2, width: percent(u * 100) }} />
+        {MINOR_TICKS.map((t) => {
+          const major = anchors.some((a) => Math.abs(Math.log(a.distanceM / t)) < 1e-6);
+          return (
+            <span
+              key={t}
+              className={`absolute w-px ${major ? "bg-ink" : "bg-ink/40"}`}
+              style={{ left: left(t), top: major ? BASE - 14 : BASE - 6, height: major ? 28 : 12 }}
+            />
+          );
+        })}
+        {sortedMarks.map((m) => (
+          <span
+            key={m.id}
+            className={`absolute block h-[9px] w-[9px] rounded-full border border-ink transition-colors duration-300 ${value >= m.distanceM ? "bg-paper" : "bg-ink"}`}
+            style={{ left: left(m.distanceM), top: BASE, transform: "translate(-50%, -50%)" }}
+          />
+        ))}
+
+        {/* thumb: a vernier line with a knob */}
+        <div
+          className="absolute flex flex-col items-center"
+          style={{ left: percent(u * 100), top: 2, height: ZONE - 4, transform: "translateX(-50%)" }}
+        >
+          <span className="tape-knob block h-4 w-4 rounded-full border-2 border-paper bg-ink shadow-[0_0_0_1px_var(--ink)]" />
+          <span className="block w-0.5 grow bg-ink" />
+        </div>
+      </div>
+
+      {/* the real control */}
+      <div className="absolute inset-x-0 [&:has(:focus-visible)_.tape-knob]:shadow-[0_0_0_3px_var(--paper),0_0_0_5px_var(--ink)]" style={{ top: zoneTop(0), height: ZONE }}>
+        <input
+          type="range"
+          className="tape-range"
+          min={0}
+          max={TAPE_STEPS}
+          step={1}
+          value={step}
+          disabled={disabled}
+          aria-label={label}
+          aria-valuetext={valueText}
+          onPointerDown={onUserInput}
+          onKeyDown={onUserInput}
+          onChange={(e) => {
+            onUserInput?.();
+            onChange(stepToDistance(Number(e.target.value), TAPE_STEPS, axis));
+          }}
+        />
+      </div>
+
+      {/* anchor labels, staggered over two rows so close neighbours (mirror, selfie) never collide */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0" style={{ top: zoneTop(0) }}>
+        {anchors.map((a, i) => {
+          const x = toUnit(a.distanceM, axis);
+          const align = x < 0.12 ? "left" : x > 0.84 ? "right" : "center";
+          // Start on the lower row so the first two anchors (mirror, selfie: 5 cm apart) never share one.
+          const row = (i + 1) % 2;
+          const labelTop = LABEL_TOP + (row === 1 ? LABEL_ROW : 0);
+          return (
+            <div key={a.label}>
+              <span
+                className="absolute w-px bg-ink/45"
+                style={{ left: left(a.distanceM), top: BASE + 14, height: labelTop - 4 - (BASE + 14) }}
+              />
+              <div
+                className="absolute whitespace-nowrap"
+                style={{
+                  left: left(a.distanceM),
+                  top: labelTop,
+                  transform: align === "center" ? "translateX(-50%)" : align === "right" ? "translateX(-100%)" : undefined,
+                  textAlign: align,
+                }}
+              >
+                <span className="num block font-mono text-[0.6875rem] leading-none tracking-wide">{formatDistance(a.distanceM)}</span>
+                <span className="mt-1.5 block text-[0.75rem] leading-none text-muted">
+                  <span className="md:hidden">{a.short}</span>
+                  <span className="hidden md:inline">{a.label}</span>
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

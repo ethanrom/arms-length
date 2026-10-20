@@ -19,6 +19,8 @@ export interface AnalysisRequest {
   image?: string;
   /** Instead of an image: a demo persona id (replay, no units). */
   persona?: string;
+  /** Analysis engine; defaults to HD. SD is a budget fallback (no pore/acne distances). */
+  engine?: "hd" | "sd";
 }
 
 /** Masks are returned inline so the browser can measure without further calls. */
@@ -48,7 +50,7 @@ export type RenderResponse = RenderResult;
 /** GET /api/youcam/status */
 export interface StatusResponse {
   live: boolean; // live analysis available for this access code
-  reason?: "no_code" | "bad_code" | "budget_floor" | "kill_switch" | "daily_cap";
+  reason?: "no_code" | "bad_code" | "budget_floor" | "kill_switch" | "daily_cap" | "replay_only";
 }
 
 /** POST /api/visibility: the drop-in layer on top of any YouCam Skin Analysis result. */

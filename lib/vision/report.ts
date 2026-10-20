@@ -19,6 +19,10 @@
  *     low     acne (17 px ring markers say where, not how big), texture
  *   then capped by where the size came from: "mask" keeps the base, "photo" caps at medium, "prior" gives low
  *   (regions carry no size source: their extent is always read from the mask).
+ *   Dark circles, eye bags, redness and wrinkles (COUNTERFACTUAL_CONCERNS) are low whenever the headline target's
+ *   contrast was measured against its surround (`contrastBasis: "surround"`), because normal anatomy and lighting
+ *   (eye-socket shading, fold shadows, lit cheeks) are part of that contrast. Only the counterfactual basis (photo vs
+ *   Skin Simulation without the concern) keeps their base rating. A target with no basis recorded is not downgraded.
  *   A scale estimate that is only "assumed" (no iris or card) makes every concern low.
  */
 import { CONCERNS, type ConcernId } from "../contracts/concerns";
@@ -31,6 +35,7 @@ import {
   type ViewingConditions,
   type VisibilityReport,
 } from "../contracts/vision";
+import { COUNTERFACTUAL_CONCERNS } from "../skin/params";
 import { specFromTarget, visibilityOfSpec } from "./visibility";
 
 type Confidence = ConcernVisibility["confidence"];
@@ -55,6 +60,7 @@ export function concernConfidence(
   scaleSource: Measurements["scale"]["source"],
 ): Confidence {
   if (scaleSource === "assumed") return "low";
+  if (headline.contrastBasis === "surround" && COUNTERFACTUAL_CONCERNS.includes(concern)) return "low";
   const base = BASE_CONFIDENCE[concern];
   const source = "sizeSource" in headline ? headline.sizeSource : "mask";
   if (source === "prior") return "low";

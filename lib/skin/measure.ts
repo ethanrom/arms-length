@@ -5,13 +5,20 @@
  * Features come from each concern's "whole" mask. The regional masks (pore forehead/nose/cheek, wrinkle
  * forehead/glabellar/...) are used only to label `Feature.region`. The texture window, when present, is
  * the skin area used for reference colours.
+ *
+ * Contrast basis. Spots, pores and acne are measured against their surround (`contrastBasis: "surround"`). Dark circles,
+ * eye bags, redness and wrinkles are normal anatomy and lighting as much as a concern (eye-socket shading, fold shadows,
+ * lit cheeks), so a surround says little about them. With `counterfactual`, a Skin Simulation render of the same
+ * face without those concerns (aligned to the photo, see counterfactual.ts), their contrast is (photo - simulation) /
+ * simulation (`"counterfactual"`, regions `reference: "simulation"`). Without it they keep the surround contrast, marked
+ * `"surround"`, and the visibility report rates them low confidence.
  */
 import {
   CONCERNS, type ConcernId, type Feature, type Measurements, type Point, type RegionMeasure, type RgbaImage,
   type ScaleEstimate, type SkinAnalysis,
 } from "../contracts";
 import { toLinearPlanes } from "./color";
-import { bandBelow, surroundStat, type Surround } from "./contrast";
+import { bandBelow, surroundStat, weightedStat, type Surround } from "./contrast";
 import {
   detectContours, detectMarkers, detectPolylines, detectRegions, dropMarkersInside, measureContours, measureMarkers,
   measurePolylines, measureRegion, type ContourDetection, type FeatureDraft, type MarkerDetection, type MeasureContext,
@@ -91,10 +98,15 @@ export function measureAnalysis(
   masks: Map<string, RgbaImage>,
   photo: RgbaImage,
   scale: ScaleEstimate,
+  /** Skin Simulation without the concerns, aligned to the photo and the same size (alignCounterfactual in counterfactual.ts). */
+  counterfactual?: RgbaImage,
 ): Measurements {
   const { width, height } = analysis.frame;
   if (photo.width !== width || photo.height !== height) {
     throw new RangeError(`photo is ${photo.width}x${photo.height} but the analysis frame is ${width}x${height}`);
+  }
+  if (counterfactual && (counterfactual.width !== width || counterfactual.height !== height)) {
+    throw new RangeError(`counterfactual is ${counterfactual.width}x${counterfactual.height} but the analysis frame is ${width}x${height}`);
   }
   const n = width * height;
   const skipped: Measurements["skipped"] = [];
@@ -188,7 +200,13 @@ export function measureAnalysis(
   const planes = toLinearPlanes(photo);
   const skinPixels = pixelsWhere(n, faceArea, occupied, regionMap);
   const skin: Surround | null = skinPixels.length >= P.MIN_REFERENCE_PIXELS ? surroundStat(planes, skinPixels) : null;
-  const ctx: MeasureContext = { planes, mmPerPx: scale.mmPerPx, occupied, skin };
+  const ctx: MeasureContext = {
+    planes,
+    counterfactual: counterfactual ? toLinearPlanes(counterfactual) : undefined,
+    mmPerPx: scale.mmPerPx,
+    occupied,
+    skin,
+  };
 
   // 3. Measure discrete features.
   const drafts = measurers.map((m) => ({ concern: m.concern, items: m.run(ctx) }));
@@ -212,15 +230,25 @@ export function measureAnalysis(
       const px = Math.min(width - 1, Math.max(0, Math.round(d.centroid.x)));
       const py = Math.min(height - 1, Math.max(0, Math.round(d.centroid.y)));
       const region = labellers.find((l) => l.binary[py * width + px])?.name ?? "whole";
-      features.push({ id: `${concern}:${i}`, region, ...d });
+      features.push({ id: `${concern}:${i}`, region, ...d, contrastBasis: d.contrastBasis ?? "surround" });
     });
   }
 
-  // 5. Regions against their references.
+  // 5. Regions against their references: the simulation without the concern when there is one, else nearby skin.
   const regions: RegionMeasure[] = [];
+  const sim = ctx.counterfactual;
   for (const [concern, det] of regionDetections) {
     const out: Omit<RegionMeasure, "id">[] = [];
-    if (concern === "redness") {
+    if (sim && P.COUNTERFACTUAL_CONCERNS.includes(concern)) {
+      for (const comp of det.comps) {
+        const ref = weightedStat(sim, comp.pixels, det.fg.diff);
+        if (ref) out.push({ ...measureRegion(concern, comp, det.fg, ref, ctx), reference: "simulation", contrastBasis: "counterfactual" });
+      }
+      if (out.length === 0) {
+        skip(concern, "the simulation has no pixels under the region");
+        continue;
+      }
+    } else if (concern === "redness") {
       const zones = dilate(det.footprint, width, height, 6);
       const px = pixelsWhere(n, faceArea, zones, occupied);
       const ref = px.length >= P.MIN_REFERENCE_PIXELS ? surroundStat(planes, px) : null;
@@ -229,7 +257,7 @@ export function measureAnalysis(
         continue;
       }
       for (const comp of det.comps) {
-        out.push({ ...measureRegion(concern, comp, det.fg, ref, ctx), reference: "skin_outside_zones" });
+        out.push({ ...measureRegion(concern, comp, det.fg, ref, ctx), reference: "skin_outside_zones", contrastBasis: "surround" });
       }
     } else {
       const blocked = union(n, occupied, regionMap);
@@ -238,7 +266,11 @@ export function measureAnalysis(
         const bandRef = band.length >= P.MIN_BAND_PIXELS ? surroundStat(planes, band) : null;
         const ref = bandRef ?? skin;
         if (!ref) continue;
-        out.push({ ...measureRegion(concern, comp, det.fg, ref, ctx), reference: bandRef ? "cheek_band" : "face_skin" });
+        out.push({
+          ...measureRegion(concern, comp, det.fg, ref, ctx),
+          reference: bandRef ? "cheek_band" : "face_skin",
+          contrastBasis: "surround",
+        });
       }
       if (out.length === 0) {
         skip(concern, "no reference skin below the region");

@@ -61,7 +61,16 @@ export interface ConcernVisibility {
   /** Ids of the most visible targets, most visible first (at most 5). */
   topTargets: string[];
   confidence: "high" | "medium" | "low";
+  /**
+   * Share of this concern's targets still detectable (bound, marginDb applied) at each PROFILE_DISTANCES_M entry.
+   * The headline for many-feature concerns ("at most 9 of your 656 pores from across a table"), and the live counter
+   * on the Step-back slider. Robust to a few outliers, unlike maxDistanceM.
+   */
+  profile?: { distanceM: number; count: number; fraction: number }[];
 }
+
+/** Fixed distances for ConcernVisibility.profile: mirror, selfie, arm's length, conversation, table, room, far. */
+export const PROFILE_DISTANCES_M = [0.25, 0.3, 0.6, 1, 1.5, 2.5, 4, 6] as const;
 
 export const MIN_DISTANCE_M = 0.1;
 export const MAX_DISTANCE_M = 10;

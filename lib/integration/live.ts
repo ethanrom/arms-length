@@ -323,7 +323,7 @@ export function createLiveSession({ accessCode }: LiveOptions): LiveSession {
           label: "Your photo",
           description: "",
           image: url(photoBlob),
-          alt: "Your photo, as it was analysed.",
+          alt: source === "live" ? "Your photo" : "A synthetic stand-in portrait, replayed in place of your photo",
           stageGrey: p.stageGrey,
           frame: p.analysis.frame,
           analysis: p.analysis,

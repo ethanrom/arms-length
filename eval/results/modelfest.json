@@ -1,0 +1,453 @@
+{
+  "detector": "reference",
+  "detectorNote": "Reference stand-in (difference-of-Gaussians CSF), tuned on these same thresholds (in-sample). Not the product model.",
+  "viewing": {
+    "luminanceCdM2": 30,
+    "acuityScale": 1,
+    "label": "custom",
+    "marginDb": 0
+  },
+  "distanceM": 1,
+  "results": [
+    {
+      "id": 1,
+      "name": "Gabor fixed size 1.12 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -36.42,
+      "observerSdDb": 2.69,
+      "predictedDb": -35.19172668457031,
+      "errorDb": 1.2282733154296892
+    },
+    {
+      "id": 2,
+      "name": "Gabor fixed size 2 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -39.21,
+      "observerSdDb": 3.59,
+      "predictedDb": -38.35578918457031,
+      "errorDb": 0.8542108154296884
+    },
+    {
+      "id": 3,
+      "name": "Gabor fixed size 2.83 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -41.26,
+      "observerSdDb": 3.58,
+      "predictedDb": -39.36103820800781,
+      "errorDb": 1.8989617919921855
+    },
+    {
+      "id": 4,
+      "name": "Gabor fixed size 4 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -42.13,
+      "observerSdDb": 4.26,
+      "predictedDb": -39.36241149902344,
+      "errorDb": 2.767588500976565
+    },
+    {
+      "id": 5,
+      "name": "Gabor fixed size 5.66 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -39.84,
+      "observerSdDb": 3.67,
+      "predictedDb": -38.76091003417969,
+      "errorDb": 1.079089965820316
+    },
+    {
+      "id": 6,
+      "name": "Gabor fixed size 8 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -36.87,
+      "observerSdDb": 3.49,
+      "predictedDb": -37.52769470214844,
+      "errorDb": -0.6576947021484401
+    },
+    {
+      "id": 7,
+      "name": "Gabor fixed size 11.3 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -32.42,
+      "observerSdDb": 3.66,
+      "predictedDb": -35.07225036621094,
+      "errorDb": -2.652250366210936
+    },
+    {
+      "id": 8,
+      "name": "Gabor fixed size 16 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -25.95,
+      "observerSdDb": 4.18,
+      "predictedDb": -30.122909545898438,
+      "errorDb": -4.172909545898438
+    },
+    {
+      "id": 9,
+      "name": "Gabor fixed size 22.6 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -19.19,
+      "observerSdDb": 5.41,
+      "predictedDb": -20.297012329101562,
+      "errorDb": -1.1070123291015612
+    },
+    {
+      "id": 10,
+      "name": "Gabor fixed size 30 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -11.35,
+      "observerSdDb": 3.95,
+      "predictedDb": -5.541000366210938,
+      "errorDb": 5.808999633789061
+    },
+    {
+      "id": 11,
+      "name": "Gabor 1-octave 2 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -35.39,
+      "observerSdDb": 3.22,
+      "predictedDb": -36.06101989746094,
+      "errorDb": -0.6710198974609369
+    },
+    {
+      "id": 12,
+      "name": "Gabor 1-octave 4 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -32.37,
+      "observerSdDb": 2.63,
+      "predictedDb": -33.01231384277344,
+      "errorDb": -0.6423138427734401
+    },
+    {
+      "id": 13,
+      "name": "Gabor 1-octave 8 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -23.86,
+      "observerSdDb": 3.37,
+      "predictedDb": -26.472702026367188,
+      "errorDb": -2.612702026367188
+    },
+    {
+      "id": 14,
+      "name": "Gabor 1-octave 16 cpd",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -10.27,
+      "observerSdDb": 3.92,
+      "predictedDb": -14.927444458007812,
+      "errorDb": -4.657444458007813
+    },
+    {
+      "id": 15,
+      "name": "Elongated Gabor 4 cpd",
+      "family": "gabor-elongated",
+      "skinRelevant": false,
+      "observedDb": -40.03,
+      "observerSdDb": 3.45,
+      "predictedDb": -38.22807312011719,
+      "errorDb": 1.8019268798828136
+    },
+    {
+      "id": 16,
+      "name": "Elongated Gabor 8 cpd",
+      "family": "gabor-elongated",
+      "skinRelevant": false,
+      "observedDb": -33.71,
+      "observerSdDb": 3.65,
+      "predictedDb": -34.41307067871094,
+      "errorDb": -0.7030706787109366
+    },
+    {
+      "id": 17,
+      "name": "Elongated Gabor 16 cpd",
+      "family": "gabor-elongated",
+      "skinRelevant": false,
+      "observedDb": -21.2,
+      "observerSdDb": 5.34,
+      "predictedDb": -24.981307983398438,
+      "errorDb": -3.781307983398438
+    },
+    {
+      "id": 18,
+      "name": "Baguette 4 cpd (bx 2 oct, by 1 oct)",
+      "family": "gabor-elongated",
+      "skinRelevant": false,
+      "observedDb": -35.46,
+      "observerSdDb": 3.46,
+      "predictedDb": -35.01594543457031,
+      "errorDb": 0.44405456542968835
+    },
+    {
+      "id": 19,
+      "name": "Baguette 4 cpd (sx 0.5 deg, by 1 oct)",
+      "family": "gabor-elongated",
+      "skinRelevant": false,
+      "observedDb": -36.88,
+      "observerSdDb": 2.86,
+      "predictedDb": -36.13243103027344,
+      "errorDb": 0.7475689697265651
+    },
+    {
+      "id": 20,
+      "name": "Baguette 4 cpd (bx 1 oct, by 2 oct)",
+      "family": "gabor-elongated",
+      "skinRelevant": false,
+      "observedDb": -35.09,
+      "observerSdDb": 3.09,
+      "predictedDb": -35.09147644042969,
+      "errorDb": -0.0014764404296840894
+    },
+    {
+      "id": 21,
+      "name": "Baguette 4 cpd (bx 1 oct, sy 0.5 deg)",
+      "family": "gabor-elongated",
+      "skinRelevant": false,
+      "observedDb": -36.19,
+      "observerSdDb": 3.16,
+      "predictedDb": -36.22444152832031,
+      "errorDb": -0.034441528320314774
+    },
+    {
+      "id": 22,
+      "name": "Compound Gabor 2 + 2.83 cpd",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -38.96,
+      "observerSdDb": 4.12,
+      "predictedDb": -37.92045593261719,
+      "errorDb": 1.0395440673828134
+    },
+    {
+      "id": 23,
+      "name": "Compound Gabor 2 + 4 cpd",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -37.64,
+      "observerSdDb": 4.21,
+      "predictedDb": -36.26701354980469,
+      "errorDb": 1.372986450195313
+    },
+    {
+      "id": 24,
+      "name": "Compound Gabor 4 + 5.66 cpd",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -38.27,
+      "observerSdDb": 4.15,
+      "predictedDb": -36.71607971191406,
+      "errorDb": 1.5539202880859406
+    },
+    {
+      "id": 25,
+      "name": "Compound Gabor 4 + 8 cpd",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -36.51,
+      "observerSdDb": 4.18,
+      "predictedDb": -35.72181701660156,
+      "errorDb": 0.7881829833984355
+    },
+    {
+      "id": 26,
+      "name": "Gaussian sd 30 arcmin",
+      "family": "blob",
+      "skinRelevant": true,
+      "observedDb": -32.73,
+      "observerSdDb": 6.4,
+      "predictedDb": -33.11119079589844,
+      "errorDb": -0.3811907958984406
+    },
+    {
+      "id": 27,
+      "name": "Gaussian sd 8.43 arcmin",
+      "family": "blob",
+      "skinRelevant": true,
+      "observedDb": -30.52,
+      "observerSdDb": 2.85,
+      "predictedDb": -31.614303588867188,
+      "errorDb": -1.094303588867188
+    },
+    {
+      "id": 28,
+      "name": "Gaussian sd 2.106 arcmin",
+      "family": "blob",
+      "skinRelevant": true,
+      "observedDb": -24.17,
+      "observerSdDb": 2.12,
+      "predictedDb": -25.376815795898438,
+      "errorDb": -1.2068157958984358
+    },
+    {
+      "id": 29,
+      "name": "Gaussian sd 1.05 arcmin",
+      "family": "blob",
+      "skinRelevant": true,
+      "observedDb": -16.61,
+      "observerSdDb": 3.51,
+      "predictedDb": -18.838577270507812,
+      "errorDb": -2.228577270507813
+    },
+    {
+      "id": 30,
+      "name": "Edge x Gaussian",
+      "family": "edge",
+      "skinRelevant": true,
+      "observedDb": -38.72,
+      "observerSdDb": 2.75,
+      "predictedDb": -38.18412780761719,
+      "errorDb": 0.5358721923828114
+    },
+    {
+      "id": 31,
+      "name": "Line 0.5 arcmin x Gaussian",
+      "family": "line",
+      "skinRelevant": true,
+      "observedDb": -18.68,
+      "observerSdDb": 3.48,
+      "predictedDb": -17.877273559570312,
+      "errorDb": 0.8027264404296872
+    },
+    {
+      "id": 32,
+      "name": "Dipole 3 px x Gaussian",
+      "family": "line",
+      "skinRelevant": true,
+      "observedDb": -12.51,
+      "observerSdDb": 2.98,
+      "predictedDb": -15.681381225585938,
+      "errorDb": -3.1713812255859377
+    },
+    {
+      "id": 33,
+      "name": "5 collinear Gabors 8 cpd, in phase",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -27.77,
+      "observerSdDb": 3.65,
+      "predictedDb": -28.764724731445312,
+      "errorDb": -0.9947247314453129
+    },
+    {
+      "id": 34,
+      "name": "5 collinear Gabors 8 cpd, out of phase",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -27.14,
+      "observerSdDb": 3.48,
+      "predictedDb": -28.741378784179688,
+      "errorDb": -1.601378784179687
+    },
+    {
+      "id": 36,
+      "name": "Gabor 4 cpd, 45 deg",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -32.07,
+      "observerSdDb": 2.99,
+      "predictedDb": -33.01231384277344,
+      "errorDb": -0.9423138427734372
+    },
+    {
+      "id": 37,
+      "name": "Gabor 4 cpd, 0 deg",
+      "family": "gabor",
+      "skinRelevant": false,
+      "observedDb": -33.15,
+      "observerSdDb": 2.55,
+      "predictedDb": -33.01231384277344,
+      "errorDb": 0.13768615722656108
+    },
+    {
+      "id": 38,
+      "name": "Gabor plaid 4 cpd, 0 + 90 deg",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -28.52,
+      "observerSdDb": 2.32,
+      "predictedDb": -30.319290161132812,
+      "errorDb": -1.799290161132813
+    },
+    {
+      "id": 39,
+      "name": "Gabor plaid 4 cpd, 45 + 90 deg",
+      "family": "gabor-compound",
+      "skinRelevant": false,
+      "observedDb": -29.72,
+      "observerSdDb": 2.25,
+      "predictedDb": -31.152877807617188,
+      "errorDb": -1.4328778076171886
+    },
+    {
+      "id": 40,
+      "name": "Disk 0.25 deg diameter",
+      "family": "disk",
+      "skinRelevant": true,
+      "observedDb": -32.53,
+      "observerSdDb": 2.99,
+      "predictedDb": -33.84315490722656,
+      "errorDb": -1.3131549072265614
+    },
+    {
+      "id": 41,
+      "name": "Bessel x Gaussian 4 cpd",
+      "family": "pattern",
+      "skinRelevant": false,
+      "observedDb": -30.95,
+      "observerSdDb": 2.95,
+      "predictedDb": -31.699447631835938,
+      "errorDb": -0.7494476318359382
+    },
+    {
+      "id": 42,
+      "name": "Checkerboard x Gaussian 4 cpd",
+      "family": "pattern",
+      "skinRelevant": false,
+      "observedDb": -41.3,
+      "observerSdDb": 3.59,
+      "predictedDb": -41.08039855957031,
+      "errorDb": 0.21960144042968466
+    }
+  ],
+  "excluded": [
+    {
+      "id": 35,
+      "name": "Binary noise 1 arcmin x Gaussian",
+      "reason": "random or photographic pixel content, not defined by parameters"
+    },
+    {
+      "id": 43,
+      "name": "Natural scene (San Francisco) x Gaussian",
+      "reason": "random or photographic pixel content, not defined by parameters"
+    }
+  ],
+  "rmsAllDb": 1.9726072686246905,
+  "rmsSkinDb": 1.5999738754291257,
+  "nAll": 41,
+  "nSkin": 8,
+  "published": {
+    "source": "Watson & Ahumada 2005, Table 5 (RMS over all 43 stimuli, incl. noise #35 and natural scene #43); subset values from our own re-implementation of Standard A on the original images",
+    "standardA": {
+      "rmsAll43Db": 1.0329,
+      "rmsAll41Db": 0.69,
+      "rmsSkinSubsetDb": 0.78
+    },
+    "standardB": {
+      "rmsAll43Db": 1.1216,
+      "rmsAll41Db": 0.87,
+      "rmsSkinSubsetDb": 1.13
+    },
+    "observerRms0Db": 3.46
+  }
+}

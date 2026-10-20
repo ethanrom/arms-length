@@ -1,0 +1,36 @@
+MediaPipe assets vendored for Arm's Length
+==========================================
+
+These files are served from this app instead of a CDN, so face landmarking works
+without a third party being reachable. They are unmodified copies of Google's
+release artifacts, licensed under the Apache License 2.0 (see LICENSE in this
+folder).
+
+Copyright The MediaPipe Authors.
+Licensed under the Apache License, Version 2.0.
+
+Files
+-----
+face_landmarker.task
+    MediaPipe Face Landmarker model bundle (float16, version 1): face detector
+    and the 478-point face mesh with iris landmarks. Source:
+    https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+    Docs: https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker
+
+wasm/vision_wasm_internal.js
+wasm/vision_wasm_internal.wasm
+    The SIMD WebAssembly runtime shipped in the @mediapipe/tasks-vision 1.1.1
+    npm package (https://github.com/google-ai-edge/mediapipe). The .wasm is
+    byte-identical to the package. The .js has two lines added at the top
+    (`/* eslint-disable */` and a comment) so the repository's lint run skips
+    vendored code; nothing else is changed. The non-SIMD
+    fallback (vision_wasm_nosimd_internal.*) and the ES-module variant
+    (vision_wasm_module_internal.*) are left out on purpose to keep the
+    repository small; current evergreen browsers all support WebAssembly SIMD.
+
+Refresh
+-------
+When the @mediapipe/tasks-vision version changes, copy
+node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.{js,wasm} over the
+files in wasm/ so the runtime matches the JavaScript bundle that lib/capture imports,
+then put the two header lines back at the top of vision_wasm_internal.js.

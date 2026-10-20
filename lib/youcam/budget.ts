@@ -42,7 +42,7 @@ export function configFromEnv(env: Record<string, string | undefined>): GuardCon
     killSwitch: env.KILL_SWITCH === "1",
     unitFloor: positiveInt(env.UNIT_FLOOR, 100),
     analysisDailyCap: positiveInt(env.LIVE_DAILY_CAP, 3),
-    renderDailyCap: positiveInt(env.LIVE_RENDER_DAILY_CAP, 40),
+    renderDailyCap: positiveInt(env.LIVE_RENDER_DAILY_CAP, 20),
   };
 }
 

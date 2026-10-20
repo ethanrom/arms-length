@@ -3,7 +3,7 @@
  * Live calls need the `x-access-code` header (a code from LIVE_ACCESS_CODES); without it, routes serve
  * replayed fixtures for demo personas only.
  */
-import type { SkinAnalysis } from "./measure";
+import type { ScaleEstimate, SkinAnalysis } from "./measure";
 import type { MakeupEffect, RenderResult, SimulationStrengths, CoveragePlan, WhatIf } from "./render";
 import type { ViewingConditions, VisibilityReport } from "./vision";
 
@@ -62,6 +62,8 @@ export interface VisibilityRequest {
   /** Mask PNGs as data URLs keyed by the mask URL in `output`, if the URLs have expired. */
   masks?: Record<string, string>;
   viewing?: Partial<ViewingConditions>;
+  /** Physical scale if the caller measured it (e.g. our iris ruler in the browser). Otherwise estimated server-side. */
+  scale?: ScaleEstimate;
 }
 
 export type VisibilityResponse = VisibilityReport;

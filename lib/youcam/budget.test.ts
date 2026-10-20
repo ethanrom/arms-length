@@ -87,7 +87,7 @@ describe("budget guard", () => {
       killSwitch: false,
       unitFloor: 100,
       analysisDailyCap: 3,
-      renderDailyCap: 40,
+      renderDailyCap: 20,
     });
     expect(configFromEnv({ LIVE_ACCESS_CODES: " a , b,,", KILL_SWITCH: "1", UNIT_FLOOR: "250", LIVE_DAILY_CAP: "5" })).toMatchObject({
       codes: ["a", "b"],

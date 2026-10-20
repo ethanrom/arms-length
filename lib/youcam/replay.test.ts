@@ -74,9 +74,15 @@ describe("replay", () => {
     // p1a recorded acne + redness: a spots request must not be answered with that render.
     const acne = await replaySimulation("p1a", { acne: 0.5 });
     expect(acne.imageRef).toBe(recordedDataUrl("p1a", "renders/sim_acne05_redness05.png"));
-    await expect(replaySimulation("p1a", { spots: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
-    await expect(replaySimulation("p3a", { acne: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
-    await expect(replaySimulation("p2b", { spots: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
+    // The half-strength group B recordings (spots, pores, acne at 0.5) now answer spots and acne requests on every persona.
+    const spots = await replaySimulation("p1a", { spots: 0.5 });
+    expect(spots.imageRef).toBe(recordedDataUrl("p1a", "renders/sim_improve_b05.png"));
+    const acneOnly = await replaySimulation("p3a", { acne: 0.5 });
+    expect(acneOnly.imageRef).toBe(recordedDataUrl("p3a", "renders/sim_improve_b05.png"));
+    // Nothing recorded changes radiance, so no render may answer it.
+    await expect(replaySimulation("p1a", { radiance: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
+    await expect(replaySimulation("p3a", { radiance: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
+    await expect(replaySimulation("p2b", { radiance: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
     await expect(replaySimulation("nobody", { spots: 0.5 })).rejects.toMatchObject({ code: "unknown_persona" });
   });
 

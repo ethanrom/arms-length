@@ -32,7 +32,11 @@ export interface ViewingConditions {
 }
 
 export interface Detector {
-  /** Pooled detector response at a viewing distance; >= 1 means detectable. Non-increasing in distance. */
+  /**
+   * Pooled detector response at a viewing distance; >= 1 means detectable. Non-increasing in distance.
+   * This is the raw model for the average observer: it ignores `viewing.marginDb`. The margin is applied only when
+   * computing the bound (TargetVisibility.distanceM).
+   */
   response(patch: ContrastPatch, viewing: ViewingConditions, distanceM: number): number;
 }
 

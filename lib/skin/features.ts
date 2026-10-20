@@ -24,8 +24,9 @@ export type RegionDraft = Omit<RegionMeasure, "id" | "reference">;
 export interface MeasureContext {
   planes: LinearPlanes;
   /**
-   * Skin Simulation of the same face without the concern, aligned to `planes` (see counterfactual.ts). When present,
-   * the concerns in COUNTERFACTUAL_CONCERNS take their contrast from photo vs simulation instead of vs the surround.
+   * A Skin Simulation of the same face with the concern improved, aligned to `planes` (see counterfactual.ts). When
+   * present, every target's contrast is the difference (photo - simulation) / simulation instead of the contrast vs its
+   * surround; sizes are unchanged.
    */
   counterfactual?: LinearPlanes;
   mmPerPx: number;
@@ -101,7 +102,8 @@ export function measureContours(concern: ConcernId, comps: Component[], ctx: Mea
     const inner = Math.max(P.RING_INNER_MIN_PX, P.RING_INNER_FRAC * dPx);
     const width = Math.max(P.RING_WIDTH_MIN_PX, P.RING_WIDTH_FRAC * dPx);
     const feature = meanStat(ctx.planes, comp.pixels)!;
-    const surround = ringSurround(comp, inner, width, ctx);
+    const simulated = ctx.counterfactual ? meanStat(ctx.counterfactual, comp.pixels) : null;
+    const surround = simulated ?? ringSurround(comp, inner, width, ctx);
     return {
       concern,
       shape: "spot",
@@ -111,6 +113,7 @@ export function measureContours(concern: ConcernId, comps: Component[], ctx: Mea
       diameterMm: dPx * ctx.mmPerPx,
       sizeSource: "mask",
       contrast: surround ? contrastBetween(feature, surround) : ZERO,
+      contrastBasis: simulated ? "counterfactual" : "surround",
     };
   });
 }
@@ -381,7 +384,7 @@ export function measurePolylines(concern: ConcernId, lines: LineDetection[], ctx
     const { comp } = det;
     const photo = linePhotoProfile(det, ctx);
     const widthPx = photo ? photo.widthPx : det.maskWidthPx;
-    const counterfactual = P.COUNTERFACTUAL_CONCERNS.includes(concern) ? lineCounterfactualContrast(det, ctx) : null;
+    const counterfactual = lineCounterfactualContrast(det, ctx);
     let contrast = ZERO;
     if (counterfactual) {
       contrast = counterfactual;
@@ -568,7 +571,13 @@ function measureMarker(m: Marker, kind: "pore" | "acne", unitR: number, ctx: Mea
 
 export function measureMarkers(kind: "pore" | "acne", det: MarkerDetection, ctx: MeasureContext): FeatureDraft[] {
   const unitR = Math.max(1.5, det.unitPeak - 0.5);
-  return det.markers.map((m) => measureMarker(m, kind, unitR, ctx));
+  return det.markers.map((m) => {
+    const draft = measureMarker(m, kind, unitR, ctx);
+    if (!ctx.counterfactual) return draft;
+    // The change a simulation makes at the mark: the same 3x3 box, photo against simulation.
+    const contrast = contrastBetween(boxStat(ctx.planes, m.x, m.y), boxStat(ctx.counterfactual, m.x, m.y));
+    return { ...draft, contrast, contrastBasis: "counterfactual" };
+  });
 }
 
 // ---------------------------------------------------------------------------------------------------

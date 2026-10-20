@@ -10,6 +10,7 @@
  * relief when at most RELIEF_SHARE of them can be seen across a table. Everything else keeps the single-distance wording.
  */
 import { CONCERNS, type ConcernId } from "@/lib/contracts/concerns";
+import type { ConcernResult } from "@/lib/contracts/measure";
 import { MAX_DISTANCE_M, MIN_DISTANCE_M, type ConcernVisibility, type VisibilityReport } from "@/lib/contracts/vision";
 import { CONCERN_COPY, concernBe, concernName, concernNoun, concernThem } from "./concerns";
 import {
@@ -45,6 +46,18 @@ export const RELIEF_SHARE = 0.1;
 const MIN_PROFILE_TARGETS = 5;
 
 type Group = "relief" | "visible" | "unmeasured";
+
+/** Across a room (the everyday anchor): from here on a soft area is "far". */
+const ACROSS_ROOM_M = 4;
+
+/**
+ * Large soft areas: at 3 to 4 cm even a few percent of contrast is detectable from 10 m for an ideal observer, so a long
+ * distance here says that the area is large, not that the shading is strong. Said plainly, and without a grade.
+ */
+const SOFT_AREA_NOTE: Partial<Record<ConcernId, string>> = {
+  dark_circle: "Under-eye shadows are a large, soft area. At that size, even a little darkening can show from across a room, on anyone's face.",
+  eye_bag: "Under-eye puffiness is a large, soft area. At that size, even a little shading can show from across a room, on anyone's face.",
+};
 
 /** Many-feature concerns (not area regions) with a profile are summarised by shares, not by the farthest target. */
 function usesProfile(cv: ConcernVisibility): boolean {
@@ -104,7 +117,7 @@ function describeUnmeasured(cv: ConcernVisibility): ConcernDescription {
   };
 }
 
-function describeRelief(cv: ConcernVisibility): ConcernDescription {
+function describeRelief(cv: ConcernVisibility, aside = ""): ConcernDescription {
   const noun = concernNoun(cv.concern);
   const them = concernThem(cv.concern);
   const bound = formatDistance(upperBoundM(cv));
@@ -113,42 +126,46 @@ function describeRelief(cv: ConcernVisibility): ConcernDescription {
   if (cv.maxDistanceM < MIN_DISTANCE_M) {
     return {
       headline: `Nobody can see your ${noun}, even up close.`,
-      detail: join([`Even from ${formatDistance(MIN_DISTANCE_M)}, a person with perfect eyesight couldn't pick ${them} out.`, note]),
+      detail: join([`Even from ${formatDistance(MIN_DISTANCE_M)}, a person with perfect eyesight couldn't pick ${them} out.`, aside, note]),
       tone: "relief",
     };
   }
   if (cv.maxDistanceM <= MIRROR_BAND_MAX_M) {
     return {
       headline: `Nobody can see your ${noun} beyond ${bound}.`,
-      detail: join(["That's about mirror and selfie distance, a view that's mostly yours.", note]),
+      detail: join(["That's about mirror and selfie distance, a view that's mostly yours.", aside, note]),
       tone: "relief",
     };
   }
   return {
     headline: `Nobody can see your ${noun} from across a table.`,
-    detail: join([`Even someone with perfect eyesight would need to be closer than ${bound}.`, note]),
+    detail: join([`Even someone with perfect eyesight would need to be closer than ${bound}.`, aside, note]),
     tone: "relief",
   };
 }
 
-function describeVisible(cv: ConcernVisibility): ConcernDescription {
+function describeVisible(cv: ConcernVisibility, aside = ""): ConcernDescription {
   const noun = concernNoun(cv.concern);
   const them = concernThem(cv.concern);
   const capped = cv.maxDistanceM >= MAX_DISTANCE_M;
   const from = capped ? "10 m or more" : `about ${formatDistance(cv.maxDistanceM)}`;
 
-  const where = capped
-    ? `That's across a room and beyond, for sharp eyes looking right at ${them}. We stop measuring at ${MAX_DISTANCE_M} m.`
-    : `That's ${anchorFor(cv.maxDistanceM)}, for sharp eyes looking right at ${them}.`;
+  // A large, soft area carries a few percent of contrast a long way, so "from far" says little about how much there is.
+  const soft = cv.maxDistanceM >= ACROSS_ROOM_M ? SOFT_AREA_NOTE[cv.concern] : undefined;
+  const where =
+    soft ??
+    (capped
+      ? `That's across a room and beyond, for sharp eyes looking right at ${them}. We stop measuring at ${MAX_DISTANCE_M} m.`
+      : `That's ${anchorFor(cv.maxDistanceM)}, for sharp eyes looking right at ${them}.`);
 
   const spread =
-    CONCERN_COPY[cv.concern].agreement === "plural" && cv.targetCount >= 3 && cv.medianDistanceM > 0 && cv.medianDistanceM <= 0.6 * cv.maxDistanceM
+    !soft && CONCERN_COPY[cv.concern].agreement === "plural" && cv.targetCount >= 3 && cv.medianDistanceM > 0 && cv.medianDistanceM <= 0.6 * cv.maxDistanceM
       ? `Most of them fade from view beyond ${formatDistance(cv.medianDistanceM)}.`
       : "";
 
   return {
     headline: `Your ${noun} ${concernBe(cv.concern)} visible from ${from}.`,
-    detail: join([where, spread, roughEstimateNote(cv), `See what would make ${them} disappear at ${formatDistance(CONVERSATION_M)}.`]),
+    detail: join([where, spread, aside, roughEstimateNote(cv), `See what would make ${them} disappear at ${formatDistance(CONVERSATION_M)}.`]),
     tone: "visible",
   };
 }
@@ -165,7 +182,7 @@ const fitHeadline = (withYour: string, without: string) => (withYour.length <= M
  * Many-feature concerns, relief: at most RELIEF_SHARE of them can be seen across a table, even by perfect eyes.
  * Always counts with "at most": the profile is a bound, so the real number of people-visible marks is lower.
  */
-function describeProfileRelief(cv: ConcernVisibility): ConcernDescription {
+function describeProfileRelief(cv: ConcernVisibility, aside = ""): ConcernDescription {
   const noun = concernNoun(cv.concern);
   const total = cv.targetCount;
   const table = anchorFor(TABLE_M);
@@ -177,7 +194,7 @@ function describeProfileRelief(cv: ConcernVisibility): ConcernDescription {
   if (atTable === 0) {
     return {
       headline: `Nobody can see your ${noun} ${fromPhrase(table)}.`,
-      detail: join([`From ${table}, not one of your ${total} ${noun} could be seen, even by perfect eyes.`, closer, note]),
+      detail: join([`From ${table}, not one of your ${total} ${noun} could be seen, even by perfect eyes.`, closer, aside, note]),
       tone: "relief",
     };
   }
@@ -186,7 +203,7 @@ function describeProfileRelief(cv: ConcernVisibility): ConcernDescription {
       `At most ${atTable} of your ${total} ${noun} show ${fromPhrase(table)}.`,
       `At most ${atTable} of ${total} ${noun} show ${fromPhrase(table)}.`,
     ),
-    detail: join([`From ${table}, at most ${atTable} of your ${total} ${noun} could be seen, even by perfect eyes.`, closer, note]),
+    detail: join([`From ${table}, at most ${atTable} of your ${total} ${noun} could be seen, even by perfect eyes.`, closer, aside, note]),
     tone: "relief",
   };
 }
@@ -195,7 +212,7 @@ function describeProfileRelief(cv: ConcernVisibility): ConcernDescription {
  * Many-feature concerns, visible: the farthest everyday anchor where at least RELIEF_SHARE is still detectable.
  * Counts are bounds, so every sentence says "at most" (or "could").
  */
-function describeProfileVisible(cv: ConcernVisibility): ConcernDescription {
+function describeProfileVisible(cv: ConcernVisibility, aside = ""): ConcernDescription {
   const noun = concernNoun(cv.concern);
   const them = concernThem(cv.concern);
   const total = cv.targetCount;
@@ -208,7 +225,7 @@ function describeProfileVisible(cv: ConcernVisibility): ConcernDescription {
   if (count >= total) {
     return {
       headline: `All ${total} of your ${noun} could show ${where}.`,
-      detail: join([`Sharp eyes looking right at ${them} could see all ${total} ${where}.`, note, hook]),
+      detail: join([`Sharp eyes looking right at ${them} could see all ${total} ${where}.`, aside, note, hook]),
       tone: "visible",
     };
   }
@@ -221,6 +238,7 @@ function describeProfileVisible(cv: ConcernVisibility): ConcernDescription {
     ),
     detail: join([
       `${capitalise(where)}, at most ${count} of your ${total} ${noun} (${percent}%) could be seen, and only by sharp eyes looking right at ${them}.`,
+      aside,
       note,
       hook,
     ]),
@@ -232,14 +250,31 @@ function nearestTable(): EverydayAnchor {
   return EVERYDAY.reduce((best, a) => (Math.abs(a.m - TABLE_M) < Math.abs(best.m - TABLE_M) ? a : best));
 }
 
-export function describeConcern(cv: ConcernVisibility): ConcernDescription {
+export interface DescribeContext {
+  /** YouCam's own 0-100 rating for this concern (higher is healthier), shown for context next to our distance. */
+  youcamScore?: number;
+}
+
+/** "YouCam rates yours 69/100, where higher is healthier." */
+export function youcamScoreLine(score: number): string {
+  return `YouCam rates yours ${Math.round(Math.min(100, Math.max(0, score)))}/100, where higher is healthier.`;
+}
+
+/** The whole-face rating of a concern in a SkinAnalysis, if the analysis has one. */
+export function youcamScoreOf(results: readonly ConcernResult[], concern: ConcernId): number | undefined {
+  const found = results.find((r) => r.concern === concern && r.region === "whole") ?? results.find((r) => r.concern === concern);
+  return found && Number.isFinite(found.uiScore) ? found.uiScore : undefined;
+}
+
+export function describeConcern(cv: ConcernVisibility, context: DescribeContext = {}): ConcernDescription {
+  const aside = context.youcamScore !== undefined && Number.isFinite(context.youcamScore) ? youcamScoreLine(context.youcamScore) : "";
   switch (groupOf(cv)) {
     case "unmeasured":
       return describeUnmeasured(cv);
     case "relief":
-      return usesProfile(cv) ? describeProfileRelief(cv) : describeRelief(cv);
+      return usesProfile(cv) ? describeProfileRelief(cv, aside) : describeRelief(cv, aside);
     case "visible":
-      return usesProfile(cv) ? describeProfileVisible(cv) : describeVisible(cv);
+      return usesProfile(cv) ? describeProfileVisible(cv, aside) : describeVisible(cv, aside);
   }
 }
 

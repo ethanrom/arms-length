@@ -6,12 +6,11 @@
  * forehead/glabellar/...) are used only to label `Feature.region`. The texture window, when present, is
  * the skin area used for reference colours.
  *
- * Contrast basis. Spots, pores and acne are measured against their surround (`contrastBasis: "surround"`). Dark circles,
- * eye bags, redness and wrinkles are normal anatomy and lighting as much as a concern (eye-socket shading, fold shadows,
- * lit cheeks), so a surround says little about them. With `counterfactual`, a Skin Simulation render of the same
- * face without those concerns (aligned to the photo, see counterfactual.ts), their contrast is (photo - simulation) /
- * simulation (`"counterfactual"`, regions `reference: "simulation"`). Without it they keep the surround contrast, marked
- * `"surround"`, and the visibility report rates them low confidence.
+ * Contrast basis. By default every target is measured against its surround (`contrastBasis: "surround"`): what another
+ * person sees. With `counterfactual`, a Skin Simulation render of the same face with the concerns improved (aligned to
+ * the photo, see counterfactual.ts), every target's contrast is instead the difference the simulation makes,
+ * (photo - simulation) / simulation (`"counterfactual"`, regions `reference: "simulation"`). Sizes and ids do not change,
+ * so the two passes line up target by target; that is what the "Worth it?" metric (lib/vision/worthIt.ts) uses.
  */
 import {
   CONCERNS, type ConcernId, type Feature, type Measurements, type Point, type RegionMeasure, type RgbaImage,
@@ -239,7 +238,7 @@ export function measureAnalysis(
   const sim = ctx.counterfactual;
   for (const [concern, det] of regionDetections) {
     const out: Omit<RegionMeasure, "id">[] = [];
-    if (sim && P.COUNTERFACTUAL_CONCERNS.includes(concern)) {
+    if (sim) {
       for (const comp of det.comps) {
         const ref = weightedStat(sim, comp.pixels, det.fg.diff);
         if (ref) out.push({ ...measureRegion(concern, comp, det.fg, ref, ctx), reference: "simulation", contrastBasis: "counterfactual" });

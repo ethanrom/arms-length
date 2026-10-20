@@ -4,7 +4,6 @@ import { DEFAULT_VIEWING } from "../contracts";
 import { buildVisibilityReport } from "../vision/report";
 import { applyCounterfactual } from "./counterfactual";
 import { measureAnalysis } from "./measure";
-import { COUNTERFACTUAL_CONCERNS } from "./params";
 import { makeMask, makePhoto, TEST_SCALE, type Rgb } from "./synth";
 
 const SKIN: Rgb = [185, 135, 115];
@@ -13,9 +12,11 @@ const H = 220;
 const inCircle = (x: number, y: number) => x >= 60 && x < 140 && y >= 50 && y < 90;
 const inCrease = (x: number, y: number) => x >= 40 && x < 140 && y >= 169 && y <= 171;
 
-// A dark under-eye region (-30%), a crease (-30%) drawn 2 px off by the mask, and a pore: all in one face.
-const photo = makePhoto(W, H, SKIN, (x, y) => (inCircle(x, y) || inCrease(x, y) ? 0.7 : null), 0.01);
-// The same face, same noise, without the concern: what Skin Simulation returns.
+const inPore = (x: number, y: number) => Math.hypot(x - 190, y - 120) <= 2.5;
+
+// A dark under-eye region (-30%), a crease (-30%) drawn 2 px off by the mask, and a pore (-40%): all in one face.
+const photo = makePhoto(W, H, SKIN, (x, y) => (inCircle(x, y) || inCrease(x, y) ? 0.7 : inPore(x, y) ? 0.6 : null), 0.01);
+// The same face, same noise, with the concerns gone: what Skin Simulation returns at full strength.
 const sim = makePhoto(W, H, SKIN, () => null, 0.01);
 
 function setup() {
@@ -41,7 +42,7 @@ function setup() {
 describe("counterfactual contrast", () => {
   const { analysis, masks } = setup();
 
-  test("a face darkened by the concern recovers its contrast against the simulation", () => {
+  test("a face darkened by the concerns recovers the difference against the simulation", () => {
     const m = measureAnalysis(analysis, masks, photo, TEST_SCALE, sim);
     const [region] = m.regions;
     expect(region).toMatchObject({ concern: "dark_circle", reference: "simulation", contrastBasis: "counterfactual" });
@@ -50,8 +51,18 @@ describe("counterfactual contrast", () => {
     const line = m.features.find((f) => f.concern === "wrinkle")!;
     expect(line.contrastBasis).toBe("counterfactual");
     expect(Math.abs(line.contrast.lum + 0.3)).toBeLessThan(0.06);
-    // Spots, pores and acne are never counterfactual.
-    expect(m.features.find((f) => f.concern === "pore")!.contrastBasis).toBe("surround");
+    // Marks too: the pore's 3x3 box against the same box in the simulation.
+    const pore = m.features.find((f) => f.concern === "pore")!;
+    expect(pore.contrastBasis).toBe("counterfactual");
+    expect(Math.abs(pore.contrast.lum + 0.4)).toBeLessThan(0.05);
+  });
+
+  test("sizes and ids do not depend on the simulation, so the two passes line up", () => {
+    const plain = measureAnalysis(analysis, masks, photo, TEST_SCALE);
+    const diff = measureAnalysis(analysis, masks, photo, TEST_SCALE, sim);
+    const shape = (m: Measurements) => m.features.map((f) => [f.id, f.diameterMm, f.lengthMm, f.widthMm, f.sizeSource, f.bbox]);
+    expect(shape(diff)).toEqual(shape(plain));
+    expect(diff.regions.map((r) => [r.id, r.bbox, r.areaPx])).toEqual(plain.regions.map((r) => [r.id, r.bbox, r.areaPx]));
   });
 
   test("a simulation equal to the photo gives no contrast, so no distance", () => {
@@ -66,24 +77,23 @@ describe("counterfactual contrast", () => {
     expect(distance(m.features.find((f) => f.concern === "wrinkle")!.id)).toBe(0);
   });
 
-  test("without a simulation the surround contrast is kept, marked as such, and the report is low confidence", () => {
+  test("without a simulation everything is against its surround, marked as such, with the usual confidence", () => {
     const m = measureAnalysis(analysis, masks, photo, TEST_SCALE);
     expect(m.regions[0]).toMatchObject({ reference: "cheek_band", contrastBasis: "surround" });
     expect(m.features.every((f) => f.contrastBasis === "surround")).toBe(true);
-    const sure = { ...m, scale: { ...m.scale, source: "iris" as const } };
-    const confidence = (x: Measurements) => Object.fromEntries(buildVisibilityReport(x, DEFAULT_VIEWING).concerns.map((c) => [c.concern, c.confidence]));
-    expect(confidence(sure)).toMatchObject({ dark_circle: "low", wrinkle: "low" });
-    const withSim = measureAnalysis(analysis, masks, photo, { ...TEST_SCALE, source: "iris" }, sim);
-    expect(confidence(withSim)).toMatchObject({ dark_circle: "high", wrinkle: "medium" });
+    const sure = measureAnalysis(analysis, masks, photo, { ...TEST_SCALE, source: "iris" });
+    const confidence = Object.fromEntries(buildVisibilityReport(sure, DEFAULT_VIEWING).concerns.map((c) => [c.concern, c.confidence]));
+    expect(confidence).toMatchObject({ dark_circle: "high", wrinkle: "medium" });
   });
 
-  test("applyCounterfactual swaps in the counterfactual contrast of those concerns only", () => {
+  test("applyCounterfactual swaps in the difference contrast and leaves sizes alone", () => {
     const base = measureAnalysis(analysis, masks, photo, TEST_SCALE);
     const after = applyCounterfactual(base, photo, sim, { dx: 0, dy: 0 }, { analysis, masks });
     expect(after.regions[0]).toMatchObject({ reference: "simulation", contrastBasis: "counterfactual" });
     expect(after.regions[0].contrast.lum).toBeLessThan(-0.25);
-    expect(after.features.find((f) => f.concern === "pore")).toEqual(base.features.find((f) => f.concern === "pore"));
-    expect(after.features.filter((f) => COUNTERFACTUAL_CONCERNS.includes(f.concern)).every((f) => f.contrastBasis === "counterfactual")).toBe(true);
+    expect(after.features.every((f) => f.contrastBasis === "counterfactual")).toBe(true);
+    const sizes = (m: Measurements) => m.features.map((f) => [f.id, f.diameterMm, f.widthMm, f.lengthMm]);
+    expect(sizes(after)).toEqual(sizes(base));
     expect(after.scale).toEqual(base.scale);
   });
 

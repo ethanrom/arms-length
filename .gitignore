@@ -1,0 +1,38 @@
+# secrets: never commit
+.env
+.env.*
+!.env.example
+
+# internal: plans, research notes, devpost drafts, video scripts (never committed)
+/internal/
+
+# third-party event briefing material (not ours to redistribute)
+docs/overview.txt
+docs/rules.txt
+docs/resources.txt
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js / build
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# testing and local caches
+/coverage
+/test-results/
+/playwright-report/
+.cache/
+*.log
+
+# vercel
+.vercel
+
+# misc
+.DS_Store
+*.pem

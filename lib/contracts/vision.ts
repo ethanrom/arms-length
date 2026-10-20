@@ -32,7 +32,11 @@ export interface ViewingConditions {
 }
 
 export interface Detector {
-  /** Pooled detector response at a viewing distance; >= 1 means detectable. Non-increasing in distance. */
+  /**
+   * Pooled detector response at a viewing distance; >= 1 means detectable. Non-increasing in distance.
+   * This is the raw model for the average observer: it ignores `viewing.marginDb`. The margin is applied only when
+   * computing the bound (TargetVisibility.distanceM).
+   */
   response(patch: ContrastPatch, viewing: ViewingConditions, distanceM: number): number;
 }
 
@@ -79,4 +83,4 @@ export type DistanceRenderer = (
   distanceM: number,
 ) => import("./measure").RgbaImage;
 
-export const DEFAULT_VIEWING: ViewingConditions = { luminanceCdM2: 100, acuityScale: 1, label: "indoor", marginDb: 6 };
+export const DEFAULT_VIEWING: ViewingConditions = { luminanceCdM2: 45, acuityScale: 1, label: "indoor", marginDb: 6 };

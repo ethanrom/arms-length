@@ -41,29 +41,42 @@ describe("replay", () => {
   });
 
   test("makeup returns the recorded render of the same category with the nearest parameter", async () => {
-    // p2b foundation recordings: 25, 30 (default smoothing), 50, 75, 80 (default smoothing), 100
+    // p2b foundation recordings with smoothing off: 25, 50, 75, 100. The Phase 0 renders (30 and 80, default smoothing,
+    // +23% brightening) are never served, even when they are the nearest parameter.
     const mid = await replayMakeup("p2b", [foundation(60)]);
     expect(mid.imageRef).toBe(recordedDataUrl("p2b", "renders/foundation_cov50.png"));
     const high = await replayMakeup("p2b", [foundation(95)]);
     expect(high.imageRef).toBe(recordedDataUrl("p2b", "renders/foundation_cov100.png"));
+    const near30 = await replayMakeup("p2b", [foundation(30)]);
+    expect(near30.imageRef).toBe(recordedDataUrl("p2b", "renders/foundation_cov25.png"));
     const p3a = await replayMakeup("p3a", [foundation(70)]); // recorded: 25, 50, 75, 100
     expect(p3a.imageRef).toBe(recordedDataUrl("p3a", "renders/foundation_cov75.png"));
 
-    // A skin_smooth effect is not the lever, so it is ignored; concealer matches on coverageLevel (20, 50, 90).
-    const conc = await replayMakeup("p2b", [{ category: "skin_smooth", skinSmoothStrength: 0 }, concealer(60)]);
-    expect(conc.imageRef).toBe(recordedDataUrl("p2b", "renders/mu_concealer_cov50.png"));
-    expect(conc).toMatchObject({ source: "replay", unitsCharged: 0, width: 1080, height: 1340, offset: { dx: 0, dy: 1 } });
-
+    // Every concealer recording used default smoothing, so none is served.
+    await expect(replayMakeup("p2b", [concealer(60)])).rejects.toMatchObject({ code: "no_replay_render" });
     await expect(replayMakeup("p2b", [{ category: "blush" }])).rejects.toMatchObject({ code: "no_replay_render" });
     await expect(replayMakeup("p3a", [concealer(50)])).rejects.toMatchObject({ code: "no_replay_render" });
   });
 
-  test("simulation returns the closest recording and is pixel-aligned (offset 0)", async () => {
+  test("each render carries the offset measured against its persona's input", async () => {
+    expect(await replayMakeup("p2b", [foundation(50)])).toMatchObject({ width: 1080, height: 1340, offset: { dx: 0, dy: 1 } });
+    // p3a: a 1078x1576 output for a 1080x1575 input, shifted 3 px left, with black padding on the right and bottom.
+    expect(await replayMakeup("p3a", [foundation(50)])).toMatchObject({ width: 1078, height: 1576, offset: { dx: -3, dy: 0 } });
+    expect(await replayMakeup("p1a", [foundation(50)])).toMatchObject({ width: 1080, height: 1610, offset: { dx: 0, dy: 0 } });
+  });
+
+  test("simulation returns the closest recording that changed every concern asked for, pixel-aligned", async () => {
     const render = await replaySimulation("p3a", { spots: 0.4, redness: 0.6 });
     expect(render.imageRef).toBe(recordedDataUrl("p3a", "renders/sim_spots05_redness05.png"));
     expect(render).toMatchObject({ width: 1080, height: 1575, offset: { dx: 0, dy: 0 }, source: "replay" });
     const dark = await replaySimulation("p2b", { dark_circle: 0.6 });
     expect(dark.imageRef).toBe(recordedDataUrl("p2b", "renders/sim_dark_circle05.png"));
+    // p1a recorded acne + redness: a spots request must not be answered with that render.
+    const acne = await replaySimulation("p1a", { acne: 0.5 });
+    expect(acne.imageRef).toBe(recordedDataUrl("p1a", "renders/sim_acne05_redness05.png"));
+    await expect(replaySimulation("p1a", { spots: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
+    await expect(replaySimulation("p3a", { acne: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
+    await expect(replaySimulation("p2b", { spots: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
     await expect(replaySimulation("nobody", { spots: 0.5 })).rejects.toMatchObject({ code: "unknown_persona" });
   });
 

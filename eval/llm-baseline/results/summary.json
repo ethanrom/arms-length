@@ -1,0 +1,1030 @@
+{
+  "meta": {
+    "model": "global.anthropic.claude-opus-5-5",
+    "platform": "Amazon Bedrock Converse API, maxTokens 4000, no sampling or thinking parameters",
+    "calls": 65,
+    "unreadableRuns": [],
+    "tokens": {
+      "input": 76790,
+      "output": 40155
+    },
+    "estimatedCostUsd": 1.11,
+    "priceAssumptionUsdPerMillion": {
+      "input": 4,
+      "output": 20
+    },
+    "note": "Cost uses list price; Bedrock billing may differ."
+  },
+  "groundTruth": "Published Watson & Ahumada (2005) Standard A model, validated against ModelFest observers (0.69 dB RMS over 41 analytic stimuli), via lib/vision with DEFAULT_VIEWING (45 cd/m2, 20/20). nominal = average observer (marginDb 0); bound = one-sided bound (marginDb 6, luminance factor max(1, g)). Not capped at the 10 m contract limit. The luminance factor that moves the 30 cd/m2 ModelFest thresholds to 45 cd/m2 is an unverified heuristic in the model.",
+  "testA": {
+    "cells": [
+      {
+        "persona": "p1a",
+        "concern": "pores",
+        "llm": {
+          "n": 5,
+          "median": 0.8,
+          "min": 0.6,
+          "max": 1,
+          "mean": 0.7600000000000001,
+          "cv": 0.22017369119317778,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            1,
+            0.6,
+            0.8,
+            0.6,
+            0.8
+          ]
+        },
+        "ours": {
+          "targetCount": 450,
+          "maxDistanceM": 4.0721,
+          "medianDistanceM": 1.262,
+          "countAt1_5m": 150,
+          "fractionAt1_5m": 0.3333
+        }
+      },
+      {
+        "persona": "p1a",
+        "concern": "dark_spots",
+        "llm": {
+          "n": 5,
+          "median": 1.5,
+          "min": 1,
+          "max": 1.5,
+          "mean": 1.34,
+          "cv": 0.17180394676449756,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            1.5,
+            1.2,
+            1.5,
+            1,
+            1.5
+          ]
+        },
+        "ours": {
+          "targetCount": 64,
+          "maxDistanceM": 10,
+          "medianDistanceM": 3.2559,
+          "countAt1_5m": 62,
+          "fractionAt1_5m": 0.9688
+        }
+      },
+      {
+        "persona": "p1a",
+        "concern": "fine_lines",
+        "llm": {
+          "n": 3,
+          "median": 0.6,
+          "min": 0.5,
+          "max": 0.6,
+          "mean": 0.5666666666666668,
+          "cv": 0.10188534162169863,
+          "nulls": 2,
+          "runs": 5,
+          "values": [
+            0.6,
+            0.5,
+            0.6,
+            null,
+            null
+          ]
+        },
+        "ours": {
+          "targetCount": 93,
+          "maxDistanceM": 10,
+          "medianDistanceM": 2.2212,
+          "countAt1_5m": 69,
+          "fractionAt1_5m": 0.7419
+        }
+      },
+      {
+        "persona": "p1a",
+        "concern": "under_eye_shadows",
+        "llm": {
+          "n": 5,
+          "median": 4,
+          "min": 3,
+          "max": 5,
+          "mean": 4.2,
+          "cv": 0.19920476822239894,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            5,
+            3,
+            5,
+            4,
+            4
+          ]
+        },
+        "ours": {
+          "targetCount": 2,
+          "maxDistanceM": 10,
+          "medianDistanceM": 10,
+          "countAt1_5m": 2,
+          "fractionAt1_5m": 1
+        }
+      },
+      {
+        "persona": "p1a",
+        "concern": "redness",
+        "llm": {
+          "n": 5,
+          "median": 3,
+          "min": 2.5,
+          "max": 4,
+          "mean": 3,
+          "cv": 0.20412414523193148,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            3,
+            2.5,
+            4,
+            2.5,
+            3
+          ]
+        },
+        "ours": {
+          "targetCount": 5,
+          "maxDistanceM": 2.904,
+          "medianDistanceM": 0.1216,
+          "countAt1_5m": 1,
+          "fractionAt1_5m": 0.2
+        }
+      },
+      {
+        "persona": "p1a",
+        "concern": "breakouts",
+        "llm": {
+          "n": 5,
+          "median": 3,
+          "min": 3,
+          "max": 4,
+          "mean": 3.3,
+          "cv": 0.13551927136362363,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            4,
+            3,
+            3,
+            3,
+            3.5
+          ]
+        },
+        "ours": {
+          "targetCount": 40,
+          "maxDistanceM": 9.1038,
+          "medianDistanceM": 1.6069,
+          "countAt1_5m": 24,
+          "fractionAt1_5m": 0.6
+        }
+      },
+      {
+        "persona": "p2b",
+        "concern": "pores",
+        "llm": {
+          "n": 5,
+          "median": 0.8,
+          "min": 0.6,
+          "max": 1,
+          "mean": 0.8,
+          "cv": 0.25,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            0.8,
+            1,
+            0.6,
+            0.6,
+            1
+          ]
+        },
+        "ours": {
+          "targetCount": 649,
+          "maxDistanceM": 4.2221,
+          "medianDistanceM": 1.5495,
+          "countAt1_5m": 342,
+          "fractionAt1_5m": 0.527
+        }
+      },
+      {
+        "persona": "p2b",
+        "concern": "dark_spots",
+        "llm": {
+          "n": 5,
+          "median": 4,
+          "min": 3.5,
+          "max": 4,
+          "mean": 3.8,
+          "cv": 0.07206875756646924,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            4,
+            4,
+            3.5,
+            3.5,
+            4
+          ]
+        },
+        "ours": {
+          "targetCount": 89,
+          "maxDistanceM": 10,
+          "medianDistanceM": 4.5529,
+          "countAt1_5m": 88,
+          "fractionAt1_5m": 0.9888
+        }
+      },
+      {
+        "persona": "p2b",
+        "concern": "fine_lines",
+        "llm": {
+          "n": 5,
+          "median": 1.5,
+          "min": 1.5,
+          "max": 2,
+          "mean": 1.6,
+          "cv": 0.13975424859373684,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            1.5,
+            2,
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "ours": {
+          "targetCount": 188,
+          "maxDistanceM": 10,
+          "medianDistanceM": 2.619,
+          "countAt1_5m": 145,
+          "fractionAt1_5m": 0.7713
+        }
+      },
+      {
+        "persona": "p2b",
+        "concern": "under_eye_shadows",
+        "llm": {
+          "n": 5,
+          "median": 6,
+          "min": 5,
+          "max": 7,
+          "mean": 6,
+          "cv": 0.11785113019775793,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            6,
+            6,
+            6,
+            5,
+            7
+          ]
+        },
+        "ours": {
+          "targetCount": 2,
+          "maxDistanceM": 10,
+          "medianDistanceM": 10,
+          "countAt1_5m": 2,
+          "fractionAt1_5m": 1
+        }
+      },
+      {
+        "persona": "p2b",
+        "concern": "redness",
+        "llm": {
+          "n": 0,
+          "median": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "cv": null,
+          "nulls": 5,
+          "runs": 5,
+          "values": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "ours": null
+      },
+      {
+        "persona": "p2b",
+        "concern": "breakouts",
+        "llm": {
+          "n": 0,
+          "median": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "cv": null,
+          "nulls": 5,
+          "runs": 5,
+          "values": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "ours": {
+          "targetCount": 18,
+          "maxDistanceM": 5.1269,
+          "medianDistanceM": 1.6544,
+          "countAt1_5m": 13,
+          "fractionAt1_5m": 0.7222
+        }
+      },
+      {
+        "persona": "p3a",
+        "concern": "pores",
+        "llm": {
+          "n": 5,
+          "median": 0.8,
+          "min": 0.6,
+          "max": 1,
+          "mean": 0.82,
+          "cv": 0.21815297341461368,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            0.8,
+            1,
+            1,
+            0.7,
+            0.6
+          ]
+        },
+        "ours": {
+          "targetCount": 221,
+          "maxDistanceM": 3.1468,
+          "medianDistanceM": 1.3307,
+          "countAt1_5m": 81,
+          "fractionAt1_5m": 0.3665
+        }
+      },
+      {
+        "persona": "p3a",
+        "concern": "dark_spots",
+        "llm": {
+          "n": 5,
+          "median": 6,
+          "min": 5,
+          "max": 6,
+          "mean": 5.8,
+          "cv": 0.07710579232757896,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            6,
+            6,
+            6,
+            5,
+            6
+          ]
+        },
+        "ours": {
+          "targetCount": 194,
+          "maxDistanceM": 10,
+          "medianDistanceM": 3.2003,
+          "countAt1_5m": 187,
+          "fractionAt1_5m": 0.9639
+        }
+      },
+      {
+        "persona": "p3a",
+        "concern": "fine_lines",
+        "llm": {
+          "n": 5,
+          "median": 2,
+          "min": 1.5,
+          "max": 2.5,
+          "mean": 2.1,
+          "cv": 0.19920476822239894,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            1.5,
+            2.5,
+            2.5,
+            2,
+            2
+          ]
+        },
+        "ours": {
+          "targetCount": 207,
+          "maxDistanceM": 10,
+          "medianDistanceM": 2.4345,
+          "countAt1_5m": 151,
+          "fractionAt1_5m": 0.7295
+        }
+      },
+      {
+        "persona": "p3a",
+        "concern": "under_eye_shadows",
+        "llm": {
+          "n": 5,
+          "median": 3.5,
+          "min": 3,
+          "max": 3.5,
+          "mean": 3.4,
+          "cv": 0.06576670522058205,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            3,
+            3.5,
+            3.5,
+            3.5,
+            3.5
+          ]
+        },
+        "ours": {
+          "targetCount": 3,
+          "maxDistanceM": 10,
+          "medianDistanceM": 10,
+          "countAt1_5m": 3,
+          "fractionAt1_5m": 1
+        }
+      },
+      {
+        "persona": "p3a",
+        "concern": "redness",
+        "llm": {
+          "n": 5,
+          "median": 9,
+          "min": 6,
+          "max": 10,
+          "mean": 8.6,
+          "cv": 0.19457209919397106,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            6,
+            9,
+            10,
+            8,
+            10
+          ]
+        },
+        "ours": {
+          "targetCount": 4,
+          "maxDistanceM": 10,
+          "medianDistanceM": 5.0545,
+          "countAt1_5m": 2,
+          "fractionAt1_5m": 0.5
+        }
+      },
+      {
+        "persona": "p3a",
+        "concern": "breakouts",
+        "llm": {
+          "n": 0,
+          "median": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "cv": null,
+          "nulls": 5,
+          "runs": 5,
+          "values": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "ours": {
+          "targetCount": 5,
+          "maxDistanceM": 3.2413,
+          "medianDistanceM": 2.1096,
+          "countAt1_5m": 5,
+          "fractionAt1_5m": 1
+        }
+      },
+      {
+        "persona": "p5a",
+        "concern": "pores",
+        "llm": {
+          "n": 5,
+          "median": 0.8,
+          "min": 0.6,
+          "max": 0.8,
+          "mean": 0.72,
+          "cv": 0.15214515486254618,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            0.8,
+            0.6,
+            0.8,
+            0.8,
+            0.6
+          ]
+        },
+        "ours": {
+          "targetCount": 250,
+          "maxDistanceM": 3.1106,
+          "medianDistanceM": 1.1472,
+          "countAt1_5m": 55,
+          "fractionAt1_5m": 0.22
+        }
+      },
+      {
+        "persona": "p5a",
+        "concern": "dark_spots",
+        "llm": {
+          "n": 5,
+          "median": 2.5,
+          "min": 2.5,
+          "max": 3,
+          "mean": 2.7,
+          "cv": 0.10143010324169743,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            3,
+            3,
+            2.5,
+            2.5,
+            2.5
+          ]
+        },
+        "ours": {
+          "targetCount": 53,
+          "maxDistanceM": 7.0742,
+          "medianDistanceM": 3.1248,
+          "countAt1_5m": 50,
+          "fractionAt1_5m": 0.9434
+        }
+      },
+      {
+        "persona": "p5a",
+        "concern": "fine_lines",
+        "llm": {
+          "n": 5,
+          "median": 1,
+          "min": 1,
+          "max": 1,
+          "mean": 1,
+          "cv": 0,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "ours": {
+          "targetCount": 107,
+          "maxDistanceM": 9.7947,
+          "medianDistanceM": 1.8242,
+          "countAt1_5m": 63,
+          "fractionAt1_5m": 0.5888
+        }
+      },
+      {
+        "persona": "p5a",
+        "concern": "under_eye_shadows",
+        "llm": {
+          "n": 5,
+          "median": 4,
+          "min": 3,
+          "max": 5,
+          "mean": 4,
+          "cv": 0.1767766952966369,
+          "nulls": 0,
+          "runs": 5,
+          "values": [
+            5,
+            4,
+            4,
+            4,
+            3
+          ]
+        },
+        "ours": {
+          "targetCount": 2,
+          "maxDistanceM": 10,
+          "medianDistanceM": 10,
+          "countAt1_5m": 2,
+          "fractionAt1_5m": 1
+        }
+      },
+      {
+        "persona": "p5a",
+        "concern": "redness",
+        "llm": {
+          "n": 0,
+          "median": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "cv": null,
+          "nulls": 5,
+          "runs": 5,
+          "values": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "ours": null
+      },
+      {
+        "persona": "p5a",
+        "concern": "breakouts",
+        "llm": {
+          "n": 0,
+          "median": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "cv": null,
+          "nulls": 5,
+          "runs": 5,
+          "values": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "ours": {
+          "targetCount": 3,
+          "maxDistanceM": 2.4648,
+          "medianDistanceM": 1.7573,
+          "countAt1_5m": 3,
+          "fractionAt1_5m": 1
+        }
+      }
+    ],
+    "oursDeterminism": {
+      "rerunIdentical": true,
+      "sha256": "528cec5aeb372238eb17624ac33270d40343b519781b497e5a69364644425277"
+    },
+    "aggregate": {
+      "cellsWithSpread": 19,
+      "medianCv": 0.15214515486254618,
+      "meanCv": 0.14723892592291146,
+      "medianMaxOverMin": 1.4,
+      "worstMaxOverMin": 1.6666666666666667,
+      "cellsWhereRunsDisagreeOnPresence": 1
+    }
+  },
+  "testB": {
+    "patches": [
+      {
+        "id": "d1mm_c5",
+        "diameterMm": 1,
+        "weberPct": 5,
+        "realisedWeberPct": 4.99,
+        "truth": {
+          "nominalM": 0.6607190356746228,
+          "boundM": 1.069748808488642
+        },
+        "llm": {
+          "n": 5,
+          "median": 0.9,
+          "min": 0.7,
+          "max": 1.2,
+          "mean": 0.9400000000000001,
+          "cv": 0.26701915740449217,
+          "values": [
+            0.9,
+            1.2,
+            0.7,
+            0.7,
+            1.2
+          ],
+          "maxOverMin": 1.7142857142857144
+        },
+        "medianOverNominal": 1.3621523694728441,
+        "medianOverBound": 0.8413190020482793,
+        "medianFactorOutsideRange": 1,
+        "answersInsideRange": 3
+      },
+      {
+        "id": "d2mm_c5",
+        "diameterMm": 2,
+        "weberPct": 5,
+        "realisedWeberPct": 4.99,
+        "truth": {
+          "nominalM": 1.3214380713517895,
+          "boundM": 2.1394976169814033
+        },
+        "llm": {
+          "n": 5,
+          "median": 2,
+          "min": 1.4,
+          "max": 3,
+          "mean": 2.08,
+          "cv": 0.29519387371170674,
+          "values": [
+            2.3,
+            1.7,
+            2,
+            1.4,
+            3
+          ],
+          "maxOverMin": 2.142857142857143
+        },
+        "medianOverNominal": 1.5135026327446908,
+        "medianOverBound": 0.9347988911629548,
+        "medianFactorOutsideRange": 1,
+        "answersInsideRange": 3
+      },
+      {
+        "id": "d4mm_c5",
+        "diameterMm": 4,
+        "weberPct": 5,
+        "realisedWeberPct": 4.99,
+        "truth": {
+          "nominalM": 2.6428761427086687,
+          "boundM": 4.278995233971046
+        },
+        "llm": {
+          "n": 5,
+          "median": 4.5,
+          "min": 4,
+          "max": 6,
+          "mean": 4.7,
+          "cv": 0.1780127716029948,
+          "values": [
+            4,
+            4.5,
+            5,
+            4,
+            6
+          ],
+          "maxOverMin": 1.5
+        },
+        "medianOverNominal": 1.702690461834498,
+        "medianOverBound": 1.0516487525562992,
+        "medianFactorOutsideRange": 1.0516487525562992,
+        "answersInsideRange": 2
+      },
+      {
+        "id": "d1mm_c15",
+        "diameterMm": 1,
+        "weberPct": 15,
+        "realisedWeberPct": 14.99,
+        "truth": {
+          "nominalM": 1.3650603793152634,
+          "boundM": 2.006952500138397
+        },
+        "llm": {
+          "n": 5,
+          "median": 1.7,
+          "min": 1.4,
+          "max": 2,
+          "mean": 1.72,
+          "cv": 0.16133066192455361,
+          "values": [
+            1.7,
+            2,
+            2,
+            1.4,
+            1.5
+          ],
+          "maxOverMin": 1.4285714285714286
+        },
+        "medianOverNominal": 1.2453661579810469,
+        "medianOverBound": 0.847055423525355,
+        "medianFactorOutsideRange": 1,
+        "answersInsideRange": 5
+      },
+      {
+        "id": "d2mm_c15",
+        "diameterMm": 2,
+        "weberPct": 15,
+        "realisedWeberPct": 14.99,
+        "truth": {
+          "nominalM": 2.730120758635783,
+          "boundM": 4.013905000284521
+        },
+        "llm": {
+          "n": 5,
+          "median": 3.5,
+          "min": 2.3,
+          "max": 4,
+          "mean": 3.2600000000000002,
+          "cv": 0.19713213512956598,
+          "values": [
+            4,
+            3.5,
+            3.5,
+            2.3,
+            3
+          ],
+          "maxOverMin": 1.7391304347826089
+        },
+        "medianOverNominal": 1.2819945743897858,
+        "medianOverBound": 0.8719688183332457,
+        "medianFactorOutsideRange": 1,
+        "answersInsideRange": 4
+      },
+      {
+        "id": "d4mm_c15",
+        "diameterMm": 4,
+        "weberPct": 15,
+        "realisedWeberPct": 14.99,
+        "truth": {
+          "nominalM": 5.460241517282075,
+          "boundM": 8.027810000584498
+        },
+        "llm": {
+          "n": 5,
+          "median": 6,
+          "min": 5,
+          "max": 9,
+          "mean": 6.6,
+          "cv": 0.27524094128159016,
+          "values": [
+            5,
+            8,
+            5,
+            6,
+            9
+          ],
+          "maxOverMin": 1.8
+        },
+        "medianOverNominal": 1.0988524923319873,
+        "medianOverBound": 0.7474018442842002,
+        "medianFactorOutsideRange": 1,
+        "answersInsideRange": 2
+      },
+      {
+        "id": "d1mm_c30",
+        "diameterMm": 1,
+        "weberPct": 30,
+        "realisedWeberPct": 30,
+        "truth": {
+          "nominalM": 2.0095320649405575,
+          "boundM": 2.89743939478063
+        },
+        "llm": {
+          "n": 5,
+          "median": 3,
+          "min": 2.5,
+          "max": 3.5,
+          "mean": 2.98,
+          "cv": 0.15988092952445093,
+          "values": [
+            3,
+            2.5,
+            2.5,
+            3.5,
+            3.4
+          ],
+          "maxOverMin": 1.4
+        },
+        "medianOverNominal": 1.4928848622720239,
+        "medianOverBound": 1.035396980314453,
+        "medianFactorOutsideRange": 1.035396980314453,
+        "answersInsideRange": 2
+      },
+      {
+        "id": "d2mm_c30",
+        "diameterMm": 2,
+        "weberPct": 30,
+        "realisedWeberPct": 30,
+        "truth": {
+          "nominalM": 4.01906412988885,
+          "boundM": 5.794878789572416
+        },
+        "llm": {
+          "n": 5,
+          "median": 5,
+          "min": 3.5,
+          "max": 7,
+          "mean": 5.5,
+          "cv": 0.2727272727272727,
+          "values": [
+            7,
+            3.5,
+            5,
+            5,
+            7
+          ],
+          "maxOverMin": 2
+        },
+        "medianOverNominal": 1.2440707185576256,
+        "medianOverBound": 0.8628308169270495,
+        "medianFactorOutsideRange": 1,
+        "answersInsideRange": 2
+      },
+      {
+        "id": "d4mm_c30",
+        "diameterMm": 4,
+        "weberPct": 30,
+        "realisedWeberPct": 30,
+        "truth": {
+          "nominalM": 8.03812825979318,
+          "boundM": 11.589757579167145
+        },
+        "llm": {
+          "n": 5,
+          "median": 7,
+          "min": 7,
+          "max": 14,
+          "mean": 9.4,
+          "cv": 0.3576114109355662,
+          "values": [
+            7,
+            7,
+            12,
+            7,
+            14
+          ],
+          "maxOverMin": 2
+        },
+        "medianOverNominal": 0.8708495029886609,
+        "medianOverBound": 0.6039815718477719,
+        "medianFactorOutsideRange": 1.1483040371133113,
+        "answersInsideRange": 0
+      }
+    ],
+    "scaling": [
+      {
+        "weberPct": 5,
+        "llm2over1": 2.2222222222222223,
+        "llm4over2": 2.25,
+        "llm2over1Range": [
+          1.1666666666666667,
+          4.285714285714286
+        ],
+        "llm4over2Range": [
+          1.3333333333333333,
+          4.285714285714286
+        ],
+        "ours2over1": 2.0000000000038503,
+        "ours4over2": 2.0000000000038516
+      },
+      {
+        "weberPct": 15,
+        "llm2over1": 2.058823529411765,
+        "llm4over2": 1.7142857142857142,
+        "llm2over1Range": [
+          1.15,
+          2.857142857142857
+        ],
+        "llm4over2Range": [
+          1.25,
+          3.91304347826087
+        ],
+        "ours2over1": 2.0000000000038507,
+        "ours4over2": 2.0000000000038494
+      },
+      {
+        "weberPct": 30,
+        "llm2over1": 1.6666666666666667,
+        "llm4over2": 1.4,
+        "llm2over1Range": [
+          1,
+          2.8
+        ],
+        "llm4over2Range": [
+          1,
+          4
+        ],
+        "ours2over1": 2.0000000000038494,
+        "ours4over2": 2.0000000000038516
+      }
+    ],
+    "aggregate": {
+      "patchesAnswered": 9,
+      "geometricMeanFactorOfMedianVsNominal": 1.3312700629999081,
+      "geometricMeanFactorOfAnswersVsNominal": 1.392749836464487,
+      "worstFactorOfMedianVsNominal": 1.702690461834498,
+      "answersInsideModelRange": 23,
+      "answersTotal": 45,
+      "medianCv": 0.26701915740449217,
+      "meanScalingRatio": {
+        "llm2over1": 1.9825708061002183,
+        "llm4over2": 1.788095238095238,
+        "ideal": 2
+      }
+    }
+  }
+}

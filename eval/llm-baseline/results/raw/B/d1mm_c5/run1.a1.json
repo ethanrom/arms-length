@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c5",
+  "run": 1,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:32:27.191Z",
+  "imageSha256": "d0738fcf80e054793dbb17a7a91fee6fdf5ec865f18443ab602fe2c1485ec9f5",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 5% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9429,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 698,
+    "totalTokens": 1380
+  },
+  "text": "{\"distance_m\": 0.9, \"reasoning_short\": \"Rough estimate (±50%) from Blackwell-type threshold data plus Ricco's law, not an exact limit. 20/20 acuity (1 arcmin) applies to high-contrast detail, so it does not set the limit for a 5%-contrast spot. For small spots, the contrast needed to see them rises as size shrinks, roughly with contrast × area held constant. At indoor light levels, 5% contrast becomes detectable once the spot spans about 4 arcmin (≈0.0012 rad). A 1 mm spot subtends that angle at about 1 mm / 0.0012 ≈ 0.85 m, so roughly 0.9 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

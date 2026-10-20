@@ -1,0 +1,24 @@
+{
+  "test": "A",
+  "item": "p3a",
+  "run": 3,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:37.648Z",
+  "imageSha256": "d75b68d255ee83a879a0137f27334ed8d30c8aa8a130edaa3d9e9fa45a080b2e",
+  "imageFormat": "jpeg",
+  "prompt": "This is a photo of a face. The person's interpupillary distance is about 63 mm.\nFor an observer with perfect 20/20 vision, looking straight at this person in normal indoor light, give the farthest distance in metres at which each of these could still be seen: pores, dark spots, fine lines, under-eye shadows, redness, breakouts. If one is not present, say null.\nReply with JSON only, in this shape, with a number of metres (or null) for each key: {\"pores\": m, \"dark_spots\": m, \"fine_lines\": m, \"under_eye_shadows\": m, \"redness\": m, \"breakouts\": m}",
+  "latencyMs": 31201,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 2461,
+    "outputTokens": 335,
+    "totalTokens": 2796
+  },
+  "text": "{\"pores\": 1, \"dark_spots\": 6, \"fine_lines\": 2.5, \"under_eye_shadows\": 3.5, \"redness\": 10, \"breakouts\": null}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

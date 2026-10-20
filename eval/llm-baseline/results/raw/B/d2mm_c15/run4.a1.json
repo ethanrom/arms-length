@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c15",
+  "run": 4,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:34:55.898Z",
+  "imageSha256": "925b0a874c93fdea62daf92d4eeda7e7699749c5e3f2c4f8ecd1b6c5ef0d3286",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 15% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9245,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 771,
+    "totalTokens": 1453
+  },
+  "text": "{\"distance_m\": 2.3, \"reasoning_short\": \"This is a rough estimate, not a measured value. A 15% contrast spot is well below the 100% contrast that 20/20 acuity (1 arcmin) assumes. So I used contrast-detection limits instead. For small targets, Ricco's law says the threshold scales roughly with contrast × area, i.e. C·α² ≈ constant. Blackwell-type indoor data give about 100% contrast needed at ~1 arcmin, so 15% contrast needs α ≈ 1/√0.15 ≈ 2.6 arcmin. Allowing for indoor rather than bright lighting, I took ≈3 arcmin (≈8.7×10⁻⁴ rad). Distance ≈ 2 mm / 8.7×10⁻⁴ rad ≈ 2.3 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

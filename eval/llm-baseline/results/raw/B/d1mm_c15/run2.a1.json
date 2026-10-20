@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c15",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:12.557Z",
+  "imageSha256": "faed5a94143420f419fb58be576aa238b744700f56bed6131651de4a3a46ea0c",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 15% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 10232,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 810,
+    "totalTokens": 1492
+  },
+  "text": "{\"distance_m\": 2, \"reasoning_short\": \"Seeing a small low-contrast spot is a detection limit, not 20/20 resolution. For tiny targets, threshold depends roughly on contrast times area (Riccò-type summation). From Blackwell-type data, a 1 arcmin spot needs about 30–40% contrast, so at 15% contrast the spot must subtend roughly 1.5–2 arcmin. A 1 mm spot at about 1.7 arcmin (≈5e-4 rad) is about 2 m away. This is an approximate estimate.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

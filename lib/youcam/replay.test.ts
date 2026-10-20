@@ -32,16 +32,22 @@ describe("replay", () => {
 
     expect((await replayAnalysis("p2b", "sd")).analysis.engine).toBe("sd");
     expect((await replayAnalysis("p3a", "sd")).analysis.engine).toBe("hd"); // no SD recording: HD answers
+    const p1a = await replayAnalysis("p1a");
+    expect(p1a.analysis.frame).toEqual({ width: 1080, height: 1610 });
+    expect(Object.keys(p1a.masks)).toHaveLength(17);
 
     await expect(replayAnalysis("nobody")).rejects.toMatchObject({ code: "unknown_persona", status: 404 });
     await expect(replayAnalysis("../p3a")).rejects.toMatchObject({ code: "unknown_persona" });
   });
 
   test("makeup returns the recorded render of the same category with the nearest parameter", async () => {
-    const low = await replayMakeup("p2b", [foundation(40)]); // recorded: 30 and 80
-    expect(low.imageRef).toBe(recordedDataUrl("p2b", "renders/mu_foundation_cov30.png"));
-    const high = await replayMakeup("p2b", [foundation(70)]);
-    expect(high.imageRef).toBe(recordedDataUrl("p2b", "renders/mu_foundation_cov80.png"));
+    // p2b foundation recordings: 25, 30 (default smoothing), 50, 75, 80 (default smoothing), 100
+    const mid = await replayMakeup("p2b", [foundation(60)]);
+    expect(mid.imageRef).toBe(recordedDataUrl("p2b", "renders/foundation_cov50.png"));
+    const high = await replayMakeup("p2b", [foundation(95)]);
+    expect(high.imageRef).toBe(recordedDataUrl("p2b", "renders/foundation_cov100.png"));
+    const p3a = await replayMakeup("p3a", [foundation(70)]); // recorded: 25, 50, 75, 100
+    expect(p3a.imageRef).toBe(recordedDataUrl("p3a", "renders/foundation_cov75.png"));
 
     // A skin_smooth effect is not the lever, so it is ignored; concealer matches on coverageLevel (20, 50, 90).
     const conc = await replayMakeup("p2b", [{ category: "skin_smooth", skinSmoothStrength: 0 }, concealer(60)]);
@@ -49,14 +55,16 @@ describe("replay", () => {
     expect(conc).toMatchObject({ source: "replay", unitsCharged: 0, width: 1080, height: 1340, offset: { dx: 0, dy: 1 } });
 
     await expect(replayMakeup("p2b", [{ category: "blush" }])).rejects.toMatchObject({ code: "no_replay_render" });
-    await expect(replayMakeup("p3a", [foundation(50)])).rejects.toMatchObject({ code: "no_replay_render" });
+    await expect(replayMakeup("p3a", [concealer(50)])).rejects.toMatchObject({ code: "no_replay_render" });
   });
 
   test("simulation returns the closest recording and is pixel-aligned (offset 0)", async () => {
     const render = await replaySimulation("p3a", { spots: 0.4, redness: 0.6 });
     expect(render.imageRef).toBe(recordedDataUrl("p3a", "renders/sim_spots05_redness05.png"));
     expect(render).toMatchObject({ width: 1080, height: 1575, offset: { dx: 0, dy: 0 }, source: "replay" });
-    await expect(replaySimulation("p2b", { spots: 0.5 })).rejects.toMatchObject({ code: "no_replay_render" });
+    const dark = await replaySimulation("p2b", { dark_circle: 0.6 });
+    expect(dark.imageRef).toBe(recordedDataUrl("p2b", "renders/sim_dark_circle05.png"));
+    await expect(replaySimulation("nobody", { spots: 0.5 })).rejects.toMatchObject({ code: "unknown_persona" });
   });
 
   test("file refs and render offsets", () => {

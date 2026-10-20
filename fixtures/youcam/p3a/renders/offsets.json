@@ -1,0 +1,125 @@
+{
+  "convention": "out(x + dx, y + dy) = in(x, y). dx, dy are the rounded means of patch-wise registration against input.jpg (scripts/personas/register-check.ts)",
+  "renders": {
+    "foundation_cov100.png": {
+      "dx": -3,
+      "dy": 0,
+      "dxMean": -2.997,
+      "dyMean": 0.031,
+      "dxSd": 0.153,
+      "dySd": 0.099,
+      "patches": 38,
+      "minNcc": 0.957,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "size": [
+        1078,
+        1576
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    },
+    "foundation_cov25.png": {
+      "dx": -3,
+      "dy": 0,
+      "dxMean": -2.996,
+      "dyMean": 0.024,
+      "dxSd": 0.139,
+      "dySd": 0.088,
+      "patches": 38,
+      "minNcc": 0.994,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "size": [
+        1078,
+        1576
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    },
+    "foundation_cov50.png": {
+      "dx": -3,
+      "dy": 0,
+      "dxMean": -2.996,
+      "dyMean": 0.029,
+      "dxSd": 0.144,
+      "dySd": 0.093,
+      "patches": 38,
+      "minNcc": 0.977,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "size": [
+        1078,
+        1576
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    },
+    "foundation_cov75.png": {
+      "dx": -3,
+      "dy": 0,
+      "dxMean": -2.997,
+      "dyMean": 0.03,
+      "dxSd": 0.148,
+      "dySd": 0.096,
+      "patches": 38,
+      "minNcc": 0.965,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "size": [
+        1078,
+        1576
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    },
+    "sim_spots05_redness05.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": 0.006,
+      "dyMean": 0.023,
+      "dxSd": 0.036,
+      "dySd": 0.114,
+      "patches": 38,
+      "minNcc": 0.979,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1575
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    }
+  }
+}

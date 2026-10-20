@@ -136,7 +136,7 @@ export default function HowItWorksPage() {
               You study your skin from about 25 cm, with the light on your side and all the time in the world. Everyone else meets your face from a metre or more, for a few seconds, mid-conversation. The question that matters is not &ldquo;what is on my skin?&rdquo; but &ldquo;what can anyone actually see, and from how far?&rdquo;
             </p>
             <p>
-              Arm&rsquo;s Length answers with a distance for each concern. Pores: gone beyond 40 cm. Under-eye shadows: still there from across a room. No scores and no grades, just the farthest distance at which a person with perfect eyesight could still pick the thing out.
+              Arm&rsquo;s Length answers with a distance for each concern. Pores: most of them gone by 85 cm. Under-eye shadows: still there from across a room. No scores and no grades, just the farthest distance at which a person with perfect eyesight could still pick the thing out.
             </p>
           </Chapter>
 

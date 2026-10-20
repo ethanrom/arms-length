@@ -13,7 +13,7 @@ import type {
   TargetVisibility,
   VisibilityReport,
 } from "@/lib/contracts";
-import { DEFAULT_VIEWING } from "@/lib/contracts";
+import { DEFAULT_VIEWING, PROFILE_DISTANCES_M } from "@/lib/contracts";
 
 export function spot(
   scale: ScaleEstimate,
@@ -94,6 +94,10 @@ export interface ConcernSummary {
   /** Relative half-width of the interval at about 95%. Wider when sizes are assumed, not measured. */
   relHalfWidth: number;
   confidence: ConcernVisibility["confidence"];
+  /** Many-feature concerns: how many marks YouCam found (the denominator of the profile). */
+  population?: number;
+  /** Fraction still detectable at each PROFILE_DISTANCES_M entry. Must be zero beyond maxM. */
+  survival?: readonly number[];
 }
 
 const median = (xs: number[]) => {
@@ -102,9 +106,24 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
+/** Distance where the profile crosses 50%, by interpolation on the log axis. */
+function halfLife(survival: readonly number[]): number {
+  const d = PROFILE_DISTANCES_M;
+  if (survival[0] <= 0.5) return d[0];
+  for (let i = 1; i < d.length; i++) {
+    if (survival[i] <= 0.5) {
+      const t = (survival[i - 1] - 0.5) / (survival[i - 1] - survival[i]);
+      return d[i - 1] * Math.pow(d[i] / d[i - 1], t);
+    }
+  }
+  return d[d.length - 1];
+}
+
 /**
  * Builds a report whose per-target distances decay geometrically from the farthest to the median and below, so
  * the concern summary matches its targets exactly. Targets are ranked by the order of features given.
+ * Concerns with a survival curve also get a profile (count and fraction detectable at fixed distances)
+ * and their median comes from it.
  */
 export function buildReport(measurements: Measurements, summaries: Partial<Record<ConcernId, ConcernSummary>>): VisibilityReport {
   const targets: TargetVisibility[] = [];
@@ -116,8 +135,9 @@ export function buildReport(measurements: Measurements, summaries: Partial<Recor
       ...measurements.regions.filter((r) => r.concern === concern).map((r) => r.id),
     ];
     if (ids.length === 0) continue;
+    const medianM = summary.survival ? halfLife(summary.survival) : summary.medianM;
     const half = (ids.length - 1) / 2;
-    const ratio = summary.medianM / summary.maxM;
+    const ratio = medianM / summary.maxM;
     const own: TargetVisibility[] = ids.map((targetId, i) => {
       const d = ids.length === 1 ? summary.maxM : summary.maxM * Math.pow(ratio, i / Math.max(half, 0.5));
       return {
@@ -130,14 +150,23 @@ export function buildReport(measurements: Measurements, summaries: Partial<Recor
     targets.push(...own);
     const ds = own.map((t) => t.distanceM);
     const maxM = Math.max(...ds);
+    const population = summary.population ?? own.length;
     concerns.push({
       concern,
-      targetCount: own.length,
+      targetCount: population,
       maxDistanceM: maxM,
-      medianDistanceM: round(median(ds)),
+      medianDistanceM: summary.survival ? round(medianM) : round(median(ds)),
       intervalM: [round(maxM * (1 - summary.relHalfWidth)), round(maxM * (1 + summary.relHalfWidth))],
       topTargets: own.slice(0, 5).map((t) => t.targetId),
       confidence: summary.confidence,
+      ...(summary.survival
+        ? {
+            profile: PROFILE_DISTANCES_M.map((distanceM, i) => {
+              const count = Math.round(population * summary.survival![i]);
+              return { distanceM, count, fraction: count / population };
+            }),
+          }
+        : {}),
     });
   }
 

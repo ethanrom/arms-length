@@ -56,7 +56,7 @@ test("a concern card expands and its receipt opens as a sheet", async ({ page })
   await page.goto("/try/p2b");
   await expect(page.getByRole("slider", { name: /Step back/ })).toBeVisible({ timeout: 30_000 });
 
-  const card = page.getByRole("button", { name: /Nobody sees your pores/ });
+  const card = page.getByRole("button", { name: /Most of your pores/ });
   await expect(card).toHaveAttribute("aria-expanded", "false");
   await card.click();
   await expect(card).toHaveAttribute("aria-expanded", "true");

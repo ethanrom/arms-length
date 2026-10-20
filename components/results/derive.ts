@@ -1,4 +1,5 @@
 import type { Box, ConcernVisibility, Feature, Point, RegionMeasure } from "@/lib/contracts";
+import { fractionAt, type ProfilePoint } from "@/app/_lib/axis";
 import type { ConcernCopy, ResultsData } from "./types";
 
 export type Target = Feature | RegionMeasure;
@@ -8,8 +9,14 @@ export interface ConcernView {
   id: string;
   visibility: ConcernVisibility;
   copy: ConcernCopy;
-  /** Out of sight by `reliefWithinM`. */
+  /** Out of sight by `reliefWithinM`: for many-feature concerns, when most marks are gone by then. */
   relief: boolean;
+  /** The distance that orders and labels the concern: where half its marks fade, or the single mark's distance. */
+  keyDistanceM: number;
+  /** Share of marks detectable at fixed distances, for concerns with many features (pores, spots, lines, acne). */
+  profile: ProfilePoint[] | null;
+  /** How many marks the concern has (the denominator of the profile). */
+  total: number;
   targets: Target[];
   topIds: ReadonlySet<string>;
   /** Where to hang a label on the face: the centre of the most visible target. */
@@ -39,17 +46,39 @@ export function deriveConcernViews(data: ResultsData): ConcernView[] {
       ...data.measurements.regions.filter((r) => r.concern === visibility.concern),
     ];
     if (targets.length === 0) continue;
+    const keyDistanceM = visibility.profile ? visibility.medianDistanceM : visibility.maxDistanceM;
     const top = targets.find((t) => t.id === visibility.topTargets[0]) ?? targets[0];
     views.push({
       id: visibility.concern,
       visibility,
       copy,
-      relief: visibility.maxDistanceM <= data.reliefWithinM,
+      relief: keyDistanceM <= data.reliefWithinM,
+      keyDistanceM,
+      profile: visibility.profile ?? null,
+      total: visibility.targetCount,
       targets,
       topIds: new Set(visibility.topTargets),
       anchor: centre(top.bbox),
       bounds: union(targets.map((t) => t.bbox)),
     });
   }
-  return views.sort((a, b) => a.visibility.maxDistanceM - b.visibility.maxDistanceM);
+  return views.sort((a, b) => a.keyDistanceM - b.keyDistanceM);
+}
+
+export interface ConcernStatus {
+  /** Most of it can still be seen (all of it, for a single area). */
+  state: "most" | "some" | "none";
+  /** Marks detectable now, for many-feature concerns. */
+  count: number | null;
+  total: number;
+}
+
+/** What an ideal observer can still pick out of this concern at a distance. */
+export function statusAt(view: ConcernView, distanceM: number): ConcernStatus {
+  if (!view.profile) {
+    return { state: distanceM <= view.visibility.maxDistanceM ? "most" : "none", count: null, total: view.total };
+  }
+  const fraction = fractionAt(view.profile, distanceM);
+  const count = Math.round(fraction * view.total);
+  return { state: count === 0 ? "none" : fraction >= 0.5 ? "most" : "some", count, total: view.total };
 }

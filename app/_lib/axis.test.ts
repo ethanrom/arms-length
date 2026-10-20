@@ -4,7 +4,9 @@ import {
   DEFAULT_STOPS,
   bracketStops,
   clampDistance,
+  countAt,
   distanceToStep,
+  fractionAt,
   formatDistance,
   fromUnit,
   layerOpacities,
@@ -108,6 +110,27 @@ describe("distance wording", () => {
     expect(between.near).toBeNull();
     expect(between.below?.label).toBe("Conversation");
     expect(between.above?.label).toBe("Room");
+  });
+
+  it("interpolates a detectability profile on the log axis", () => {
+    const profile = [
+      { distanceM: 1, count: 400, fraction: 0.4 },
+      { distanceM: 4, count: 100, fraction: 0.1 },
+      { distanceM: 16, count: 0, fraction: 0 },
+    ];
+    expect(fractionAt(profile, 1)).toBeCloseTo(0.4, 12);
+    expect(fractionAt(profile, 2)).toBeCloseTo(0.25, 12); // halfway in log distance between 1 and 4
+    expect(fractionAt(profile, 4)).toBeCloseTo(0.1, 12);
+    expect(fractionAt(profile, 0.1)).toBe(0.4);
+    expect(fractionAt(profile, 99)).toBe(0);
+    expect(countAt(profile, 1000, 2)).toBe(250);
+    let prev = Infinity;
+    for (let d = 0.5; d <= 20; d *= 1.1) {
+      const f = fractionAt(profile, d);
+      expect(f).toBeLessThanOrEqual(prev + 1e-12);
+      prev = f;
+    }
+    expect(fractionAt([], 1)).toBe(0);
   });
 
   it("fades threshold labels in around the threshold only", () => {

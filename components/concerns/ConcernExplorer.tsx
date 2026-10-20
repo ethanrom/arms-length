@@ -7,6 +7,7 @@ import { ReceiptTrigger } from "@/components/receipt/ReceiptSheet";
 import type { DistanceAnchor, OutOfScopeNote, ReceiptEntry } from "@/components/results/types";
 import { AnnotatedFace, cropAround } from "./AnnotatedFace";
 import { DistanceAxisHeader, DistanceBar } from "./DistanceBar";
+import { SurvivalCurve } from "./SurvivalCurve";
 
 interface ConcernExplorerProps {
   views: ConcernView[];
@@ -59,7 +60,7 @@ export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, r
 
         <Group
           id="relief"
-          heading={`Out of sight beyond ${formatDistance(reliefWithinM)}`}
+          heading={`Mostly out of sight by ${formatDistance(reliefWithinM)}`}
           note="Nobody needs to look at these twice."
           views={relief}
           openId={openId}
@@ -188,7 +189,9 @@ function ConcernCard({ view, open, onToggle, tickM, receipt, src, alt, frame }: 
               />
               <span className="eyebrow !text-ink-soft">{copy.title}</span>
               <span className="eyebrow ml-auto flex items-center gap-2 !tracking-[0.1em]">
-                <span className="num">{relief ? "Gone by" : "Up to"} {formatDistance(visibility.maxDistanceM)}</span>
+                <span className="num">
+                  {view.profile ? "Half gone by" : relief ? "Gone by" : "Up to"} {formatDistance(view.profile ? view.keyDistanceM : visibility.maxDistanceM)}
+                </span>
                 <span
                   aria-hidden="true"
                   className="relative block h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110"
@@ -206,7 +209,11 @@ function ConcernCard({ view, open, onToggle, tickM, receipt, src, alt, frame }: 
         </h4>
 
         <div className="mt-4">
-          <DistanceBar maxM={visibility.maxDistanceM} intervalM={visibility.intervalM} relief={relief} tickM={tickM} />
+          {view.profile ? (
+            <SurvivalCurve profile={view.profile} total={view.total} medianM={view.keyDistanceM} relief={relief} tickM={tickM} />
+          ) : (
+            <DistanceBar maxM={visibility.maxDistanceM} intervalM={visibility.intervalM} relief={relief} tickM={tickM} />
+          )}
         </div>
         {receipt && (
           <div className="mt-1">

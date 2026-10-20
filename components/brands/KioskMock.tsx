@@ -37,7 +37,7 @@ export function KioskMock({ data }: { data: ResultsData }) {
                       <span className="serif text-[1rem]">{l.label}</span>
                       <span className="num font-mono text-[0.625rem] text-muted">{l.tone === "relief" ? "gone by" : "up to"} {formatDistance(l.distanceM)}</span>
                     </div>
-                    {v && <DistanceBar maxM={v.maxDistanceM} intervalM={v.intervalM} relief={l.tone === "relief"} tickM={tickM} description={`${l.label}: ${l.sentence}`} />}
+                    {v && <DistanceBar maxM={l.distanceM} intervalM={[l.distanceM * 0.92, l.distanceM * 1.08]} relief={l.tone === "relief"} tickM={tickM} description={`${l.label}: ${l.sentence}`} />}
                   </li>
                 );
               })}

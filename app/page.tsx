@@ -4,9 +4,9 @@ import { MOCK_ANCHORS } from "@/lib/mock/anchors";
 
 const CHART = [
   { size: "clamp(2.4rem, 1.2rem + 5.4vw, 5.25rem)", label: "Under-eye shadows", value: "visible from 3 m" },
-  { size: "clamp(1.9rem, 1rem + 3.6vw, 3.75rem)", label: "Age spots", value: "visible from 1.9 m" },
-  { size: "clamp(1.5rem, 0.9rem + 2.4vw, 2.6rem)", label: "Fine lines", value: "gone beyond 65 cm" },
-  { size: "clamp(1.25rem, 0.8rem + 1.6vw, 1.85rem)", label: "Pores", value: "gone beyond 40 cm" },
+  { size: "clamp(1.9rem, 1rem + 3.6vw, 3.75rem)", label: "Age spots", value: "half in view at 1.6 m" },
+  { size: "clamp(1.5rem, 0.9rem + 2.4vw, 2.6rem)", label: "Pores", value: "most gone by 85 cm" },
+  { size: "clamp(1.25rem, 0.8rem + 1.6vw, 1.85rem)", label: "Fine lines", value: "most gone by 50 cm" },
 ];
 
 const PRINCIPLES = [

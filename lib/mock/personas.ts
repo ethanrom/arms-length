@@ -92,7 +92,7 @@ const p2b: PersonaSpec = {
     ...[
       [500, 760], [545, 790], [590, 775], [470, 720], [610, 700], [300, 880], [250, 830], [330, 780],
       [780, 880], [840, 840], [720, 800], [420, 300], [520, 262], [640, 330], [700, 290],
-    ].map(([x, y], i) => spot(P2B_SCALE, "pore", i, x, y, 0.16 - (i % 4) * 0.02, -0.07, 0, i < 5 ? "nose" : i < 11 ? "cheek" : "forehead", "prior")),
+    ].map(([x, y], i) => spot(P2B_SCALE, "pore", i, x, y, i === 0 ? 0.6 : 0.16 - (i % 4) * 0.02, i === 0 ? -0.18 : -0.07, 0, i < 5 ? "nose" : i < 11 ? "cheek" : "forehead", "prior")),
     line(P2B_SCALE, "wrinkle", 0, { x: 340, y: 330, w: 420, h: 26 }, -0.12, "forehead"),
     line(P2B_SCALE, "wrinkle", 1, { x: 380, y: 392, w: 330, h: 24 }, -0.1, "forehead"),
     line(P2B_SCALE, "wrinkle", 2, { x: 200, y: 580, w: 80, h: 60 }, -0.09, "crowfeet"),
@@ -109,11 +109,11 @@ const p2b: PersonaSpec = {
     { concern: "texture", reason: "Not a visible mark" },
   ],
   summaries: {
-    pore: { maxM: 0.4, medianM: 0.3, relHalfWidth: 0.25, confidence: "low" },
-    wrinkle: { maxM: 0.65, medianM: 0.45, relHalfWidth: 0.12, confidence: "medium" },
-    acne: { maxM: 0.85, medianM: 0.7, relHalfWidth: 0.14, confidence: "medium" },
+    pore: { maxM: 5.6, medianM: 0, relHalfWidth: 0.25, confidence: "low", population: 656, survival: [0.9, 0.85, 0.62, 0.45, 0.2, 0.08, 0.015, 0.004] },
+    wrinkle: { maxM: 2.0, medianM: 0, relHalfWidth: 0.12, confidence: "medium", population: 84, survival: [0.8, 0.7, 0.35, 0.15, 0.05, 0, 0, 0] },
+    acne: { maxM: 3.0, medianM: 0, relHalfWidth: 0.14, confidence: "medium", population: 15, survival: [0.9, 0.8, 0.5, 0.3, 0.15, 0.04, 0, 0] },
     eye_bag: { maxM: 1.2, medianM: 1.1, relHalfWidth: 0.1, confidence: "medium" },
-    age_spot: { maxM: 1.9, medianM: 1.2, relHalfWidth: 0.08, confidence: "high" },
+    age_spot: { maxM: 3.2, medianM: 0, relHalfWidth: 0.08, confidence: "high", population: 38, survival: [1, 1, 1, 0.9, 0.6, 0.15, 0, 0] },
     dark_circle: { maxM: 3.1, medianM: 2.8, relHalfWidth: 0.1, confidence: "high" },
   },
   confidenceReasons: {
@@ -171,7 +171,7 @@ const p3a: PersonaSpec = {
     spot(P3A_SCALE, "age_spot", 6, 574, 709, 1.3, -0.1),
     ...[
       [530, 820], [575, 850], [490, 790], [610, 790], [330, 900], [290, 860], [760, 900], [810, 860], [440, 330], [560, 300], [670, 350],
-    ].map(([x, y], i) => spot(P3A_SCALE, "pore", i, x, y, 0.16 - (i % 4) * 0.02, -0.05, 0, i < 4 ? "nose" : i < 8 ? "cheek" : "forehead", "prior")),
+    ].map(([x, y], i) => spot(P3A_SCALE, "pore", i, x, y, i === 0 ? 0.6 : 0.16 - (i % 4) * 0.02, i === 0 ? -0.16 : -0.05, 0, i < 4 ? "nose" : i < 8 ? "cheek" : "forehead", "prior")),
     line(P3A_SCALE, "wrinkle", 0, { x: 330, y: 468, w: 420, h: 30 }, -0.1, "forehead"),
     line(P3A_SCALE, "wrinkle", 1, { x: 370, y: 520, w: 340, h: 24 }, -0.09, "forehead"),
     line(P3A_SCALE, "wrinkle", 2, { x: 500, y: 430, w: 80, h: 130 }, -0.08, "glabellar"),
@@ -193,11 +193,11 @@ const p3a: PersonaSpec = {
     { concern: "texture", reason: "Not a visible mark" },
   ],
   summaries: {
-    pore: { maxM: 0.35, medianM: 0.28, relHalfWidth: 0.25, confidence: "low" },
+    pore: { maxM: 5, medianM: 0, relHalfWidth: 0.25, confidence: "low", population: 700, survival: [0.85, 0.78, 0.5, 0.3, 0.12, 0.04, 0.008, 0] },
     dark_circle: { maxM: 0.9, medianM: 0.85, relHalfWidth: 0.1, confidence: "medium" },
     eye_bag: { maxM: 0.75, medianM: 0.7, relHalfWidth: 0.1, confidence: "medium" },
-    wrinkle: { maxM: 1.15, medianM: 0.7, relHalfWidth: 0.12, confidence: "medium" },
-    age_spot: { maxM: 2.2, medianM: 1.4, relHalfWidth: 0.08, confidence: "high" },
+    wrinkle: { maxM: 3, medianM: 0, relHalfWidth: 0.12, confidence: "medium", population: 110, survival: [0.95, 0.9, 0.75, 0.55, 0.3, 0.06, 0, 0] },
+    age_spot: { maxM: 4.5, medianM: 0, relHalfWidth: 0.08, confidence: "high", population: 52, survival: [1, 1, 0.98, 0.9, 0.78, 0.45, 0.1, 0] },
     redness: { maxM: 3.6, medianM: 3.5, relHalfWidth: 0.1, confidence: "medium" },
   },
   confidenceReasons: {
@@ -237,11 +237,11 @@ const p2c: PersonaSpec = {
   label: "Synthetic face C (placeholder)",
   description: "Placeholder: the first face again, with different illustrative numbers, until the third recording lands.",
   summaries: {
-    pore: { maxM: 0.45, medianM: 0.32, relHalfWidth: 0.25, confidence: "low" },
-    wrinkle: { maxM: 0.55, medianM: 0.4, relHalfWidth: 0.12, confidence: "medium" },
+    pore: { maxM: 6, medianM: 0, relHalfWidth: 0.25, confidence: "low", population: 656, survival: [0.92, 0.87, 0.66, 0.5, 0.24, 0.1, 0.02, 0.005] },
+    wrinkle: { maxM: 1.8, medianM: 0, relHalfWidth: 0.12, confidence: "medium", population: 60, survival: [0.8, 0.7, 0.3, 0.1, 0.02, 0, 0, 0] },
     eye_bag: { maxM: 0.95, medianM: 0.9, relHalfWidth: 0.1, confidence: "medium" },
-    age_spot: { maxM: 1.3, medianM: 0.9, relHalfWidth: 0.08, confidence: "high" },
-    acne: { maxM: 1.7, medianM: 1.2, relHalfWidth: 0.14, confidence: "medium" },
+    age_spot: { maxM: 3.5, medianM: 0, relHalfWidth: 0.08, confidence: "high", population: 20, survival: [0.95, 0.9, 0.6, 0.4, 0.2, 0.08, 0, 0] },
+    acne: { maxM: 5, medianM: 0, relHalfWidth: 0.14, confidence: "medium", population: 21, survival: [1, 1, 0.9, 0.7, 0.5, 0.28, 0.1, 0] },
     dark_circle: { maxM: 2.4, medianM: 2.2, relHalfWidth: 0.1, confidence: "high" },
   },
   coverage: {
@@ -367,7 +367,8 @@ export function getMockResults(id: string): ResultsData | null {
       }
     : null;
 
-  const sorted = [...report.concerns].sort((a, b) => a.maxDistanceM - b.maxDistanceM);
+  const keyOf = (c: (typeof report.concerns)[number]) => (c.profile ? c.medianDistanceM : c.maxDistanceM);
+  const sorted = [...report.concerns].sort((a, b) => keyOf(a) - keyOf(b));
   const picks = sorted.length >= 3 ? [sorted[0], sorted[Math.floor((sorted.length - 1) / 2)], sorted[sorted.length - 1]] : sorted;
   const share: ShareData = {
     title: "What others see",

@@ -98,7 +98,7 @@ export function ResultsExperience({ data }: { data: ResultsData }) {
         index="02"
         eyebrow="Relief first"
         title="What others see"
-        lede="Each concern gets a distance, not a grade. The bar shows where it stops being visible on the same scale as the slider; the thin line is the plausible range."
+        lede="Each concern gets a distance, not a grade. For one area, a bar shows where it stops being visible. For concerns with many marks, a curve shows how many are still detectable, on the same scale as the slider."
       >
         <ConcernExplorer
           views={views}

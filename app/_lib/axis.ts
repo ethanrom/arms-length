@@ -133,3 +133,31 @@ export function thresholdLabelOpacity(distanceM: number, thresholdM: number, win
   const k = 1 - off;
   return k * k * (3 - 2 * k); // smoothstep
 }
+
+export interface ProfilePoint {
+  distanceM: number;
+  count: number;
+  fraction: number;
+}
+
+/**
+ * Fraction of a concern's marks detectable at any distance, interpolated linearly in log distance between the
+ * profile's fixed points (the same axis the slider uses). Clamps to the first and last point.
+ */
+export function fractionAt(profile: readonly ProfilePoint[], distanceM: number): number {
+  if (profile.length === 0) return 0;
+  if (distanceM <= profile[0].distanceM) return profile[0].fraction;
+  const last = profile[profile.length - 1];
+  if (distanceM >= last.distanceM) return last.fraction;
+  let i = 0;
+  while (i < profile.length - 2 && distanceM >= profile[i + 1].distanceM) i++;
+  const a = profile[i];
+  const b = profile[i + 1];
+  const t = Math.log(distanceM / a.distanceM) / Math.log(b.distanceM / a.distanceM);
+  return a.fraction + (b.fraction - a.fraction) * t;
+}
+
+/** "143 of 656": how many marks are detectable at a distance. */
+export function countAt(profile: readonly ProfilePoint[], total: number, distanceM: number): number {
+  return Math.round(fractionAt(profile, distanceM) * total);
+}

@@ -26,11 +26,19 @@ export const DISCLAIMERS = {
   simulation: "A simulation. It shows a possible change in the picture, not what any product or routine would do.",
   /** Beside the coverage number in the makeup section. */
   tryOn: "A virtual try-on, one shade. Real makeup, shade and light will differ.",
-  /**
-   * Before the camera or upload step. This states only the data path, which is true as built. The integrator appends the
-   * retention clause once the delete-endpoint check says what is true (see internal/DECISIONS.md, triage item 3).
-   */
+  /** Before the camera or upload step: the data path only, so a caller can follow it with the retention lines below. */
   privacy: "Your photo goes to our server and on to YouCam (Perfect Corp) to be analysed.",
+  /**
+   * What happens after. Verified 2026-10-20/21 (internal/research/task-delete.md; docs/YOUCAM.md section 4, note 10): the
+   * browser asks for the YouCam tasks to be deleted when the visitor leaves (analysis and makeup tasks delete). That call is
+   * best effort, so YouCam's own retention is the backstop, 30 days at most.
+   */
+  retention: "We ask YouCam to delete your photo and its results when you leave this page. We don't store your photo.",
+  /** YouCam refuses to delete a Skin Simulation task (400 OperationInvalid), so that one picture waits out its retention. */
+  simulationRetention:
+    "One exception: YouCam can't delete the Skin Simulation picture early, so it may keep it for up to 24 hours. It removes anything left within 30 days.",
+  /** Own-photo mode only; the demo faces are for everyone. */
+  adults: "Your own photo is for people aged 18 and over. The demo faces are for everyone.",
   /** Footer, every page. */
   notHealth: "Visibility, not health. Not health advice.",
   /** Dark-spot and breakout cards and receipts. */

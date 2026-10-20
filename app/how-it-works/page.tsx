@@ -55,7 +55,7 @@ const CHAPTERS = [
 const APIS = [
   {
     name: "HD Skin Analysis",
-    use: "Masks for eight concerns: acne, age spots, pores, wrinkles, dark circles, eye bags, redness and texture. This is the raw material for every distance.",
+    use: "Masks for eight concerns: breakouts, dark spots, pores, fine lines, under-eye shadows, under-eye puffiness, redness and texture. This is the raw material for every distance.",
   },
   {
     name: "Makeup try-on",

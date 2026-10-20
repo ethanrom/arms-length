@@ -34,31 +34,46 @@ interface LivingFaceProps {
   viewing?: ViewingConditions;
 }
 
+type Playback = "idle" | "playing" | "paused";
+
 /**
  * Landing visual: one face that steps back from the mirror to across a room, once, then hands the slider over.
  * The stops are drawn by the same renderer as the results page (in a worker); until they are ready a CSS blur stands in.
+ * The 12 s sweep starts on its own, so it has a visible Pause/Play button (WCAG 2.2.2); touching the tape stops it for good.
  */
 export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, viewing = DEFAULT_VIEWING }: LivingFaceProps) {
   const reduce = useReducedMotion();
   const [picked, setPicked] = useState<number | null>(null);
   const [auto, setAuto] = useState(0.25);
-  const [playing, setPlaying] = useState(false);
-  const controls = useRef<{ stop: () => void } | null>(null);
+  const [playback, setPlayback] = useState<Playback>("idle");
+  const [played, setPlayed] = useState(false);
+  const controls = useRef<ReturnType<typeof animate> | null>(null);
   const frames = useDistanceFrames(src, scale, viewing, DEFAULT_STOPS, 900);
   const real = frames.status === "ready";
 
   const play = () => {
     controls.current?.stop();
     setPicked(null);
-    setPlaying(true);
+    setPlayback("playing");
+    setPlayed(true);
     const u = (d: number) => toUnit(d);
     controls.current = animate(0, [0, 0, u(1), u(1), u(4), u(4), u(1)], {
       duration: 12,
       times: [0, 0.07, 0.27, 0.4, 0.66, 0.78, 1],
       ease: ["linear", EASE, "linear", EASE, "linear", EASE],
       onUpdate: (v) => setAuto(fromUnit(v)),
-      onComplete: () => setPlaying(false),
+      onComplete: () => setPlayback("idle"),
     });
+  };
+
+  const toggle = () => {
+    if (playback === "playing") {
+      controls.current?.pause();
+      setPlayback("paused");
+    } else if (playback === "paused") {
+      controls.current?.play();
+      setPlayback("playing");
+    } else play();
   };
 
   useEffect(() => {
@@ -73,8 +88,9 @@ export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, v
   const distance = picked ?? (reduce ? 1 : auto);
   const stop = () => {
     controls.current?.stop();
-    setPlaying(false);
+    setPlayback("idle");
   };
+  const toggleLabel = playback === "playing" ? "Pause" : playback === "paused" ? "Play" : played ? "Replay" : "Play the step back";
 
   const opacities = useMemo(() => layerOpacities(DEFAULT_STOPS, distance), [distance]);
   // The stand-in blur: sigma grows with distance; the photo is already "seen" from the mirror.
@@ -84,7 +100,7 @@ export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, v
 
   return (
     <div>
-      <div className="stage on-stage relative h-[min(66svh,600px)] min-h-[24rem] overflow-hidden">
+      <div className="stage on-stage relative h-[clamp(15rem,37svh,26rem)] overflow-hidden lg:h-[min(66svh,600px)] lg:min-h-[24rem]">
         <div className="absolute inset-0 scale-[1.04]">
           <Image
             src={src}
@@ -94,25 +110,25 @@ export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, v
             sizes="(min-width: 1024px) 40vw, 100vw"
             preload
             className="h-full w-full object-cover"
-            style={{ filter: sigma > 0 ? `blur(${sigma.toFixed(2)}px)` : undefined, objectPosition: "50% 30%" }}
+            style={{ filter: sigma > 0 ? `blur(${sigma.toFixed(2)}px)` : undefined, objectPosition: "50% 34%" }}
           />
           {DEFAULT_STOPS.map((s, i) => (
             <FrameCanvas
               key={s}
               image={frames.frames[i] ?? null}
               className="absolute inset-0 h-full w-full object-cover"
-              style={{ opacity: real ? opacities[i] : 0, objectPosition: "50% 30%" }}
+              style={{ opacity: real ? opacities[i] : 0, objectPosition: "50% 34%" }}
             />
           ))}
         </div>
         <div className="absolute left-3 top-3 border border-ink/15 bg-paper px-3 py-2 sm:left-4 sm:top-4 sm:px-4 sm:py-2.5" aria-hidden="true">
-          <span className="eyebrow block !text-[0.625rem]">Seen from</span>
-          <span className="serif num mt-0.5 block text-[1.875rem] leading-none sm:text-[2.25rem]">{formatDistance(distance)}</span>
-          <span className="mt-1 block min-h-[1.1em] text-[0.75rem] leading-none text-muted">{where}</span>
+          <span className="eyebrow block !text-[0.75rem]">Seen from</span>
+          <span className="serif num mt-0.5 block text-[1.75rem] leading-none sm:text-[2.25rem]">{formatDistance(distance)}</span>
+          <span className="mt-1 block min-h-[1.1em] text-[0.875rem] leading-none text-muted">{where}</span>
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <DistanceTape
           value={clampDistance(distance)}
           onChange={(d) => setPicked(d)}
@@ -121,11 +137,14 @@ export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, v
           valueText={`${spokenDistance(distance)}${near ? `, ${near.label.toLowerCase()}` : ""}`}
           label="Step back from the mirror"
         />
-        <div className="mt-1 flex items-center justify-between gap-4 text-[0.8125rem] text-muted">
-          <span>Drag to step back.</span>
-          <button type="button" onClick={play} disabled={playing} className="link min-h-9 disabled:opacity-40" aria-label="Replay the step back animation">
-            Replay
-          </button>
+        <div className="mt-1 flex items-center justify-between gap-4 text-[0.875rem] text-muted">
+          <span>Drag the tape to step back.</span>
+          {/* With reduced motion there is no sweep to pause: the face rests at 1 m and the tape does the rest. */}
+          {!reduce && (
+            <button type="button" onClick={toggle} className="link inline-flex min-h-11 items-center px-1 text-ink">
+              {toggleLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

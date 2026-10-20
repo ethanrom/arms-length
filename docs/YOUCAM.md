@@ -1,9 +1,10 @@
 # How Arm's Length uses the YouCam API
 
 This page lists every YouCam endpoint we call, what we send, what we use from the answer, what it costs, and what we
-learned while building on it. The numbers come from real calls, all logged: 159 units so far (the first 61, on two
-faces, are behind sections 3 and 4; the other 98 recorded two more faces, a makeup grid and the Skin Simulation
-renders of section 7). Where we only tested one face or one setting, we say so.
+learned while building on it. The numbers come from real calls, all logged: 184 units so far (the first 61, on two
+faces, are behind sections 3 and 4; the next 98 recorded two more faces, a makeup grid and the Skin Simulation
+renders of section 7; the last 25 were the first live session through the running app, section 5). Where we only
+tested one face or one setting, we say so.
 
 Contents: [1. The idea](#1-how-arms-length-uses-youcam) | [2. Endpoints](#2-every-endpoint-we-use) |
 [3. The masks](#3-what-the-masks-actually-contain) | [4. Integration notes](#4-integration-notes-we-learned-the-hard-way) |
@@ -61,6 +62,7 @@ All code is in `lib/youcam/`.
 | 6 | `GET /s2s/v1.0/client/credit` | Nothing. The Bearer key works here; the V1 client id and secret are not needed | `results[]` tokens: `amount_dec` (or `amount`) and `expiry`. We sum the unexpired ones to get the balance | 0 | `client.ts` `credit`, `budget.ts` |
 | 7 | `GET /s2s/v1.0/client/credit/history?page_size=30` | `Content-Type: application/json` (required) | `results.history[]`: `action`, `timestamp`, `target_id`. We use it to check our own ledger against YouCam's | 0 | `scripts/spikes/free-history.ts` |
 | 8 | `GET /s2s/v2.0/credit/feature-cost?page_size=20&starting_token=<next_token>` | Paging only | `result.skus[]` and `result.next_token`. 102 SKUs; the price table in `costs.ts` comes from here | 0 | `scripts/spikes/free-reads.ts`, `costs.ts` |
+| 9 | `POST /s2s/v2.0/task/delete` | `{"task_id": "<id>"}`, one POST per finished task | HTTP status only. 200 `{"status":200}`; afterwards the task answers 400 `InvalidTaskId` and its result URL 404 | 0 | `client.ts` `deleteTask`, `service.ts` `cleanup` |
 
 Notes on the table:
 
@@ -72,8 +74,10 @@ Notes on the table:
   SD: 9 / **12** / 14 / 16. Makeup VTO: **1**. Skin Simulation, 1-4 / 5-10 concerns: **4** / 6.
 - **Steps 7 and 8 are used offline.** The running app reads the balance (step 6); the history and price list were read
   once, with free calls, to build and check the ledger and `costs.ts`.
-- **Optional cleanup.** `POST /s2s/v2.0/task/delete` with `{task_ids: [...]}` is wired up but off by default
-  (`YOUCAM_DELETE_TASKS=1` turns it on). We have not verified its request shape against the live service, so failures are ignored.
+- **Cleanup (step 9, verified).** `POST /s2s/v2.0/task/delete` takes `{"task_id": "<id>"}`, one task per call, and is free.
+  Our first client sent `{task_ids: [...]}`, which answers 400 `InvalidParameters`, so the call never worked until we read
+  the live reference and fixed the body. Analysis and makeup tasks delete. A Skin Simulation task does not: it answers 400
+  `OperationInvalid` although its status is `success`. We delete once, when the visitor leaves the page (section 4, note 10).
 - **Not used:** the JS Camera Kit and the other YouCam analysis products. Capture quality checks and the iris ruler run
   on the device.
 
@@ -85,6 +89,7 @@ Our own routes sit on top of these, so the browser never talks to YouCam:
 | `POST /api/youcam/makeup` | One foundation render for a given `fileRef` | `app/api/youcam/makeup/route.ts` |
 | `POST /api/youcam/simulate` | One Skin Simulation render | `app/api/youcam/simulate/route.ts` |
 | `GET /api/youcam/status` | Tells the UI whether live mode is open for this access code, and why not | `app/api/youcam/status/route.ts` |
+| `POST /api/youcam/cleanup` | Deletes the YouCam tasks a live session created: signed task tokens in, a count of deleted and failed out. The browser calls it when the visitor leaves the page (section 4, note 10) | `app/api/youcam/cleanup/route.ts` |
 | `POST /api/visibility` | The drop-in layer: a YouCam Skin Analysis result you already have plus its photo in, a visibility report out. Calls no YouCam endpoint, spends no units (section 8) | `app/api/visibility/route.ts` |
 
 ## 3. What the masks actually contain
@@ -205,6 +210,35 @@ Tips for other developers. Each one cost us a few units or an afternoon.
      connection). The docs state about 250 requests per 300 s per IP, and our client backs off on 429.
    - Error codes are not always in the documented list, so `errors.ts` maps the ones we know to plain sentences and gives
      any unknown code a safe retry message.
+10. **Deleting a task: the body is `{task_id}`, and Skin Simulation refuses.** Verified against the live service on
+    2026-10-20, and again in our first live session on 2026-10-21:
+    - `POST /s2s/v2.0/task/delete` with `{"task_id": "<id>"}` returns 200 `{"status":200}` in about 2.2 s and costs nothing
+      (the credit balance did not move). Afterwards the task's status answers 400 `InvalidTaskId`, the same as for an
+      expired task, and its mask URL answers 404: the output is gone from storage. A sibling task on the same uploaded file
+      was untouched, so outputs are deleted per task.
+    - The body `{task_ids: [...]}` (our first guess) answers 400 `InvalidParameters` and changes nothing. Our client swallowed
+      the error, so it looked fine. Log delete failures.
+    - Only a finished task can be deleted (`OperationInvalid` otherwise). `OperationNotSupport` means the id is not the one
+      the run endpoint returned; `InvalidTaskId` means malformed, unknown or already deleted.
+    - **Analysis and makeup tasks delete. A Skin Simulation task does not:** it answers 400 `OperationInvalid` although its
+      status is `success` (seen in the first live session). Its output stays under YouCam's own retention, and we say so in
+      the privacy notice.
+    - YouCam's changelog says a delete removes "all associated input files and generated outputs". We verified the outputs,
+      not the input file. That wording is why we delete **once, at the end of the session** and not after each call: a makeup
+      or simulation render reuses the uploaded file of the analysis.
+    - **What ships.** Each live call returns the tasks it created as signed tokens (an HMAC of the task id, keyed with the
+      API key), so a visitor can only delete tasks this server made. On `pagehide` the browser sends the tokens with
+      `navigator.sendBeacon` to `POST /api/youcam/cleanup` (a keepalive `fetch` if the beacon is refused), and the server
+      deletes the tasks in parallel. `YOUCAM_DELETE_TASKS` is on unless set to `0`. It is best effort: a lost beacon or a
+      failed call leaves the tasks to YouCam's retention. Demo faces create no tasks. In the first live session it deleted
+      the analysis task and the three makeup tasks; the simulation task was refused.
+    - **Retention without a delete.** YouCam's file-retention page (`docs.perfectcorp.com/develop/file_retention_period`)
+      says: "Uploaded files and their associated `file_id` values are stored for 30 days. After an AI task is created, the
+      corresponding `task_id` remains valid for 30 days. [...] All uploaded and generated images and videos are
+      automatically removed after 30 days." The skin-analysis reference pages say results are retained for 24 hours after
+      completion, and result and mask URLs are valid for 2 hours. The pages do not agree with each other, so a claim about
+      what is kept uses the worst case, **up to 30 days**. YouCam's API privacy policy governs anything not stated there; we
+      did not read it, because the page needs JavaScript.
 
 ## 5. Unit budget and safety
 
@@ -218,15 +252,16 @@ the plan keeps most of the units for that.
 |---|---|---|---|---|
 | Phase 0 spike | 55 | 53 | 2 | 2 HD analyses (32), 1 SD analysis (12), 5 makeup renders (5), 1 simulation (4) |
 | Demo personas | 90 | 90 | 0 | 2 more HD analyses (p1a, p5a; 32), 10 foundation grid renders (10), 4 counterfactual simulations (16), 6 half-strength simulations (24), 2 other simulations (8) |
-| Integration checks | 40 | 0 | 40 | Two full live sessions |
+| Integration checks | 40 | 25 | 15 | The first live session through the running app: HD analysis (16), one seven-concern simulation (6) and 3 makeup renders (3) |
 | Deployed smoke tests | 40 | 0 | 40 | Two live sessions on the deployed site |
 | Demo video | 40 | 0 | 40 | One live session on a phone and one on desktop |
-| Judges' live sessions | 400 | 0 | 400 | About 14 sessions of about 28 units |
+| Judges' live sessions | 400 | 0 | 400 | About 15 sessions of about 26 units |
 | Reserve | 335 | 16 | 319 | 8 makeup renders to find which makeup parameters change anything (section 4, note 5), and 2 half-strength simulations for p5a (8) |
-| **Total** | **1,000** | **159** | **841** | |
+| **Total** | **1,000** | **184** | **816** | |
 
-A live session now costs about 28 units: the analysis (16), two half-strength simulations (8) and up to 4 coverage renders
-(4). Demo faces cost nothing.
+A live session costs about 26 units: the analysis (16), one half-strength simulation of all seven concerns (6, the
+5-to-10-concern price tier) and up to 4 coverage renders (4). The first real session spent 25 (16 + 6 + 3), and the balance
+read 841 before it and 816 after. Demo faces cost nothing.
 
 Every paid call goes through one guard (`lib/youcam/budget.ts`, used by `lib/youcam/service.ts`):
 
@@ -323,7 +358,8 @@ Notes for other developers:
 - **Pick the render that changed the concern.** A concern the simulation left alone comes out with a difference near 0. The
   replay (section 6) enforces this by serving a recording only if it changed every concern asked for.
 - **Price tiers.** One to four concerns cost 4 units and five to ten cost 6. Our seven concerns are two 4-unit calls (8
-  units); one seven-concern call is priced at 6. We did not test whether it renders the same as the two separate calls.
+  units); one seven-concern call is priced at 6, and that is what a live session sends. We did not compare it with the two
+  separate calls, so the recorded demo faces (two calls each) and a live session may differ slightly.
 - **We have not tested repeatability.** One render per request and face; the same request twice might not give the same image.
 - A single-concern **what-if** (one strength, the share of marks detectable at 1.5 m before and after) uses the same endpoint
   (`lib/coverage/whatif.ts`).

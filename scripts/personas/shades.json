@@ -1,0 +1,63 @@
+{
+  "shades": {
+    "p3a": {
+      "hex": "#e6af9d",
+      "patches": [
+        [
+          300,
+          780,
+          80,
+          80
+        ],
+        [
+          640,
+          780,
+          80,
+          80
+        ]
+      ],
+      "meanRgb": [
+        229.73,
+        175.12,
+        157.11
+      ],
+      "pixels": 6913
+    },
+    "p2b": {
+      "hex": "#8a5840",
+      "patches": [
+        [
+          300,
+          820,
+          40,
+          40
+        ]
+      ],
+      "note": "Phase 0 spike value (mean of one 40 px patch, no mask exclusion); kept so the new renders match the recorded p2b foundation renders lv_found_c50 and lv_found_c100"
+    },
+    "p1a": {
+      "hex": "#e3b499",
+      "patches": [
+        [
+          230,
+          800,
+          80,
+          80
+        ],
+        [
+          700,
+          800,
+          80,
+          80
+        ]
+      ],
+      "meanRgb": [
+        226.53,
+        179.52,
+        152.57
+      ],
+      "pixels": 7916
+    }
+  },
+  "note": "Foundation shade per persona: mean sRGB of cheek patches [x, y, w, h] with pixels within 4 px of a discrete mark left out. scripts/personas/shade.ts"
+}

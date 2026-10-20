@@ -1,6 +1,9 @@
 // Replay mode: serves the recorded fixture personas with no network and no units.
 // Analysis comes from fixtures/youcam/<persona>/analysis.<hd|sd>.json, masks as data URLs. Makeup and
 // simulation requests get the closest recorded render for the persona (category, then nearest parameter).
+// Only honest renders are served: makeup recorded with skin_smooth at 0 (the default smoothing brightens and blurs the
+// whole picture), and a simulation only when it changed every concern asked for. Each render carries the offset measured
+// against the persona's input (renders/offsets.json), since the service's offset is not constant.
 import fs from "node:fs";
 import path from "node:path";
 import type { AnalysisResponse, MakeupEffect, RenderResult, SimulationStrengths, Size2 } from "@/lib/contracts";
@@ -82,6 +85,14 @@ function numericFields(record: unknown): Record<string, number> {
   return out;
 }
 
+/** True when the request turns smoothing off. Without it the service smooths and brightens everything (spike.md section 9). */
+function smoothingOff(effects: MakeupEffect[]): boolean {
+  return effects.some(
+    (effect) =>
+      effect.category === "skin_smooth" && effect.skinSmoothStrength === 0 && (effect.skinSmoothColorIntensity ?? 0) === 0,
+  );
+}
+
 /** Skin smoothing is not the product's lever, so it is ignored when picking the primary effect. */
 export function primaryEffect(effects: MakeupEffect[]): MakeupEffect | undefined {
   return effects.find((effect) => effect.category !== "skin_smooth");
@@ -106,8 +117,9 @@ function listRecorded(persona: string): Recorded[] {
       const file = `renders/${name.replace(/\.request\.json$/, ".png")}`;
       if (!fs.existsSync(fixturePath(persona, file)) || !isRecord(request)) continue;
       if (Array.isArray(request.effects)) {
-        const primary = primaryEffect(request.effects as MakeupEffect[]);
-        if (primary) out.push({ file, kind: "makeup", category: primary.category, params: effectParams(primary) });
+        const effects = request.effects as MakeupEffect[];
+        const primary = primaryEffect(effects);
+        if (primary && smoothingOff(effects)) out.push({ file, kind: "makeup", category: primary.category, params: effectParams(primary) });
       } else {
         out.push({ file, kind: "simulation", category: "simulation", params: numericFields(request) });
       }
@@ -139,9 +151,37 @@ function closest(candidates: Recorded[], wanted: Record<string, number>): Record
   return best;
 }
 
+interface MeasuredOffset {
+  dx: number;
+  dy: number;
+}
+
+const offsetsCache = new Map<string, Record<string, MeasuredOffset>>();
+
+/** renders/offsets.json: the alignment of each recorded render to the persona's input, if it was measured. */
+function measuredOffsets(persona: string): Record<string, MeasuredOffset> {
+  const cached = offsetsCache.get(persona);
+  if (cached) return cached;
+  const out: Record<string, MeasuredOffset> = {};
+  const file = fixturePath(persona, "renders/offsets.json");
+  if (fs.existsSync(file)) {
+    const parsed: unknown = JSON.parse(fs.readFileSync(file, "utf8"));
+    const renders = isRecord(parsed) && isRecord(parsed.renders) ? parsed.renders : {};
+    for (const [name, entry] of Object.entries(renders)) {
+      if (isRecord(entry) && Number.isInteger(entry.dx) && Number.isInteger(entry.dy)) {
+        out[name] = { dx: entry.dx as number, dy: entry.dy as number };
+      }
+    }
+  }
+  offsetsCache.set(persona, out);
+  return out;
+}
+
 async function toRender(persona: string, recorded: Recorded): Promise<RenderResult> {
   const image = await readImage(persona, recorded.file);
-  return buildRender(recorded.kind, image, personaFrame(persona), 0, "replay");
+  const render = buildRender(recorded.kind, image, personaFrame(persona), 0, "replay");
+  const measured = measuredOffsets(persona)[path.basename(recorded.file)];
+  return measured ? { ...render, offset: measured } : render;
 }
 
 const noRecording = () =>
@@ -158,7 +198,10 @@ export async function replayMakeup(persona: string, effects: MakeupEffect[]): Pr
 
 export async function replaySimulation(persona: string, strengths: SimulationStrengths): Promise<RenderResult> {
   const wanted = numericFields(strengths);
-  const candidates = listRecorded(persona).filter((r) => r.kind === "simulation");
+  // A recording must have changed every concern asked for: a request for spots never gets the acne render.
+  const candidates = listRecorded(persona).filter(
+    (r) => r.kind === "simulation" && Object.entries(wanted).every(([key, value]) => !(value > 0) || (r.params[key] ?? 0) > 0),
+  );
   // Missing strengths count as 0 so a recording that changes extra concerns ranks lower.
   let best: Recorded | undefined;
   let bestDistance = Infinity;

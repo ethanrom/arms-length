@@ -6,7 +6,7 @@
  *  - region   (dark circle, eye bag, redness): extent from the mask, alpha-weighted contrast vs a reference.
  * Detection (mask only) is separate from measurement (needs the photo and the shared exclusion map).
  */
-import type { Box, ConcernId, Feature, RegionMeasure, RgbaImage } from "../contracts";
+import type { Box, ConcernId, Contrast, Feature, RegionMeasure, RgbaImage } from "../contracts";
 import {
   boxStat, annulusPixels, bilinear, meanStat, radialProfile, ringPixels, surroundStat, weightedStat,
   type Surround,
@@ -23,6 +23,11 @@ export type RegionDraft = Omit<RegionMeasure, "id" | "reference">;
 
 export interface MeasureContext {
   planes: LinearPlanes;
+  /**
+   * Skin Simulation of the same face without the concern, aligned to `planes` (see counterfactual.ts). When present,
+   * the concerns in COUNTERFACTUAL_CONCERNS take their contrast from photo vs simulation instead of vs the surround.
+   */
+  counterfactual?: LinearPlanes;
   mmPerPx: number;
   /** 1 where any detected feature (any concern) sits, dilated by 1 px: excluded from surrounds. */
   occupied: Uint8Array;
@@ -161,39 +166,25 @@ interface LineProfile {
 const LINE_STEP = 0.5;
 const LINE_PROFILE_HALF = 6;
 
-interface Section {
-  y: Float32Array;
-  l: Float32Array;
-  m: Float32Array;
-  /** 1 where the sample is inside the image and not on another feature (usable as baseline). */
-  free: Uint8Array;
+/** Where a wrinkle is cut across: a skeleton point (global px) and the unit normal of the line there. */
+interface SectionFrame {
+  gx: number;
+  gy: number;
+  nx: number;
+  ny: number;
 }
 
-/**
- * Mean luminance profile across a wrinkle in the photo, with ONE lateral offset per wrinkle.
- * At each (degree-2) skeleton pixel the photo is sampled along the local normal. The YouCam line can sit
- * a few px off the visible crease, so the wrinkle gets a single offset t0 within +-LINE_ALIGN_PX of the
- * mask line: the one at which the mean dip below the flank baseline (flanks at LINE_FLANK_INNER_PX to
- * LINE_HALF_SPAN_PX from t0, other features skipped) is deepest. A single offset, not one per
- * cross-section, because picking the darkest point of every cross-section inflates depth by about as much
- * as the real signal (measured with shifted-photo controls). Width is the full width at half depth of the
- * mean profile at t0. Null when the dip is shallower than LINE_MIN_DEPTH or not clearly above its
- * standard error.
- */
-function linePhotoProfile(det: LineDetection, ctx: MeasureContext): LineProfile | null {
-  const { planes, occupied } = ctx;
+/** Cross-section frames every LINE_SAMPLE_STEP_PX along the (degree-2) skeleton; the local direction is the principal axis of the skeleton within 3 px. */
+function sectionFrames(det: LineDetection): SectionFrame[] {
   const { skeleton, w, h, ox, oy, info } = det;
   const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < w && y < h ? skeleton[y * w + x] : 0);
-  const span = P.LINE_ALIGN_PX + P.LINE_HALF_SPAN_PX;
-  const nt = Math.round((2 * span) / LINE_STEP) + 1;
-  const sections: Section[] = [];
+  const frames: SectionFrame[] = [];
   let eligible = 0;
   for (let k = 0; k < info.pixels.length; k++) {
     if (info.degree[k] !== 2) continue;
     if (eligible++ % P.LINE_SAMPLE_STEP_PX !== 0) continue;
     const lx = info.pixels[k] % w;
     const ly = (info.pixels[k] - lx) / w;
-    // Local direction: principal axis of the skeleton pixels within 3 px.
     let n = 0;
     let mx = 0;
     let my = 0;
@@ -215,10 +206,36 @@ function linePhotoProfile(det: LineDetection, ctx: MeasureContext): LineProfile 
       }
     }
     const theta = 0.5 * Math.atan2(2 * sxy, sxx - syy);
-    const nx = -Math.sin(theta);
-    const ny = Math.cos(theta);
-    const gx = ox + lx;
-    const gy = oy + ly;
+    frames.push({ gx: ox + lx, gy: oy + ly, nx: -Math.sin(theta), ny: Math.cos(theta) });
+  }
+  return frames;
+}
+
+interface Section {
+  y: Float32Array;
+  l: Float32Array;
+  m: Float32Array;
+  /** 1 where the sample is inside the image and not on another feature (usable as baseline). */
+  free: Uint8Array;
+}
+
+/**
+ * Mean luminance profile across a wrinkle in the photo, with ONE lateral offset per wrinkle.
+ * At each (degree-2) skeleton pixel the photo is sampled along the local normal. The YouCam line can sit
+ * a few px off the visible crease, so the wrinkle gets a single offset t0 within +-LINE_ALIGN_PX of the
+ * mask line: the one at which the mean dip below the flank baseline (flanks at LINE_FLANK_INNER_PX to
+ * LINE_HALF_SPAN_PX from t0, other features skipped) is deepest. A single offset, not one per
+ * cross-section, because picking the darkest point of every cross-section inflates depth by about as much
+ * as the real signal (measured with shifted-photo controls). Width is the full width at half depth of the
+ * mean profile at t0. Null when the dip is shallower than LINE_MIN_DEPTH or not clearly above its
+ * standard error.
+ */
+function linePhotoProfile(det: LineDetection, ctx: MeasureContext): LineProfile | null {
+  const { planes, occupied } = ctx;
+  const span = P.LINE_ALIGN_PX + P.LINE_HALF_SPAN_PX;
+  const nt = Math.round((2 * span) / LINE_STEP) + 1;
+  const sections: Section[] = [];
+  for (const { gx, gy, nx, ny } of sectionFrames(det)) {
     const s: Section = { y: new Float32Array(nt), l: new Float32Array(nt), m: new Float32Array(nt), free: new Uint8Array(nt) };
     for (let i = 0; i < nt; i++) {
       const t = -span + i * LINE_STEP;
@@ -320,13 +337,55 @@ function linePhotoProfile(det: LineDetection, ctx: MeasureContext): LineProfile 
   return { widthPx: left + right, depth, rg: rgSum / nSec };
 }
 
+/**
+ * Contrast of a wrinkle against the simulation of the same face without it: (photo - simulation) / simulation in
+ * linear light, at the crease. As in linePhotoProfile the line gets ONE lateral offset within +-LINE_ALIGN_PX of the
+ * mask line, the one where the mean difference over the cross-sections is most negative (a crease is darker than its
+ * simulated absence); the difference is the mean over cross-sections at that offset. Null when too few cross-sections
+ * fall inside both images.
+ */
+function lineCounterfactualContrast(det: LineDetection, ctx: MeasureContext): Contrast | null {
+  const sim = ctx.counterfactual;
+  if (!sim) return null;
+  const { planes } = ctx;
+  const frames = sectionFrames(det);
+  let best: Contrast | null = null;
+  for (let t0 = -P.LINE_ALIGN_PX; t0 <= P.LINE_ALIGN_PX + 1e-9; t0 += LINE_STEP) {
+    let lum = 0;
+    let rg = 0;
+    let n = 0;
+    for (const { gx, gy, nx, ny } of frames) {
+      const x = gx + t0 * nx;
+      const y = gy + t0 * ny;
+      const at = (p: LinearPlanes) => ({
+        y: bilinear(p.y, p.width, p.height, x, y),
+        l: bilinear(p.l, p.width, p.height, x, y),
+        m: bilinear(p.m, p.width, p.height, x, y),
+      });
+      const photo = at(planes);
+      const base = at(sim);
+      if (![photo.y, photo.l, photo.m, base.y, base.l, base.m].every(Number.isFinite)) continue;
+      const c = contrastBetween(photo, base);
+      lum += c.lum;
+      rg += c.rg;
+      n++;
+    }
+    if (n < P.LINE_MIN_SECTIONS) continue;
+    if (best === null || lum / n < best.lum) best = { lum: lum / n, rg: rg / n };
+  }
+  return best;
+}
+
 export function measurePolylines(concern: ConcernId, lines: LineDetection[], ctx: MeasureContext): FeatureDraft[] {
   return lines.map((det) => {
     const { comp } = det;
     const photo = linePhotoProfile(det, ctx);
     const widthPx = photo ? photo.widthPx : det.maskWidthPx;
+    const counterfactual = P.COUNTERFACTUAL_CONCERNS.includes(concern) ? lineCounterfactualContrast(det, ctx) : null;
     let contrast = ZERO;
-    if (photo) {
+    if (counterfactual) {
+      contrast = counterfactual;
+    } else if (photo) {
       contrast = { lum: -photo.depth, rg: photo.rg };
     } else {
       const surround = ringSurround(comp, 3, 6, ctx);
@@ -343,6 +402,7 @@ export function measurePolylines(concern: ConcernId, lines: LineDetection[], ctx
       widthMm: widthPx * ctx.mmPerPx,
       sizeSource: photo ? "photo" : "mask",
       contrast,
+      contrastBasis: counterfactual ? "counterfactual" : "surround",
     };
   });
 }
@@ -410,13 +470,26 @@ export function detectMarkers(mask: RgbaImage, kind: "pore" | "acne"): MarkerDet
 }
 
 /**
+ * YouCam tags some age spots (and papules) as pores or acne as well. A marker whose centre sits inside a measured
+ * age spot is dropped, because the spot already counts that mark. Mutates `det.markers`; returns how many were dropped.
+ */
+export function dropMarkersInside(det: MarkerDetection, spots: Component[], width: number, height: number): number {
+  const inside = footprintOf(spots, width * height);
+  const kept = det.markers.filter((m) => !inside[m.y * width + m.x]);
+  const dropped = det.markers.length - kept.length;
+  det.markers = kept;
+  return dropped;
+}
+
+/**
  * Size and contrast of one marker from the photo. Contrast is the 3x3 box at the mask location against a
  * robust surround annulus (the box absorbs the ~1 px mask registration error; a wider search for the
  * strongest position inflates contrast, see MARKER_PARAMS.searchRadiusPx). Size is the full width at
  * half the peak of the radial profile, on the luminance channel or (acne) the red-green channel,
  * whichever stands further above the noise. When neither does, the size is a stated prior
- * (sizeSource "prior") and the contrast is still reported. Photo sizes are blur-limited (about 2 px
- * minimum), so they are upper bounds on the physical size, with contrast diluted correspondingly.
+ * (sizeSource "prior") and the contrast is still reported; so it is for a pore wider than P.PORE_MAX_PLAUSIBLE_MM.
+ * Photo sizes are blur-limited (about 2 px minimum), so they are upper bounds on the physical size, with contrast
+ * diluted correspondingly.
  */
 function measureMarker(m: Marker, kind: "pore" | "acne", unitR: number, ctx: MeasureContext): FeatureDraft {
   const p = P.MARKER_PARAMS[kind];
@@ -487,6 +560,9 @@ function measureMarker(m: Marker, kind: "pore" | "acne", unitR: number, ctx: Mea
     return { ...base, diameterMm: priorPx * ctx.mmPerPx, sizeSource: "prior", contrast };
   }
   const dPx = Math.max(p.priorMinPx, 2 * rHalf);
+  if (kind === "pore" && dPx * ctx.mmPerPx > P.PORE_MAX_PLAUSIBLE_MM) {
+    return { ...base, diameterMm: P.PORE_IMPLAUSIBLE_PRIOR_MM, sizeSource: "prior", contrast };
+  }
   return { ...base, diameterMm: dPx * ctx.mmPerPx, sizeSource: "photo", contrast };
 }
 

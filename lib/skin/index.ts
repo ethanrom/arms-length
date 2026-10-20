@@ -1,4 +1,5 @@
 export { measureAnalysis } from "./measure";
+export { alignCounterfactual, applyCounterfactual } from "./counterfactual";
 export * from "./color";
 export * from "./masks";
 export * from "./contrast";

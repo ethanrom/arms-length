@@ -77,6 +77,8 @@ export const MAX_DISTANCE_M = 10;
 
 export interface VisibilityReport {
   viewing: ViewingConditions;
+  /** The physical scale the distances were computed with (iris ruler, card, or estimated from masks). */
+  scale?: import("./measure").ScaleEstimate;
   targets: TargetVisibility[];
   concerns: ConcernVisibility[];
 }

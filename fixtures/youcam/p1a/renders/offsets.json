@@ -1,0 +1,149 @@
+{
+  "convention": "out(x + dx, y + dy) = in(x, y). dx, dy are the rounded means of patch-wise registration against input.jpg (scripts/personas/register-check.ts)",
+  "renders": {
+    "foundation_cov100.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.009,
+      "dyMean": -0.016,
+      "dxSd": 0.09,
+      "dySd": 0.081,
+      "patches": 35,
+      "minNcc": 0.943,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
+    },
+    "foundation_cov25.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.004,
+      "dyMean": -0.009,
+      "dxSd": 0.079,
+      "dySd": 0.074,
+      "patches": 35,
+      "minNcc": 0.991,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
+    },
+    "foundation_cov50.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.006,
+      "dyMean": -0.011,
+      "dxSd": 0.084,
+      "dySd": 0.078,
+      "patches": 35,
+      "minNcc": 0.958,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
+    },
+    "foundation_cov75.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.006,
+      "dyMean": -0.013,
+      "dxSd": 0.087,
+      "dySd": 0.08,
+      "patches": 35,
+      "minNcc": 0.95,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
+    },
+    "sim_acne05_redness05.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.002,
+      "dyMean": 0.013,
+      "dxSd": 0.043,
+      "dySd": 0.07,
+      "patches": 35,
+      "minNcc": 0.88,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
+    },
+    "sim_counterfactual.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": 0.005,
+      "dyMean": -0.017,
+      "dxSd": 0.107,
+      "dySd": 0.106,
+      "patches": 35,
+      "minNcc": 0.94,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
+    }
+  }
+}

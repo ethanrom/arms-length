@@ -13,6 +13,10 @@
  * interval from `scale.relSd` is distance * (1 +/- relSd), 1 SD.
  *
  * Only the red-green contrast is measured, so the yellow-violet term is 0 here (the code path exists).
+ *
+ * Redness is judged on its chromatic contrast only (luminance contrast taken as 0), on either contrast basis: the
+ * luminance of a redness zone is the lighting of the cheek it sits on (about +-30% on recorded faces) while its
+ * red-green contrast is 0.01 to 0.03, and the zone is a colour concern, not a brightness one.
  */
 import { CONCERNS } from "../contracts/concerns";
 import type { ConcernId } from "../contracts/concerns";
@@ -49,9 +53,10 @@ function isFeature(t: Feature | RegionMeasure): t is Feature {
  * Returns null when the size or contrast is missing or not finite.
  */
 export function specFromTarget(target: Feature | RegionMeasure, scale: ScaleEstimate): TargetSpec | null {
-  const { lum, rg } = target.contrast;
-  if (!Number.isFinite(lum) || !Number.isFinite(rg)) return null;
+  const { rg } = target.contrast;
+  if (!Number.isFinite(target.contrast.lum) || !Number.isFinite(rg)) return null;
   const chromatic = CONCERNS[target.concern].chromatic;
+  const lum = target.concern === "redness" ? 0 : target.contrast.lum;
   const base = { id: target.id, concern: target.concern, lum, rg, yv: 0, chromatic };
   let spec: TargetSpec;
   if (isFeature(target)) {

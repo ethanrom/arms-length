@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "effects": [
+    {
+      "category": "skin_smooth",
+      "skinSmoothStrength": 0,
+      "skinSmoothColorIntensity": 0
+    },
+    {
+      "category": "foundation",
+      "palettes": [
+        {
+          "color": "#e6af9d",
+          "colorIntensity": 50,
+          "glowIntensity": 0,
+          "coverageIntensity": 50
+        }
+      ]
+    }
+  ]
+}

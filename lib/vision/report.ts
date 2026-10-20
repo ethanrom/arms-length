@@ -7,6 +7,9 @@
  *   medianDistanceM  median over all the concern's targets, vanished ones (distance 0) included
  *   intervalM        the scale-uncertainty interval of the max target
  *   topTargets       ids of the (at most 5) most visible targets, most visible first
+ *   profile          at each PROFILE_DISTANCES_M entry, how many targets have a bound distance at or beyond it. This is the
+ *                    summary for many-feature concerns: unlike the max it does not hinge on one outlier. Regions are
+ *                    included (for a handful of zones it is a step function).
  * Concerns are returned most visible first (ties broken by concern id) so the output is deterministic.
  *
  * Confidence rule, applied to the headline (max) target:
@@ -16,17 +19,23 @@
  *     low     acne (17 px ring markers say where, not how big), texture
  *   then capped by where the size came from: "mask" keeps the base, "photo" caps at medium, "prior" gives low
  *   (regions carry no size source: their extent is always read from the mask).
+ *   Dark circles, eye bags, redness and wrinkles (COUNTERFACTUAL_CONCERNS) are low whenever the headline target's
+ *   contrast was measured against its surround (`contrastBasis: "surround"`), because normal anatomy and lighting
+ *   (eye-socket shading, fold shadows, lit cheeks) are part of that contrast. Only the counterfactual basis (photo vs
+ *   Skin Simulation without the concern) keeps their base rating. A target with no basis recorded is not downgraded.
  *   A scale estimate that is only "assumed" (no iris or card) makes every concern low.
  */
 import { CONCERNS, type ConcernId } from "../contracts/concerns";
 import type { Feature, Measurements, RegionMeasure } from "../contracts/measure";
 import {
   DEFAULT_VIEWING,
+  PROFILE_DISTANCES_M,
   type ConcernVisibility,
   type TargetVisibility,
   type ViewingConditions,
   type VisibilityReport,
 } from "../contracts/vision";
+import { COUNTERFACTUAL_CONCERNS } from "../skin/params";
 import { specFromTarget, visibilityOfSpec } from "./visibility";
 
 type Confidence = ConcernVisibility["confidence"];
@@ -51,6 +60,7 @@ export function concernConfidence(
   scaleSource: Measurements["scale"]["source"],
 ): Confidence {
   if (scaleSource === "assumed") return "low";
+  if (headline.contrastBasis === "surround" && COUNTERFACTUAL_CONCERNS.includes(concern)) return "low";
   const base = BASE_CONFIDENCE[concern];
   const source = "sizeSource" in headline ? headline.sizeSource : "mask";
   if (source === "prior") return "low";
@@ -65,6 +75,14 @@ function median(sorted: number[]): number {
 }
 
 const MAX_TOP_TARGETS = 5;
+
+/** `distances` must be the targets' bound distances; a target counts at d when it stays detectable out to d. */
+export function detectabilityProfile(distances: readonly number[]): NonNullable<ConcernVisibility["profile"]> {
+  return PROFILE_DISTANCES_M.map((distanceM) => {
+    const count = distances.filter((x) => x >= distanceM).length;
+    return { distanceM, count, fraction: distances.length ? count / distances.length : 0 };
+  });
+}
 
 export function buildVisibilityReport(measurements: Measurements, viewing: ViewingConditions = DEFAULT_VIEWING): VisibilityReport {
   const { scale } = measurements;
@@ -98,6 +116,7 @@ export function buildVisibilityReport(measurements: Measurements, viewing: Viewi
       medianDistanceM: median(distances),
       intervalM: head.intervalM,
       topTargets: ranked.slice(0, MAX_TOP_TARGETS).map((t) => t.targetId),
+      profile: detectabilityProfile(distances),
       confidence: concernConfidence(concern, source.get(head.targetId) as Feature | RegionMeasure, scale.source),
     });
   }

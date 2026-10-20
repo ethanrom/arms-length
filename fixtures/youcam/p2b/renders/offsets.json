@@ -1,0 +1,269 @@
+{
+  "convention": "out(x + dx, y + dy) = in(x, y). dx, dy are the rounded means of patch-wise registration against input.jpg (scripts/personas/register-check.ts)",
+  "renders": {
+    "foundation_cov100.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.006,
+      "dyMean": 1,
+      "dxSd": 0.031,
+      "dySd": 0.029,
+      "patches": 23,
+      "minNcc": 0.868,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "foundation_cov25.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.005,
+      "dyMean": 1,
+      "dxSd": 0.028,
+      "dySd": 0.028,
+      "patches": 23,
+      "minNcc": 0.988,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "foundation_cov50.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.006,
+      "dyMean": 1,
+      "dxSd": 0.032,
+      "dySd": 0.032,
+      "patches": 23,
+      "minNcc": 0.942,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "foundation_cov75.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.006,
+      "dyMean": 1.001,
+      "dxSd": 0.032,
+      "dySd": 0.03,
+      "patches": 23,
+      "minNcc": 0.895,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "mu_concealer_cov20.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.002,
+      "dyMean": 0.993,
+      "dxSd": 0.046,
+      "dySd": 0.046,
+      "patches": 23,
+      "minNcc": 0.934,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "mu_concealer_cov50.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.002,
+      "dyMean": 0.992,
+      "dxSd": 0.046,
+      "dySd": 0.046,
+      "patches": 23,
+      "minNcc": 0.934,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "mu_concealer_cov90.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.001,
+      "dyMean": 0.993,
+      "dxSd": 0.046,
+      "dySd": 0.046,
+      "patches": 23,
+      "minNcc": 0.934,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "mu_foundation_cov30.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.003,
+      "dyMean": 0.99,
+      "dxSd": 0.038,
+      "dySd": 0.036,
+      "patches": 23,
+      "minNcc": 0.967,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "mu_foundation_cov80.png": {
+      "dx": 0,
+      "dy": 1,
+      "dxMean": -0.003,
+      "dyMean": 0.988,
+      "dxSd": 0.038,
+      "dySd": 0.036,
+      "patches": 23,
+      "minNcc": 0.883,
+      "blackEdges": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1340
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "sim_counterfactual.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.006,
+      "dyMean": -0.045,
+      "dxSd": 0.043,
+      "dySd": 0.116,
+      "patches": 22,
+      "minNcc": 0.805,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1341
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
+    "sim_dark_circle05.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": 0,
+      "dyMean": -0.003,
+      "dxSd": 0.007,
+      "dySd": 0.013,
+      "patches": 23,
+      "minNcc": 0.989,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1341
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    }
+  }
+}

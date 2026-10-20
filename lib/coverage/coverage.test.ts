@@ -1,10 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { DEFAULT_VIEWING, type ConcernId, type Lever, type Measurements, type RgbaImage, type SkinAnalysis } from "../contracts";
+import { DEFAULT_VIEWING, type ConcernId, type Measurements, type RgbaImage, type SkinAnalysis } from "../contracts";
 import { alignRender, remeasure } from "../skin/remeasure";
 import { measureAnalysis } from "../skin/measure";
 import { inDisk, makeMask, makePhoto, TEST_SCALE, type Rgb } from "../skin/synth";
-import { concernDistance, type RenderedImage } from "./common";
-import { planCoverage } from "./plan";
+import { concernStats } from "./common";
 import { registerRender } from "./register";
 import { skinShade } from "./shade";
 import { whatIf } from "./whatif";
@@ -32,7 +31,7 @@ function setup(photo: RgbaImage, mask?: RgbaImage) {
 }
 
 const spotContrast = (m: Measurements) => m.features[0].contrast.lum;
-const distance = (m: Measurements, concern: ConcernId = "age_spot") => concernDistance(m, concern, DEFAULT_VIEWING).maxDistanceM;
+const distance = (m: Measurements, concern: ConcernId = "age_spot") => concernStats(m, concern, DEFAULT_VIEWING, 1.5).maxDistanceM;
 const NO_SHIFT = { dx: 0, dy: 0 };
 
 describe("remeasure", () => {
@@ -126,65 +125,6 @@ describe("skinShade", () => {
   });
 });
 
-describe("planCoverage", () => {
-  const photo = photoWith(-0.3);
-  const { analysis, masks, base } = setup(photo);
-  const geometry = { analysis, masks };
-  const request = { concern: "age_spot" as const, base, scale: TEST_SCALE, viewing: DEFAULT_VIEWING, photo, geometry };
-
-  // A fake service with a known monotone response: coverage c scales the spot's contrast by (1 - 0.8 c / 100).
-  const render = (c: number) => photoWith(-0.3 * (1 - (0.8 * c) / 100));
-  const fakeRender = (log: number[]) => async (lever: Lever): Promise<RenderedImage> => {
-    log.push(lever.value);
-    return {
-      photo: render(lever.value),
-      result: { imageRef: `fake:${lever.value}`, width: W, height: H, offset: NO_SHIFT, unitsCharged: 1, source: "preview" },
-    };
-  };
-
-  // What each grid level measures through the same pipeline, to place targets between them.
-  const level = (c: number) => distance(remeasure(base, render(c), NO_SHIFT, { geometry }));
-  const d = { base: distance(base), 25: level(25), 50: level(50), 75: level(75), 100: level(100) };
-
-  test("the fake response is strictly decreasing, so bisection is well posed", () => {
-    expect(d.base).toBeGreaterThan(d[25]);
-    expect(d[25]).toBeGreaterThan(d[50]);
-    expect(d[50]).toBeGreaterThan(d[75]);
-    expect(d[75]).toBeGreaterThan(d[100]);
-  });
-
-  test.each([
-    { name: "50 meets, 25 does not: choose 50", target: (d[25] + d[50]) / 2, order: [50, 25], chosen: 50, status: "met" },
-    { name: "50 and 25 meet: choose 25", target: d[25] + 0.01, order: [50, 25], chosen: 25, status: "met" },
-    { name: "50 fails, 75 meets: choose 75", target: (d[50] + d[75]) / 2, order: [50, 75], chosen: 75, status: "met" },
-    { name: "only 100 meets: choose 100", target: (d[75] + d[100]) / 2, order: [50, 75, 100], chosen: 100, status: "met" },
-    { name: "even 100 fails: not met, nothing chosen", target: d[100] / 2, order: [50, 75, 100], chosen: null, status: "not_met" },
-  ])("$name", async ({ target, order, chosen, status }) => {
-    const log: number[] = [];
-    const plan = await planCoverage({ ...request, targetDistanceM: target, render: fakeRender(log) });
-    expect(log).toEqual(order);
-    expect(plan.steps.map((s) => s.lever.value)).toEqual(order);
-    expect(plan.chosen?.lever.value ?? null).toBe(chosen);
-    expect(plan.status).toBe(status);
-    expect(plan.baselineDistanceM).toBeCloseTo(d.base, 6);
-    expect(plan.steps[0].lever).toEqual({ category: "foundation", field: "coverageIntensity", value: 50 });
-  });
-
-  test("a concern already below the target needs no render", async () => {
-    const log: number[] = [];
-    const plan = await planCoverage({ ...request, targetDistanceM: d.base + 1, render: fakeRender(log) });
-    expect(log).toEqual([]);
-    expect(plan).toMatchObject({ status: "met", chosen: null, steps: [], reason: "already_met" });
-  });
-
-  test.each(["dark_circle", "eye_bag"] as const)("%s has no makeup lever and renders nothing", async (concern) => {
-    const log: number[] = [];
-    const plan = await planCoverage({ ...request, concern, targetDistanceM: 1, render: fakeRender(log) });
-    expect(log).toEqual([]);
-    expect(plan).toMatchObject({ concern, status: "no_lever", chosen: null, steps: [], reason: "no_makeup_lever" });
-  });
-});
-
 describe("whatIf", () => {
   test("maps the concern to its simulation control and reports before and after", async () => {
     const photo = photoWith(-0.3);
@@ -206,6 +146,13 @@ describe("whatIf", () => {
     expect(seen).toEqual([{ spots: 0.5 }]);
     expect(result.strengths).toEqual({ spots: 0.5 });
     expect(result.afterDistanceM).toBeLessThan(result.beforeDistanceM);
+    // The fractions are judged at a target between the two distances: the spot is detectable before, not after.
+    const between = (result.beforeDistanceM + result.afterDistanceM) / 2;
+    const judged = await whatIf({ ...common, concern: "age_spot", geometry: { analysis, masks }, targetDistanceM: between, render: async () => ({
+      photo: photoWith(-0.15),
+      result: { imageRef: "fake", width: W, height: H, offset: NO_SHIFT, unitsCharged: 4, source: "preview" },
+    }) });
+    expect([judged.beforeFraction, judged.afterFraction]).toEqual([1, 0]);
     await expect(whatIf({ ...common, concern: "texture", render: () => Promise.reject(new Error("unused")) })).rejects.toThrow(RangeError);
   });
 });

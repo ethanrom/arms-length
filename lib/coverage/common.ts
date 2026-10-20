@@ -35,10 +35,26 @@ const only = (m: Measurements, concern: ConcernId): Measurements => ({
   regions: m.regions.filter((r) => r.concern === concern),
 });
 
-/** The concern's headline distance ("visible from up to"), and how many targets it has. 0 targets: distance 0. */
-export function concernDistance(m: Measurements, concern: ConcernId, viewing: ViewingConditions): { maxDistanceM: number; targets: number } {
-  const found = buildVisibilityReport(only(m, concern), viewing).concerns.find((c) => c.concern === concern);
-  return { maxDistanceM: found?.maxDistanceM ?? 0, targets: found?.targetCount ?? 0 };
+/** Default target distance: across a table. */
+export const DEFAULT_TARGET_DISTANCE_M = 1.5;
+
+export interface ConcernStats {
+  /** The farthest any one target stays detectable (information only). 0 with no targets. */
+  maxDistanceM: number;
+  targets: number;
+  /** Share of the concern's targets whose bound distance reaches `targetM`, i.e. still detectable there. 0 with no targets. */
+  fractionAtTarget: number;
+}
+
+export function concernStats(m: Measurements, concern: ConcernId, viewing: ViewingConditions, targetM: number): ConcernStats {
+  const report = buildVisibilityReport(only(m, concern), viewing);
+  const targets = report.targets.filter((t) => t.concern === concern);
+  const found = report.concerns.find((c) => c.concern === concern);
+  return {
+    maxDistanceM: found?.maxDistanceM ?? 0,
+    targets: targets.length,
+    fractionAtTarget: targets.length ? targets.filter((t) => t.distanceM >= targetM).length / targets.length : 0,
+  };
 }
 
 const IDENTITY: RenderOffset = { dx: 0, dy: 0 };

@@ -7,8 +7,7 @@ import { decodeImage, loadPersona } from "../skin/fixtures-io";
 import { measureAnalysis } from "../skin/measure";
 import { remeasure } from "../skin/remeasure";
 import { fixturePath } from "../youcam/fixtures";
-import { buildVisibilityReport } from "../vision/report";
-import { concernDistance } from "./common";
+import { concernStats, DEFAULT_TARGET_DISTANCE_M } from "./common";
 import { planCoverage } from "./plan";
 import { registerRender } from "./register";
 import { replayMakeupRender, replaySimulationRender } from "./replayRender";
@@ -50,46 +49,63 @@ describe("registerRender on the recorded renders", () => {
 });
 
 describe("p2b with the recorded foundation grid", () => {
-  test("age-spot visibility falls monotonically with coverage; the plan stops at the least coverage that meets a target", { timeout: 120_000 }, async () => {
+  test("age-spot and pore visibility fall monotonically with coverage; the plan follows the 10% and knee rules", { timeout: 120_000 }, async () => {
     const scale = scaleOf("p2b");
     const { analysis, masks, photo } = await loadPersona("p2b");
     const base = measureAnalysis(analysis, masks, photo, scale);
     const render = replayMakeupRender("p2b");
 
-    // Age spots: the strongest mark (a dark mole) is beyond the 10 m cap at every level, so check the max does not rise
-    // and the median falls strictly.
-    const levels: { max: number; median: number }[] = [];
+    // The share of marks still detectable at 1.5 m, and the farthest one (the strongest mole sits at the 10 m cap at every
+    // level, so the max can only be checked not to rise).
     const baseline = remeasure(base, photo, { dx: 0, dy: 0 }, { frame: photo });
-    const summary = (m: typeof base) => buildVisibilityReport(m, DEFAULT_VIEWING).concerns.find((c) => c.concern === "age_spot")!;
-    levels.push({ max: summary(baseline).maxDistanceM, median: summary(baseline).medianDistanceM });
+    const grid: Record<"age_spot" | "pore", { fraction: number; max: number }[]> = { age_spot: [], pore: [] };
+    for (const concern of ["age_spot", "pore"] as const) {
+      const s = concernStats(baseline, concern, DEFAULT_VIEWING, DEFAULT_TARGET_DISTANCE_M);
+      grid[concern].push({ fraction: s.fractionAtTarget, max: s.maxDistanceM });
+    }
     for (const coverage of [25, 50, 75, 100]) {
       const lever = { category: "foundation", field: "coverageIntensity", value: coverage };
       const rendered = await render(lever, [{ category: "foundation", palettes: [{ coverageIntensity: coverage }] }]);
       const found = registerRender(photo, rendered.photo);
       expect(found.ncc).toBeGreaterThan(0.85);
-      const after = summary(remeasure(base, rendered.photo, found, { frame: photo }));
-      levels.push({ max: after.maxDistanceM, median: after.medianDistanceM });
+      const after = remeasure(base, rendered.photo, found, { frame: photo });
+      for (const concern of ["age_spot", "pore"] as const) {
+        const s = concernStats(after, concern, DEFAULT_VIEWING, DEFAULT_TARGET_DISTANCE_M);
+        grid[concern].push({ fraction: s.fractionAtTarget, max: s.maxDistanceM });
+      }
     }
-    for (let i = 1; i < levels.length; i++) {
-      expect(levels[i].max).toBeLessThanOrEqual(levels[i - 1].max + 1e-9);
-      expect(levels[i].median).toBeLessThan(levels[i - 1].median);
+    for (const concern of ["age_spot", "pore"] as const) {
+      for (let i = 1; i < grid[concern].length; i++) {
+        expect(grid[concern][i].fraction).toBeLessThan(grid[concern][i - 1].fraction + 1e-9);
+        expect(grid[concern][i].max).toBeLessThanOrEqual(grid[concern][i - 1].max + 1e-9);
+      }
+      expect(grid[concern][4].fraction).toBeLessThan(grid[concern][0].fraction); // full coverage helps
     }
 
-    // Pores: the whole search through the replay adapter. Targets are placed between the measured steps.
+    // Pores at the default 1.5 m: the whole search through the replay adapter. Full coverage still leaves more than 10%.
     const request = { concern: "pore" as const, base, scale, viewing: DEFAULT_VIEWING, photo, render };
-    const unreachable = await planCoverage({ ...request, targetDistanceM: 0.1 });
-    expect(unreachable.status).toBe("not_met");
-    expect(unreachable.steps.map((s) => s.lever.value)).toEqual([50, 75, 100]);
-    expect(unreachable.steps[0].render.offset).toEqual({ dx: 0, dy: 1 }); // measured, not assumed
-    const [d50, d75, d100] = unreachable.steps.map((s) => s.maxDistanceM);
-    expect(unreachable.baselineDistanceM).toBeGreaterThan(d50);
-    expect(d50).toBeGreaterThan(d75);
-    expect(d75).toBeGreaterThan(d100);
+    const plan = await planCoverage(request);
+    expect(plan.targetDistanceM).toBe(1.5);
+    expect(plan.status).toBe("not_met");
+    expect(plan.steps.map((s) => s.lever.value)).toEqual([50, 75, 100]);
+    expect(plan.steps[0].render.offset).toEqual({ dx: 0, dy: 1 }); // measured, not assumed
+    const fractions = plan.steps.map((s) => s.fractionAtTarget!);
+    expect(plan.baselineFraction!).toBeGreaterThan(fractions[0]);
+    expect(fractions[0]).toBeGreaterThan(fractions[1]);
+    expect(fractions[1]).toBeGreaterThan(fractions[2]);
+    expect(fractions[2]).toBeGreaterThan(0.1);
+    // The knee: the lowest rendered coverage reaching 80% of the reduction at 100.
+    const reduction = (f: number) => plan.baselineFraction! - f;
+    const knee = plan.steps.filter((s) => reduction(s.fractionAtTarget!) >= 0.8 * reduction(fractions[2]) - 1e-9);
+    expect(plan.chosen?.lever.value).toBe(Math.min(...knee.map((s) => s.lever.value)));
 
-    const reachable = await planCoverage({ ...request, targetDistanceM: (d50 + d75) / 2 });
+    // A reachable target (2.5 m): the lowest coverage at or under 10% is chosen.
+    const reachable = await planCoverage({ ...request, targetDistanceM: 2.5 });
     expect(reachable.status).toBe("met");
-    expect(reachable.chosen?.lever.value).toBe(75);
-    expect(reachable.steps.map((s) => s.lever.value)).toEqual([50, 75]);
+    expect(reachable.chosen!.fractionAtTarget!).toBeLessThanOrEqual(0.1);
+    for (const s of reachable.steps) {
+      if (s.lever.value < reachable.chosen!.lever.value) expect(s.fractionAtTarget!).toBeGreaterThan(0.1);
+    }
   });
 
   test("a what-if on p2b dark circles uses the recorded simulation, re-measured with the masks", { timeout: 120_000 }, async () => {
@@ -106,8 +122,9 @@ describe("p2b with the recorded foundation grid", () => {
       render: replaySimulationRender("p2b"),
     });
     expect(result.strengths).toEqual({ dark_circle: 0.5 });
-    expect(result.beforeDistanceM).toBeCloseTo(concernDistance(base, "dark_circle", DEFAULT_VIEWING).maxDistanceM, 6);
+    expect(result.beforeDistanceM).toBeCloseTo(concernStats(base, "dark_circle", DEFAULT_VIEWING, 1.5).maxDistanceM, 6);
     expect(result.afterDistanceM).toBeLessThanOrEqual(result.beforeDistanceM);
+    expect(result.afterFraction).toBeLessThanOrEqual(result.beforeFraction);
     expect(result.render.offset).toEqual({ dx: 0, dy: 0 });
   });
 });

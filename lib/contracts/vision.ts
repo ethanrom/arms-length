@@ -27,6 +27,8 @@ export interface ViewingConditions {
   /** 1 = 20/20, 2 = 20/40: scales spatial frequencies (a blurrier observer). */
   acuityScale: number;
   label: "indoor" | "daylight" | "custom";
+  /** Safety margin added to detector sensitivity for the one-sided bound, in dB (default 6; research 9.4). */
+  marginDb?: number;
 }
 
 export interface Detector {
@@ -39,6 +41,8 @@ export interface TargetVisibility {
   targetId: string; // Feature.id or RegionMeasure.id
   concern: ConcernId;
   distanceM: number; // capped at MAX_DISTANCE_M; 0 if not detectable at MIN_DISTANCE_M
+  /** Distance for the average observer with no margin (marginDb = 0). distanceM is the bound. */
+  nominalM?: number;
   intervalM: [number, number];
 }
 
@@ -75,4 +79,4 @@ export type DistanceRenderer = (
   distanceM: number,
 ) => import("./measure").RgbaImage;
 
-export const DEFAULT_VIEWING: ViewingConditions = { luminanceCdM2: 100, acuityScale: 1, label: "indoor" };
+export const DEFAULT_VIEWING: ViewingConditions = { luminanceCdM2: 100, acuityScale: 1, label: "indoor", marginDb: 6 };

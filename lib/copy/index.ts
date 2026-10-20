@@ -6,4 +6,5 @@
 export * from "./distance";
 export * from "./concerns";
 export * from "./describe";
+export * from "./profile";
 export * from "./banned";

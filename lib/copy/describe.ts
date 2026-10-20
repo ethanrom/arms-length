@@ -4,11 +4,18 @@
  * Register: kind, factual, relief first. Distances, not grades. The claim is one-sided (see
  * lib/contracts/vision.ts): beyond the distance, even perfect eyes cannot see it. Inside it, we only say
  * that sharp eyes looking right at it could, never that people will.
+ *
+ * Concerns with many features (at least 5, not area regions) are summarised by the share of them detectable at
+ * fixed distances (ConcernVisibility.profile), not by the farthest one, which a single outlier decides. They are a
+ * relief when at most RELIEF_SHARE of them can be seen across a table. Everything else keeps the single-distance wording.
  */
 import { CONCERNS, type ConcernId } from "@/lib/contracts/concerns";
 import { MAX_DISTANCE_M, MIN_DISTANCE_M, type ConcernVisibility, type VisibilityReport } from "@/lib/contracts/vision";
-import { CONCERN_COPY, concernBe, concernNoun, concernThem } from "./concerns";
-import { anchorFor, CONVERSATION_M, formatDistance, formatInterval } from "./distance";
+import { CONCERN_COPY, concernBe, concernName, concernNoun, concernThem } from "./concerns";
+import {
+  anchorFor, CONVERSATION_M, DISTANCE_ANCHORS, formatDistance, formatInterval, type EverydayAnchor,
+} from "./distance";
+import { profileAt, reachM, shareWords } from "./profile";
 
 export type Tone = "relief" | "visible";
 
@@ -28,11 +35,37 @@ const MIRROR_BAND_MAX_M = 0.35;
 /** A concern is a relief when it is gone by conversation distance, the same target the coverage search uses. */
 export const RELIEF_MAX_M = CONVERSATION_M;
 
+/** Across a table: where a many-feature concern is judged. */
+export const TABLE_M = 1.5;
+
+/** A many-feature concern is a relief when at most this share of it is detectable across a table. */
+export const RELIEF_SHARE = 0.1;
+
+/** Fewer targets than this and a share is not a useful summary: the single-distance wording is used. */
+const MIN_PROFILE_TARGETS = 5;
+
 type Group = "relief" | "visible" | "unmeasured";
 
-function groupOf(cv: ConcernVisibility): Group {
+/** Many-feature concerns (not area regions) with a profile are summarised by shares, not by the farthest target. */
+function usesProfile(cv: ConcernVisibility): boolean {
+  return cv.profile !== undefined && cv.targetCount >= MIN_PROFILE_TARGETS && CONCERNS[cv.concern].maskKind !== "region";
+}
+
+/** The share of the concern that can be seen across a table; without a profile, all or nothing from the farthest target. */
+function tableShare(cv: ConcernVisibility): number {
+  return cv.profile ? profileAt(cv.profile, TABLE_M).fraction : cv.maxDistanceM >= TABLE_M ? 1 : 0;
+}
+
+/** The group a concern falls in when judged from `distanceM`: relief when gone (or down to RELIEF_SHARE) by then. */
+function groupAt(cv: ConcernVisibility, distanceM: number): Group {
   if (!CONCERNS[cv.concern].visibility || cv.targetCount === 0) return "unmeasured";
-  return cv.maxDistanceM <= RELIEF_MAX_M ? "relief" : "visible";
+  if (usesProfile(cv)) return profileAt(cv.profile!, distanceM).fraction <= RELIEF_SHARE + 1e-9 ? "relief" : "visible";
+  return cv.maxDistanceM <= distanceM ? "relief" : "visible";
+}
+
+/** Single-distance concerns are judged at conversation distance, many-feature ones across a table. */
+function groupOf(cv: ConcernVisibility): Group {
+  return groupAt(cv, usesProfile(cv) ? TABLE_M : RELIEF_MAX_M);
 }
 
 export function toneOf(cv: ConcernVisibility): Tone {
@@ -53,6 +86,7 @@ function upperBoundM(cv: ConcernVisibility): number {
 }
 
 const join = (parts: string[]) => parts.filter(Boolean).join(" ");
+const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 function describeUnmeasured(cv: ConcernVisibility): ConcernDescription {
   const noun = concernNoun(cv.concern);
@@ -119,15 +153,98 @@ function describeVisible(cv: ConcernVisibility): ConcernDescription {
   };
 }
 
+const EVERYDAY = DISTANCE_ANCHORS.filter((a): a is EverydayAnchor => a.phrase !== null);
+
+/** "across a table" -> "from across a table"; the phrases that are not about a place stand alone. */
+const fromPhrase = (phrase: string) => (phrase.startsWith("across") ? `from ${phrase}` : phrase);
+
+/** A headline that is too long loses "your" rather than overflowing the card line. */
+const fitHeadline = (withYour: string, without: string) => (withYour.length <= MAX_HEADLINE_CHARS ? withYour : without);
+
+/**
+ * Many-feature concerns, relief: at most RELIEF_SHARE of them can be seen across a table, even by perfect eyes.
+ * Always counts with "at most": the profile is a bound, so the real number of people-visible marks is lower.
+ */
+function describeProfileRelief(cv: ConcernVisibility): ConcernDescription {
+  const noun = concernNoun(cv.concern);
+  const total = cv.targetCount;
+  const table = anchorFor(TABLE_M);
+  const atTable = Math.round(profileAt(cv.profile!, TABLE_M).count);
+  const atConversation = Math.round(profileAt(cv.profile!, CONVERSATION_M).count);
+  const closer = atConversation > atTable ? `At ${formatDistance(CONVERSATION_M)}, that rises to at most ${atConversation}.` : "";
+  const note = roughEstimateNote(cv);
+
+  if (atTable === 0) {
+    return {
+      headline: `Nobody can see your ${noun} ${fromPhrase(table)}.`,
+      detail: join([`From ${table}, not one of your ${total} ${noun} could be seen, even by perfect eyes.`, closer, note]),
+      tone: "relief",
+    };
+  }
+  return {
+    headline: fitHeadline(
+      `At most ${atTable} of your ${total} ${noun} show ${fromPhrase(table)}.`,
+      `At most ${atTable} of ${total} ${noun} show ${fromPhrase(table)}.`,
+    ),
+    detail: join([`From ${table}, at most ${atTable} of your ${total} ${noun} could be seen, even by perfect eyes.`, closer, note]),
+    tone: "relief",
+  };
+}
+
+/** Many-feature concerns, visible: the farthest everyday anchor where at least RELIEF_SHARE is still detectable. */
+function describeProfileVisible(cv: ConcernVisibility): ConcernDescription {
+  const noun = concernNoun(cv.concern);
+  const them = concernThem(cv.concern);
+  const total = cv.targetCount;
+  const reach = reachM(cv.profile!, RELIEF_SHARE);
+  const anchor = EVERYDAY.filter((a) => a.m <= reach + 1e-9).pop() ?? nearestTable();
+  const here = profileAt(cv.profile!, anchor.m);
+  const count = Math.round(here.count);
+  const where = fromPhrase(anchor.phrase);
+  return {
+    headline: fitHeadline(
+      `${shareWords(here.fraction)} of your ${noun} show ${where}.`,
+      `${shareWords(here.fraction)} of ${noun} show ${where}.`,
+    ),
+    detail: join([
+      count >= total
+        ? `All ${total} of your ${noun} could be seen ${where}, by sharp eyes looking right at ${them}.`
+        : `${capitalise(where)}, that's at most ${count} of your ${total} ${noun}, for sharp eyes looking right at ${them}.`,
+      roughEstimateNote(cv),
+      `See what would make ${them} disappear at ${formatDistance(CONVERSATION_M)}.`,
+    ]),
+    tone: "visible",
+  };
+}
+
+function nearestTable(): EverydayAnchor {
+  return EVERYDAY.reduce((best, a) => (Math.abs(a.m - TABLE_M) < Math.abs(best.m - TABLE_M) ? a : best));
+}
+
 export function describeConcern(cv: ConcernVisibility): ConcernDescription {
   switch (groupOf(cv)) {
     case "unmeasured":
       return describeUnmeasured(cv);
     case "relief":
-      return describeRelief(cv);
+      return usesProfile(cv) ? describeProfileRelief(cv) : describeRelief(cv);
     case "visible":
-      return describeVisible(cv);
+      return usesProfile(cv) ? describeProfileVisible(cv) : describeVisible(cv);
   }
+}
+
+/**
+ * The live counter for the Step-back slider, e.g. "143 of 656 pores detectable from here". The profile is read on a log
+ * distance axis and clamped outside its range (closer than the first point the count is a lower bound, beyond the last
+ * an upper bound). Concerns without a profile get a yes/no line from the farthest target.
+ */
+export function stepBackCounter(cv: ConcernVisibility, distanceM: number): string {
+  if (!CONCERNS[cv.concern].visibility || cv.targetCount === 0) return describeUnmeasured(cv).headline;
+  if (cv.profile && CONCERN_COPY[cv.concern].agreement === "plural") {
+    const n = Math.round(profileAt(cv.profile, distanceM).count);
+    return `${n} of ${cv.targetCount} ${concernName(cv.concern, cv.targetCount === 1 ? "singular" : "plural")} detectable from here`;
+  }
+  const seen = cv.maxDistanceM >= distanceM;
+  return `Your ${concernNoun(cv.concern)} ${concernBe(cv.concern)} ${seen ? "" : "no longer "}detectable from here`;
 }
 
 const CONCERN_ORDER = Object.keys(CONCERNS) as ConcernId[];
@@ -137,8 +254,11 @@ function byGroupThenDistance(a: ConcernVisibility, b: ConcernVisibility): number
   const ga = groupOf(a);
   const gb = groupOf(b);
   if (ga !== gb) return rank[ga] - rank[gb];
-  // Relief: the biggest relief (vanishes closest) first. Visible: the most visible first.
+  // Relief: the biggest relief (the smallest share across a table) first. Visible: the most visible first.
+  // Ties fall back to the farthest target, as before.
   const sign = ga === "visible" ? -1 : 1;
+  const share = sign * (tableShare(a) - tableShare(b));
+  if (Math.abs(share) > 1e-9) return share;
   const d = sign * (a.maxDistanceM - b.maxDistanceM);
   if (d !== 0) return d;
   return CONCERN_ORDER.indexOf(a.concern) - CONCERN_ORDER.indexOf(b.concern);
@@ -164,9 +284,15 @@ export function summaryLine(report: VisibilityReport): string {
   const ordered = orderReliefFirst(report.concerns);
   const relief = ordered.filter((c) => groupOf(c) === "relief");
   const visible = ordered.filter((c) => groupOf(c) === "visible");
-  const from = "From a metre away,";
 
   if (relief.length === 0 && visible.length === 0) return "We didn't find anything to measure this time.";
+
+  // The vantage must hold for every concern the sentence names: a pore count is judged across a table, so a
+  // sentence that names pores as unseen cannot be about a metre away.
+  const vantage = (named: ConcernVisibility[]) =>
+    [CONVERSATION_M, TABLE_M].find((d) => named.every((c) => groupAt(c, d) === groupOf(c))) === CONVERSATION_M
+      ? "From a metre away,"
+      : "From across a table,";
 
   if (visible.length === 0) {
     const shown = relief.slice(0, 3);
@@ -174,7 +300,7 @@ export function summaryLine(report: VisibilityReport): string {
     const names = shown.map((c) => concernNoun(c.concern));
     if (more > 0) names.push(`${more} more`);
     const unsure = shown.some((c) => c.confidence === "low");
-    return `${from} ${unsure ? "we don't think anyone can see" : "nobody can see"} your ${listNames(names, "or")}.`;
+    return `${vantage(shown)} ${unsure ? "we don't think anyone can see" : "nobody can see"} your ${listNames(names, "or")}.`;
   }
 
   const featured = visible.slice(0, 2);
@@ -182,11 +308,11 @@ export function summaryLine(report: VisibilityReport): string {
   const seen = `your ${listNames(names, "and")}`;
   if (relief.length === 0) {
     const unsure = featured.some((c) => c.confidence === "low");
-    return `${from} people ${unsure ? "may see" : "see"} ${seen}.`;
+    return `${vantage(featured)} people ${unsure ? "may see" : "see"} ${seen}.`;
   }
 
   // Name the relief we trust most: the nearest-vanishing one that isn't a rough estimate.
   const unseen = relief.find((c) => c.confidence !== "low") ?? relief[0];
   const unsure = featured.some((c) => c.confidence === "low") || unseen.confidence === "low";
-  return `${from} people ${unsure ? "may see" : "see"} ${seen}, not your ${concernNoun(unseen.concern)}.`;
+  return `${vantage([...featured, unseen])} people ${unsure ? "may see" : "see"} ${seen}, not your ${concernNoun(unseen.concern)}.`;
 }

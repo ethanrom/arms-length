@@ -10,12 +10,16 @@ export const STATE = path.join(DIR, "state.json"); // task ids (gitignored)
 export const FIXTURES = path.join(ROOT, "fixtures", "youcam");
 export const SHADES = path.join(DIR, "shades.json");
 
-/** Units this job may spend, from the "Demo personas" bucket (internal/LEDGER.md). */
-export const CEILING_UNITS = 40;
+/** Hard unit ceiling per job, from the "Demo personas" bucket (internal/LEDGER.md). */
+export const CEILINGS: Record<string, number> = {
+  trio: 40, // p1a analysis, foundation grid, what-ifs (34 planned)
+  p5a: 16, // the "fine skin" face: one HD analysis
+};
 
 export type Kind = "analysis" | "foundation" | "simulation";
 
 export interface PlanItem {
+  job: keyof typeof CEILINGS;
   persona: string;
   kind: Kind;
   slug: string; // path after /s2s/
@@ -52,6 +56,7 @@ export function buildPlan(): Record<string, PlanItem> {
   const shades = readShades();
   const plan: Record<string, PlanItem> = {
     p1a_hd: {
+      job: "trio",
       persona: "p1a",
       kind: "analysis",
       slug: "v2.1/task/skin-analysis",
@@ -65,6 +70,7 @@ export function buildPlan(): Record<string, PlanItem> {
     if (!hex) continue;
     for (const cov of levels) {
       plan[`${persona}_found_cov${cov}`] = {
+        job: "trio",
         persona,
         kind: "foundation",
         slug: "v2.0/task/makeup-vto",
@@ -76,6 +82,7 @@ export function buildPlan(): Record<string, PlanItem> {
     }
   }
   plan.p2b_sim_dark_circle05 = {
+    job: "trio",
     persona: "p2b",
     kind: "simulation",
     slug: "v2.0/task/skin-simulation",
@@ -85,6 +92,7 @@ export function buildPlan(): Record<string, PlanItem> {
     stem: "sim_dark_circle05",
   };
   plan.p1a_sim_acne05_redness05 = {
+    job: "trio",
     persona: "p1a",
     kind: "simulation",
     slug: "v2.0/task/skin-simulation",
@@ -93,8 +101,14 @@ export function buildPlan(): Record<string, PlanItem> {
     action: "api_skin_simulation",
     stem: "sim_acne05_redness05",
   };
+  plan.p5a_hd = {
+    job: "p5a",
+    persona: "p5a",
+    kind: "analysis",
+    slug: "v2.1/task/skin-analysis",
+    body: { dst_actions: [...HD_ACTIONS], format: "json" },
+    units: 16,
+    action: "api_skin_analysis_hd_v2",
+  };
   return plan;
 }
-
-/** Everything the job is allowed to buy, shades or not: used for the budget check. */
-export const MAX_PLANNED_UNITS = 16 + (2 + 4 + 4) * 1 + 2 * 4;

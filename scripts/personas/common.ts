@@ -14,6 +14,7 @@ export const SHADES = path.join(DIR, "shades.json");
 export const CEILINGS: Record<string, number> = {
   trio: 40, // p1a analysis, foundation grid, what-ifs (34 planned)
   p5a: 16, // the "fine skin" face: one HD analysis
+  cf: 16, // counterfactual simulations: the same face without under-eye shading, eye bags, lines or redness (4 x 4)
 };
 
 export type Kind = "analysis" | "foundation" | "simulation";
@@ -110,5 +111,18 @@ export function buildPlan(): Record<string, PlanItem> {
     units: 16,
     action: "api_skin_analysis_hd_v2",
   };
+  for (const persona of ["p1a", "p2b", "p3a", "p5a"]) {
+    plan[`${persona}_sim_counterfactual`] = {
+      job: "cf",
+      persona,
+      kind: "simulation",
+      slug: "v2.0/task/skin-simulation",
+      // Four concerns is the 4-unit tier. The simulation edits only flagged regions (spike.md section 7).
+      body: { dark_circle: 1, eye_bags: 1, wrinkle: 1, redness: 1 },
+      units: 4,
+      action: "api_skin_simulation",
+      stem: "sim_counterfactual",
+    };
+  }
   return plan;
 }

@@ -217,6 +217,30 @@
         1341
       ]
     },
+    "sim_counterfactual.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.006,
+      "dyMean": -0.045,
+      "dxSd": 0.043,
+      "dySd": 0.116,
+      "patches": 22,
+      "minNcc": 0.805,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1341
+      ],
+      "inputSize": [
+        1080,
+        1341
+      ]
+    },
     "sim_dark_circle05.png": {
       "dx": 0,
       "dy": 0,

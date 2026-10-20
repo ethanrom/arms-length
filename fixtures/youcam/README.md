@@ -13,7 +13,7 @@ live API. Load them with `lib/youcam/fixtures.ts`.
   - `p3a`: fair skin, 1080x1575.
   - `p5a`: light East Asian skin with very subtle freckling, the "fine skin" relief example, 1080x1350. The raw 928x1152 photo had the
     face at 55% of the width, so it was cropped to x 102, y 103, 732x915 (face about 70%) and upscaled 1.475x (Lanczos3, JPEG q95)
-    (`scripts/personas/prepare-input.ts`). HD analysis only: no renders recorded.
+    (`scripts/personas/prepare-input.ts`). HD analysis plus the counterfactual simulation only.
 - Everything else is the unedited output of the API for those photos. The JSON is trimmed as described below; the mask and
   render images are byte-identical to what was downloaded, and the inputs are the files that were uploaded.
 - Removed on purpose: task ids, file ids, presigned S3 URLs and signatures, the account's storage prefix. No API keys.
@@ -50,7 +50,8 @@ p1a/
   input.jpg, analysis.hd.json, masks/hd/*.png (17), scale.json
   renders/                       foundation grid + simulation
 p5a/
-  input.jpg, analysis.hd.json, masks/hd/*.png (17), scale.json   (no renders)
+  input.jpg, analysis.hd.json, masks/hd/*.png (17), scale.json
+  renders/sim_counterfactual.png (+ .request.json, offsets.json)
 <persona>/renders/offsets.json   measured alignment of each render to input.jpg (see quirk 8)
 ```
 
@@ -65,6 +66,14 @@ The replay picks the nearest `coverageIntensity` among these.
 | p1a | 25, 50, 75, 100 | `#e3b499` | `sim_acne05_redness05.png`: acne 0.5, redness 0.5 |
 | p2b | 25, 50, 75, 100 | `#8a5840` | `sim_dark_circle05.png`: dark_circle 0.5 |
 | p3a | 25, 50, 75, 100 | `#e6af9d` | `sim_spots05_redness05.png`: spots 0.5, redness 0.5 (Phase 0) |
+
+**Counterfactual simulation** (`sim_counterfactual.png`, all four personas): one Skin Simulation with `dark_circle` 1, `eye_bags` 1,
+`wrinkle` 1, `redness` 1 and nothing else (4 concerns, the 4-unit tier). It is YouCam's rendering of the same face without those
+concerns, so a feature's contrast can be measured as photo versus simulation instead of photo versus its surround (the surround
+measure picks up eye-socket shading and lighting). Pixel-aligned like every simulation: dx, dy mean within 0.06 px for p1a, p2b and
+p5a, and within 0.15 px for p3a (patch spread up to 1 px where the render changed the content under the eyes); the size equals the
+input. About 1 to 2 mean absolute levels (of 255) differ from the photo over the whole frame, 3 to 6% of pixels by more than 10.
+The replay's simulation lookup ranks by distance over the strengths, so a request needs those four strengths to get this render.
 
 Shade: the mean sRGB colour of cheek patches away from features (`scripts/personas/shade.ts`; patches and values in
 `scripts/personas/shades.json`). p1a and p3a pool one 80 px patch per cheek, leaving out pixels within 4 px of an age spot, acne,
@@ -125,13 +134,13 @@ persona folder, for example `masks/hd/hd_pore_whole.png`. For `resize_image` the
    - p3a: **1078x1576, `dx` -3, `dy` 0**, black last row and last column. The engine dropped 3 columns on the left.
    - p1a: 1080x1610, `dx` 0, `dy` 0, no padding: the same size and no shift.
    The output size alone does not give the shift, so a size heuristic is wrong for p3a and p1a. Within a persona every render has
-   the same geometry (sd 0.03 to 0.15 px, NCC at least 0.86). Simulations are pixel-aligned (dx, dy within 0.03 px) for all three.
-9. **Not recorded:** an SD run for p3a, p1a and p5a; any render for p5a; concealer for p3a and p1a; simulations other than the three above; foundation
+   the same geometry (sd 0.03 to 0.15 px, NCC at least 0.86). Simulations are pixel-aligned (dx, dy within 0.03 px) for all three, and the counterfactual simulations for all four personas (see Renders).
+9. **Not recorded:** an SD run for p3a, p1a and p5a; makeup renders for p5a; concealer for p3a and p1a; simulations other than the ones above; foundation
    below 25 (a skin_smooth 0/0 render without makeup is the input itself).
 
 ## Size
 
-About 40 MiB in total: renders 34.8 MiB (a VTO render is 1.6 to 1.8 MiB, a simulation 2.0 MiB), HD masks 4.7 MiB for four
+About 49 MiB in total: renders 42.5 MiB (a VTO render is 1.6 to 1.8 MiB, a simulation 1.8 to 2.1 MiB), HD masks 4.7 MiB for four
 personas, SD masks 0.5 MiB, inputs 1.5 MiB, JSON 30 KB. The largest mask is 213 KB, so no mask was re-encoded. The renders
 were left byte-identical: palette quantisation would change pixel values, and a lossless re-encode saved little (none for VTO,
 about 24% for the simulation).

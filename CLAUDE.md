@@ -63,7 +63,7 @@ Never commit or print `.env` values (not in logs, test output, reports, or commi
 
 ## Git
 - Work and commit only on your own branch, never on `main`. Descriptive messages.
-- End every commit message with: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`
+- No `Co-Authored-By` or other AI attribution trailers in commit messages (Claude Code is credited in the README).
 - `next dev` and `next build` may re-add the block in `AGENTS.md`; that is expected, leave it.
 
 ## Friction notes

@@ -9,6 +9,9 @@
  * added without saying where it comes from.
  */
 import { DEFAULT_VIEWING, MAX_DISTANCE_M, MIN_DISTANCE_M, PROFILE_DISTANCES_M } from "../../lib/contracts/vision";
+import { DEFAULT_TARGET_DISTANCE_M } from "../../lib/coverage/common";
+import { COVERAGE_GRID, KNEE_SHARE, MET_FRACTION } from "../../lib/coverage/plan";
+import { MAX_SHIFT_PX, MIN_TRUSTED_NCC } from "../../lib/coverage/register";
 import { CARD_ASPECT_TOLERANCE, CARD_CORNER_SD_PX, CARD_LONG_MM, CARD_SHORT_MM } from "../../lib/scale/card";
 import { IRIS_DIAMETER_MM, IRIS_DIAMETER_SD_MM, IRIS_EDGE_SD_PX, IRIS_POPULATION_REL_SD } from "../../lib/scale/iris";
 import { LINEAR_SRGB_TO_XYZ, XYZ_TO_LMS_HPE_D65 } from "../../lib/skin/color";
@@ -250,6 +253,8 @@ function measurementGroup(): ParamGroup {
       row("MIN_REFERENCE_PIXELS", "MIN_REFERENCE_PIXELS", S.MIN_REFERENCE_PIXELS, "pixels", "Heuristic: smallest skin reference sample"),
       row("MARKER_PARAMS", "MARKER_PARAMS.priorDiameterMm", both((p) => p.priorDiameterMm), "mm", "Assumption: a pore opening is a few tenths of a millimetre; used only when the photo gives no measurable size, and flagged as a prior. Acne uses a fraction of the ring, below"),
       row("ACNE_PRIOR_FRACTION", "ACNE_PRIOR_FRACTION", S.ACNE_PRIOR_FRACTION, "of ring diameter", "Assumption: the lesion fills about half of the 17 px ring YouCam draws"),
+      row("PORE_MAX_PLAUSIBLE_MM", "PORE_MAX_PLAUSIBLE_MM", S.PORE_MAX_PLAUSIBLE_MM, "mm", "Assumption: a photo-measured pore wider than this is another mark (a papule, a spot) at a pore location. Flament et al. 2015 count pores from 0.25 mm; enlarged pores are typically up to about 0.5 mm (our order-of-magnitude reading), so this is more than twice that"),
+      row("PORE_IMPLAUSIBLE_PRIOR_MM", "PORE_IMPLAUSIBLE_PRIOR_MM", S.PORE_IMPLAUSIBLE_PRIOR_MM, "mm", "Assumption: the size such a marker gets instead (the upper end of an enlarged pore), flagged as a prior"),
       row("MARKER_PARAMS", "MARKER_PARAMS.priorMinPx", both((p) => p.priorMinPx), "pixels", "Photo-measured marker sizes are blur-limited; never smaller than this"),
       row("MARKER_PARAMS", "MARKER_PARAMS.flatSigma", both((p) => p.flatSigma), "standard errors", "Heuristic: a marker's contrast must exceed this many noise standard errors to count as a measurement"),
       row("MARKER_PARAMS", "MARKER_PARAMS.splitAreaFactor", both((p) => p.splitAreaFactor), "x median area", "Heuristic: larger components are split into several markers (merged neighbours)"),
@@ -271,10 +276,28 @@ function measurementGroup(): ParamGroup {
   };
 }
 
+function productGroup(): ParamGroup {
+  return {
+    id: "products",
+    title: "Least makeup and render registration",
+    intro:
+      "Choices of ours (sections 11 and 12). None of them feeds the vision model's constants; they decide which renders are measured and which one is reported.",
+    rows: [
+      row("COVERAGE_GRID", "COVERAGE_GRID", list(COVERAGE_GRID), "% coverageIntensity", "Ours: the foundation levels rendered. The search relies on the monotone response measured in the spike (docs/YOUCAM.md, section 4, note 5)"),
+      row("DEFAULT_TARGET_DISTANCE_M", "DEFAULT_TARGET_DISTANCE_M", DEFAULT_TARGET_DISTANCE_M, "m", "Ours: across a table, one of the profile distances (PROFILE_DISTANCES_M)"),
+      row("MET_FRACTION", "MET_FRACTION", MET_FRACTION, "of the concern's targets", "Ours: a concern counts as hidden when at most this share is still detectable at the target distance (the share the copy calls a relief)"),
+      row("KNEE_SHARE", "KNEE_SHARE", KNEE_SHARE, "of the reduction at 100%", "Ours: when the target is not met, the lowest coverage that achieves this share of the reduction full coverage achieves"),
+      row("MAX_SHIFT_PX", "MAX_SHIFT_PX", MAX_SHIFT_PX, "pixels", "Ours: registration tries every whole-pixel shift within this. The recorded shifts are 0 to 3"),
+      row("MIN_TRUSTED_NCC", "MIN_TRUSTED_NCC", MIN_TRUSTED_NCC, "correlation", "Ours: a registration whose mean normalised cross-correlation is below this is not trusted, and the service's own offset is used instead. The recorded renders score 0.87 to 0.99"),
+    ],
+  };
+}
+
 export const PARAM_BLOCKS: { name: string; groups: () => ParamGroup[] }[] = [
   { name: "params-model", groups: visionGroups },
   { name: "params-scale", groups: scaleAndColourGroups },
   { name: "params-measurement", groups: () => [measurementGroup()] },
+  { name: "params-products", groups: () => [productGroup()] },
 ];
 
 function render(groups: ParamGroup[]): string {

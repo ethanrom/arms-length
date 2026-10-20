@@ -97,9 +97,9 @@
         "ours": {
           "targetCount": 93,
           "maxDistanceM": 10,
-          "medianDistanceM": 2.2212,
-          "countAt1_5m": 69,
-          "fractionAt1_5m": 0.7419
+          "medianDistanceM": 2.1424,
+          "countAt1_5m": 62,
+          "fractionAt1_5m": 0.6667
         }
       },
       {
@@ -152,10 +152,10 @@
         },
         "ours": {
           "targetCount": 5,
-          "maxDistanceM": 2.904,
-          "medianDistanceM": 0.1216,
-          "countAt1_5m": 1,
-          "fractionAt1_5m": 0.2
+          "maxDistanceM": 10,
+          "medianDistanceM": 10,
+          "countAt1_5m": 5,
+          "fractionAt1_5m": 1
         }
       },
       {
@@ -265,9 +265,9 @@
         "ours": {
           "targetCount": 188,
           "maxDistanceM": 10,
-          "medianDistanceM": 2.619,
-          "countAt1_5m": 145,
-          "fractionAt1_5m": 0.7713
+          "medianDistanceM": 2.9463,
+          "countAt1_5m": 144,
+          "fractionAt1_5m": 0.766
         }
       },
       {
@@ -427,9 +427,9 @@
         "ours": {
           "targetCount": 207,
           "maxDistanceM": 10,
-          "medianDistanceM": 2.4345,
-          "countAt1_5m": 151,
-          "fractionAt1_5m": 0.7295
+          "medianDistanceM": 2.4208,
+          "countAt1_5m": 160,
+          "fractionAt1_5m": 0.7729
         }
       },
       {
@@ -483,9 +483,9 @@
         "ours": {
           "targetCount": 4,
           "maxDistanceM": 10,
-          "medianDistanceM": 5.0545,
-          "countAt1_5m": 2,
-          "fractionAt1_5m": 0.5
+          "medianDistanceM": 10,
+          "countAt1_5m": 3,
+          "fractionAt1_5m": 0.75
         }
       },
       {
@@ -594,10 +594,10 @@
         },
         "ours": {
           "targetCount": 107,
-          "maxDistanceM": 9.7947,
-          "medianDistanceM": 1.8242,
-          "countAt1_5m": 63,
-          "fractionAt1_5m": 0.5888
+          "maxDistanceM": 10,
+          "medianDistanceM": 1.6013,
+          "countAt1_5m": 60,
+          "fractionAt1_5m": 0.5607
         }
       },
       {
@@ -681,7 +681,7 @@
     ],
     "oursDeterminism": {
       "rerunIdentical": true,
-      "sha256": "528cec5aeb372238eb17624ac33270d40343b519781b497e5a69364644425277"
+      "sha256": "8950a9c315a8129b4215814b7fd7c519bfc85579245abc0230522ea461078c07"
     },
     "aggregate": {
       "cellsWithSpread": 19,

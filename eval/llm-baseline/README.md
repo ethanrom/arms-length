@@ -44,31 +44,31 @@ The four recorded persona photos (`fixtures/youcam/{p1a,p2b,p3a,p5a}/input.jpg`,
 each, with the interpupillary distance given as about 63 mm. The question asks for the **farthest** distance at which each
 concern could still be seen, so the matching column of ours is the bound on the farthest target (`maxDistanceM`). We
 also show `medianDistanceM` and how many of the face's targets are still in view at 1.5 m. Our numbers come from the
-same code path as `scripts/dev/pipeline.ts`; "10+" is our 10 m contract cap.
+same code path as `scripts/dev/pipeline.ts`, with every target measured against its surround (no Skin Simulation); "10+" is our 10 m contract cap.
 
 | Face | Concern | Claude: median (min to max) | CV | Ours: max / median (m) | Ours: in view at 1.5 m |
 |---|---|---|---|---|---|
 | p1a | pores | 0.8 (0.6 to 1) | 22% | 4.07 / 1.26 | 150 of 450 |
 | p1a | dark spots | 1.5 (1 to 1.5) | 17% | 10+ / 3.26 | 62 of 64 |
-| p1a | fine lines | 0.6 (0.5 to 0.6), null in 2 of 5 | 10% | 10+ / 2.22 | 69 of 93 |
+| p1a | fine lines | 0.6 (0.5 to 0.6), null in 2 of 5 | 10% | 10+ / 2.14 | 62 of 93 |
 | p1a | under-eye shadows | 4 (3 to 5) | 20% | 10+ / 10+ | 2 of 2 |
-| p1a | redness | 3 (2.5 to 4) | 20% | 2.9 / 0.12 | 1 of 5 |
+| p1a | redness | 3 (2.5 to 4) | 20% | 10+ / 10+ | 5 of 5 |
 | p1a | breakouts | 3 (3 to 4) | 14% | 9.1 / 1.61 | 24 of 40 |
 | p2b | pores | 0.8 (0.6 to 1) | 25% | 4.22 / 1.55 | 342 of 649 |
 | p2b | dark spots | 4 (3.5 to 4) | 7% | 10+ / 4.55 | 88 of 89 |
-| p2b | fine lines | 1.5 (1.5 to 2) | 14% | 10+ / 2.62 | 145 of 188 |
+| p2b | fine lines | 1.5 (1.5 to 2) | 14% | 10+ / 2.95 | 144 of 188 |
 | p2b | under-eye shadows | 6 (5 to 7) | 12% | 10+ / 10+ | 2 of 2 |
 | p2b | redness | null in 5 of 5 runs | - | no redness found | - |
 | p2b | breakouts | null in 5 of 5 runs | - | 5.13 / 1.65 | 13 of 18 |
 | p3a | pores | 0.8 (0.6 to 1) | 22% | 3.15 / 1.33 | 81 of 221 |
 | p3a | dark spots | 6 (5 to 6) | 8% | 10+ / 3.2 | 187 of 194 |
-| p3a | fine lines | 2 (1.5 to 2.5) | 20% | 10+ / 2.43 | 151 of 207 |
+| p3a | fine lines | 2 (1.5 to 2.5) | 20% | 10+ / 2.42 | 160 of 207 |
 | p3a | under-eye shadows | 3.5 (3 to 3.5) | 7% | 10+ / 10+ | 3 of 3 |
-| p3a | redness | 9 (6 to 10) | 19% | 10+ / 5.05 | 2 of 4 |
+| p3a | redness | 9 (6 to 10) | 19% | 10+ / 10+ | 3 of 4 |
 | p3a | breakouts | null in 5 of 5 runs | - | 3.24 / 2.11 | 5 of 5 |
 | p5a | pores | 0.8 (0.6 to 0.8) | 15% | 3.11 / 1.15 | 55 of 250 |
 | p5a | dark spots | 2.5 (2.5 to 3) | 10% | 7.07 / 3.12 | 50 of 53 |
-| p5a | fine lines | 1 (1 to 1) | 0% | 9.79 / 1.82 | 63 of 107 |
+| p5a | fine lines | 1 (1 to 1) | 0% | 10+ / 1.6 | 60 of 107 |
 | p5a | under-eye shadows | 4 (3 to 5) | 18% | 10+ / 10+ | 2 of 2 |
 | p5a | redness | null in 5 of 5 runs | - | no redness found | - |
 | p5a | breakouts | null in 5 of 5 runs | - | 2.46 / 1.76 | 3 of 3 |
@@ -79,8 +79,8 @@ Reading it:
   and the median highest-over-lowest is 1.4x (worst 1.7x). One cell flips on whether the concern exists at all: p1a
   fine lines is a number in 3 runs and null in 2.
 - **Ours is identical on every run.** Computing all four faces twice in one process gives byte-identical results (SHA-256
-  `528cec5a...` in `summary.json`), and `scripts/dev/pipeline.ts p1a p2b p3a p5a` run twice gave identical output
-  (SHA-256 `dc36539f...`). The model has no randomness; the same photo gives the same numbers.
+  `8950a9c3...` in `summary.json`), and `scripts/dev/pipeline.ts p1a p2b p3a p5a` run twice gave identical output
+  (SHA-256 `bc49fd78...`). The model has no randomness; the same photo gives the same numbers.
 - **The LLM's numbers barely move with the face.** Pores are 0.8 m on every face. Our pore counts in view at 1.5 m are
   33%, 53%, 37% and 22% of what was found. Under-eye shadows are 3.5 to 6 m for Claude and past our 10 m cap for ours.
 - **Breakouts: null on three of four faces** where YouCam located 18, 5 and 3 (visible from 5.1, 3.2 and 2.5 m at the

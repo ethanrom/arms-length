@@ -1,0 +1,97 @@
+{
+  "error": null,
+  "results": {
+    "output": [
+      {
+        "ui_score": 69,
+        "mask_urls": [
+          "masks/sd/eye_bag.png"
+        ],
+        "raw_score": "52.431702613830566",
+        "type": "eye_bag",
+        "url": null
+      },
+      {
+        "ui_score": 99,
+        "mask_urls": [
+          "masks/sd/redness.png"
+        ],
+        "raw_score": 100,
+        "type": "redness",
+        "url": null
+      },
+      {
+        "ui_score": 72,
+        "mask_urls": [
+          "masks/sd/pore.png"
+        ],
+        "raw_score": "59.53966569900513",
+        "type": "pore",
+        "url": null
+      },
+      {
+        "ui_score": 45,
+        "mask_urls": [
+          "masks/sd/texture.png"
+        ],
+        "raw_score": "7.575385272502899",
+        "type": "texture",
+        "url": null
+      },
+      {
+        "ui_score": 82,
+        "mask_urls": [
+          "masks/sd/acne.png"
+        ],
+        "raw_score": 83.35392,
+        "type": "acne",
+        "url": null
+      },
+      {
+        "ui_score": 71,
+        "mask_urls": [
+          "masks/sd/age_spot.png"
+        ],
+        "raw_score": "72.62149047851562",
+        "type": "age_spot",
+        "url": null
+      },
+      {
+        "ui_score": 71,
+        "mask_urls": [
+          "masks/sd/wrinkle.png"
+        ],
+        "raw_score": "65.39387702941895",
+        "type": "wrinkle",
+        "url": null
+      },
+      {
+        "ui_score": 69,
+        "mask_urls": [
+          "masks/sd/dark_circle_v2.png"
+        ],
+        "raw_score": "60.71227192878723",
+        "type": "dark_circle_v2",
+        "url": null
+      },
+      {
+        "score": 72.25,
+        "type": "all",
+        "url": null
+      },
+      {
+        "score": 46,
+        "type": "skin_age",
+        "url": null
+      },
+      {
+        "mask_urls": [
+          "input.jpg"
+        ],
+        "type": "resize_image",
+        "url": null
+      }
+    ]
+  },
+  "task_status": "success"
+}

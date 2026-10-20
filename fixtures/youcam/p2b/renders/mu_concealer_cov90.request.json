@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "effects": [
+    {
+      "category": "concealer",
+      "palettes": [
+        {
+          "color": "#8a5840",
+          "colorIntensity": 50,
+          "colorUnderEyeIntensity": 50,
+          "coverageLevel": 90
+        }
+      ]
+    }
+  ]
+}

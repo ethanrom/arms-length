@@ -1,0 +1,191 @@
+{
+  "error": null,
+  "results": {
+    "output": [
+      {
+        "ui_score": 69,
+        "mask_urls": [
+          "masks/hd/hd_eye_bag.png"
+        ],
+        "raw_score": "52.43487358093262",
+        "type": "hd_eye_bag",
+        "url": null
+      },
+      {
+        "ui_score": 69,
+        "mask_urls": [
+          "masks/hd/hd_dark_circle.png"
+        ],
+        "raw_score": "60.71227490901947",
+        "type": "hd_dark_circle",
+        "url": null
+      },
+      {
+        "ui_score": 71,
+        "mask_urls": [
+          "masks/hd/hd_age_spot.png"
+        ],
+        "raw_score": "72.62026977539062",
+        "type": "hd_age_spot",
+        "url": null
+      },
+      {
+        "ui_score": 99,
+        "mask_urls": [
+          "masks/hd/hd_redness.png"
+        ],
+        "raw_score": 100,
+        "type": "hd_redness",
+        "url": null
+      },
+      {
+        "ui_score": 85,
+        "mask_urls": [
+          "masks/hd/hd_acne_whole.png"
+        ],
+        "raw_score": "75.16320037841797",
+        "type": "hd_acne",
+        "region": "whole",
+        "url": null
+      },
+      {
+        "ui_score": 30,
+        "mask_urls": [
+          "masks/hd/hd_pore_forehead.png"
+        ],
+        "raw_score": 0,
+        "type": "hd_pore",
+        "region": "forehead",
+        "url": null
+      },
+      {
+        "ui_score": 66,
+        "mask_urls": [
+          "masks/hd/hd_pore_nose.png"
+        ],
+        "raw_score": "47.08456039428711",
+        "type": "hd_pore",
+        "region": "nose",
+        "url": null
+      },
+      {
+        "ui_score": 48,
+        "mask_urls": [
+          "masks/hd/hd_pore_cheek.png"
+        ],
+        "raw_score": "9.220256805419922",
+        "type": "hd_pore",
+        "region": "cheek",
+        "url": null
+      },
+      {
+        "ui_score": 53,
+        "mask_urls": [
+          "masks/hd/hd_pore_whole.png"
+        ],
+        "raw_score": "16.381267547607422",
+        "type": "hd_pore",
+        "region": "whole",
+        "url": null
+      },
+      {
+        "ui_score": 54,
+        "mask_urls": [
+          "masks/hd/hd_texture_whole.png"
+        ],
+        "raw_score": "19.673846153846156",
+        "type": "hd_texture",
+        "region": "whole",
+        "url": null
+      },
+      {
+        "ui_score": 70,
+        "mask_urls": [
+          "masks/hd/hd_wrinkle_forehead.png"
+        ],
+        "raw_score": "63.36191177368164",
+        "type": "hd_wrinkle",
+        "region": "forehead",
+        "url": null
+      },
+      {
+        "ui_score": 79,
+        "mask_urls": [
+          "masks/hd/hd_wrinkle_glabellar.png"
+        ],
+        "raw_score": "88.42249989509583",
+        "type": "hd_wrinkle",
+        "region": "glabellar",
+        "url": null
+      },
+      {
+        "ui_score": 90,
+        "mask_urls": [
+          "masks/hd/hd_wrinkle_crowfeet.png"
+        ],
+        "raw_score": "95.1667782664299",
+        "type": "hd_wrinkle",
+        "region": "crowfeet",
+        "url": null
+      },
+      {
+        "ui_score": 74,
+        "mask_urls": [
+          "masks/hd/hd_wrinkle_periocular.png"
+        ],
+        "raw_score": "75.18460512161255",
+        "type": "hd_wrinkle",
+        "region": "periocular",
+        "url": null
+      },
+      {
+        "ui_score": 94,
+        "mask_urls": [
+          "masks/hd/hd_wrinkle_nasolabial.png"
+        ],
+        "raw_score": "97.18466609716415",
+        "type": "hd_wrinkle",
+        "region": "nasolabial",
+        "url": null
+      },
+      {
+        "ui_score": 97,
+        "mask_urls": [
+          "masks/hd/hd_wrinkle_marionette.png"
+        ],
+        "raw_score": 99,
+        "type": "hd_wrinkle",
+        "region": "marionette",
+        "url": null
+      },
+      {
+        "ui_score": 69,
+        "mask_urls": [
+          "masks/hd/hd_wrinkle_whole.png"
+        ],
+        "raw_score": "59.741997718811035",
+        "type": "hd_wrinkle",
+        "region": "whole",
+        "url": null
+      },
+      {
+        "score": 71.125,
+        "type": "all",
+        "url": null
+      },
+      {
+        "score": 46,
+        "type": "skin_age",
+        "url": null
+      },
+      {
+        "mask_urls": [
+          "input.jpg"
+        ],
+        "type": "resize_image",
+        "url": null
+      }
+    ]
+  },
+  "task_status": "success"
+}

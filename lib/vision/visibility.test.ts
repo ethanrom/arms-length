@@ -106,6 +106,23 @@ describe("visibility distance (research 9.4, Standard A at 30 cd/m2)", () => {
     const darkFlat = targetVisibility(region("dark_circle", 20, -0.01, 0), scale, DEFAULT_VIEWING);
     expect(dark.distanceM).toBe(darkFlat.distanceM);
   });
+
+  it("redness is judged on its red-green contrast only: lighting luminance is ignored, on either basis", () => {
+    const dist = (lum: number, rg: number, basis?: "surround" | "counterfactual") =>
+      targetVisibility({ ...region("redness", 20, lum, rg), contrastBasis: basis }, scale, DEFAULT_VIEWING);
+    // A bright or shadowed zone with no colour is not visible as redness.
+    expect(dist(0.3, 0).distanceM).toBe(0);
+    expect(dist(-0.3, 0, "counterfactual").distanceM).toBe(0);
+    // With colour the luminance changes nothing, for both bases.
+    const colour = dist(0, 0.03).distanceM;
+    expect(colour).toBeGreaterThan(0);
+    for (const lum of [-0.3, 0.3]) {
+      expect(dist(lum, 0.03).distanceM).toBe(colour);
+      expect(dist(lum, 0.03, "counterfactual").distanceM).toBe(colour);
+    }
+    // Other regions still see luminance.
+    expect(targetVisibility(region("dark_circle", 20, -0.3), scale, DEFAULT_VIEWING).distanceM).toBeGreaterThan(0);
+  });
 });
 
 describe("visibility report", () => {

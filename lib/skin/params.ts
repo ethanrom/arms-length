@@ -3,6 +3,7 @@
  * "Heuristic" means chosen from the recorded masks/photos (internal/research/spike.md) and not taken
  * from a published model; none of these feed the vision model's parameters.
  */
+import type { ConcernId } from "../contracts";
 
 /** Components smaller than this (px) are not features: rendering specks (spike: age-spot p10 is 47 px). */
 export const MIN_SPOT_AREA_PX = 6;
@@ -104,6 +105,16 @@ export const MARKER_PARAMS: Record<"pore" | "acne", MarkerParams> = {
 };
 /** Acne prior diameter as a fraction of the marker (ring) diameter. */
 export const ACNE_PRIOR_FRACTION = 0.5;
+
+/**
+ * Concerns whose contrast is measured against a Skin Simulation of the same face without them (photo vs simulation)
+ * rather than against nearby skin. Dark circles and eye bags sit in the eye socket's shading, redness zones carry
+ * the lighting of the cheeks, and wrinkle folds include their own shadow: on every recorded face a surround gives
+ * dark circles -26% to -55%, redness zones +-30% luminance against a red-green contrast of only 0.01 to 0.03, and
+ * every one of them saturates the 10 m cap. Without a simulation the surround contrast is kept and the report
+ * rates these concerns low confidence (lib/vision/report.ts).
+ */
+export const COUNTERFACTUAL_CONCERNS: readonly ConcernId[] = ["dark_circle", "eye_bag", "wrinkle", "redness"];
 
 /**
  * A photo-measured pore wider than this is not an enlarged pore but another mark (a papule, a spot) that sits at a pore

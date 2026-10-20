@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c5",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:06.952Z",
+  "imageSha256": "085ca3668fa94068a04d5f168e8ad1237e590e5c0e487f49ff133e475b62b46a",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 5% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9353,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 707,
+    "totalTokens": 1389
+  },
+  "text": "{\"distance_m\": 1.7, \"reasoning_short\": \"Approximate estimate: a 5% contrast spot (threshold sensitivity about 20) under indoor lighting becomes detectable at roughly 3.5–4 arcmin, based on recalled Blackwell-type threshold data. A 2 mm spot subtends 4 arcmin at about 0.002 / 0.00116 ≈ 1.7 m. The true limit could plausibly range from about 1.5 to 2.5 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

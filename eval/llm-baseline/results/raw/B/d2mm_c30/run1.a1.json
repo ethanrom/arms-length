@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c30",
+  "run": 1,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:32:49.001Z",
+  "imageSha256": "34d52126d37cbe2326f0a37bb405558c0d29656ac49789c657bc323fb03c4b79",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 6406,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 495,
+    "totalTokens": 1177
+  },
+  "text": "{\"distance_m\": 7, \"reasoning_short\": \"Estimated from typical human visual limits, not measured. A 20/20 eye resolves about 1 arcminute (0.00029 rad). For a moderate-contrast (30%) spot under indoor light, the detection limit is roughly that size: a full-contrast dot is visible at about 0.5 arcmin, and lower contrast needs a larger angle (≈1/√contrast scaling). Distance ≈ 0.002 m / 0.00029 ≈ 6.9 m, so about 7 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

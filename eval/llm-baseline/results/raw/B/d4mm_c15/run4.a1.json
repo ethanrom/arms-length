@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d4mm_c15",
+  "run": 4,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:34:56.837Z",
+  "imageSha256": "aa270af26cae72a83f2d6892f3ca2dd41e8a9420695671a95220876afccdde41",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 4 mm across and 15% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9666,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 695,
+    "totalTokens": 1377
+  },
+  "text": "{\"distance_m\": 6, \"reasoning_short\": \"This is an estimate from contrast-threshold data, not an exact figure. Acuity alone does not set the limit here: a 15% contrast spot drops below detection threshold before it reaches 1 arcmin. Under indoor lighting, lab data on small dark disks (Blackwell-type) put the threshold near 4% contrast at about 3.6 arcmin. For targets this small, threshold contrast rises roughly as 1/size² (Ricco-type summation). Scaling to 15% contrast gives a threshold size of about 1.9 arcmin, or 5.4e-4 rad. A 4 mm spot subtends that angle at about 7 m. Allowing a margin for reliable detection outside ideal lab conditions brings this to roughly 5–7 m, so about 6 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

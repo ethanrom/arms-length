@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c5",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:03.628Z",
+  "imageSha256": "d0738fcf80e054793dbb17a7a91fee6fdf5ec865f18443ab602fe2c1485ec9f5",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 5% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 8903,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 667,
+    "totalTokens": 1349
+  },
+  "text": "{\"distance_m\": 1.2, \"reasoning_short\": \"At 5% contrast the spot must subtend about 3 arcmin to be seen. 1 mm ÷ 3 arcmin (8.7×10⁻⁴ rad) ≈ 1.15 m, so roughly 1.2 m. This is a rough estimate: a black spot (100% contrast) is detectable at about 0.5–1 arcmin. For small spots, detection depends on contrast × area (Ricco's law), so threshold diameter scales as 1/√contrast, about 4.5× larger at 5%.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

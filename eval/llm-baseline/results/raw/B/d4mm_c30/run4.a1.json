@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d4mm_c30",
+  "run": 4,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:35:06.531Z",
+  "imageSha256": "9ff338c88ac8158ac6927bd3ba494f5cbe47e8b2d19ff1ec37ca2e97fe5e8a19",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 4 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9921,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 626,
+    "totalTokens": 1308
+  },
+  "text": "{\"distance_m\": 7, \"reasoning_short\": \"A 30% contrast spot is below the high-contrast 1 arcmin acuity limit. Using Ricco's law (threshold contrast × area ≈ constant) with Blackwell-type indoor thresholds of about 100% contrast at 1 arcmin, it needs about 1.8–2 arcmin (≈5.5e-4 rad). Then 4 mm / 5.5e-4 rad ≈ 7 m, a rough estimate since the threshold data are approximate.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

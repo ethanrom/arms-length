@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c15",
+  "run": 3,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:34:13.360Z",
+  "imageSha256": "faed5a94143420f419fb58be576aa238b744700f56bed6131651de4a3a46ea0c",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 15% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9345,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 715,
+    "totalTokens": 1397
+  },
+  "text": "{\"distance_m\": 2, \"reasoning_short\": \"Estimated from Ricco's law and Blackwell-type threshold data, not measured. A spot this small and faint is limited by contrast, not by 20/20 acuity. For small targets, detection threshold is set by contrast × angular area, roughly C·α² ≈ 0.3–0.5 arcmin² under indoor light. With C = 0.15, the spot must subtend about 1.5–1.8 arcmin. A 1 mm spot subtends 1.8 arcmin at about 1.9 m, so the limit is roughly 2 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

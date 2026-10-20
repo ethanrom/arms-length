@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c30",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:22.819Z",
+  "imageSha256": "5a266cadb252b6178cdabe44b07359579da6c6fafcf07f750d650e3d4b874da1",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 8459,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 670,
+    "totalTokens": 1352
+  },
+  "text": "{\"distance_m\": 2.5, \"reasoning_short\": \"Estimate from small-spot detection, not acuity alone. A 1 mm spot is far below the eye's spatial summation area (Ricco's area, about 5–7 arcmin across). In that range, detectability depends on contrast × area. Assuming a large-target contrast threshold of about 1–2% gives a threshold of about 0.5 arcmin². At 30% contrast, the spot must cover about 1.5–2 arcmin², roughly 1.5 arcmin across. That puts the 1 mm spot at about 2–3 m; I take 2.5 m. For comparison, 20/20 acuity (1 arcmin) alone would give about 3.4 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

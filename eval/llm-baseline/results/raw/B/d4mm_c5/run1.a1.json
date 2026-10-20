@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d4mm_c5",
+  "run": 1,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:32:29.876Z",
+  "imageSha256": "bb015c3e6c3e98d74bfafdc4a1a394f9cb76002d75ed96e007e0dbdad2fefbbf",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 4 mm across and 5% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 10297,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 806,
+    "totalTokens": 1488
+  },
+  "text": "{\"distance_m\": 4, \"reasoning_short\": \"A 5% contrast spot needs to subtend about 3–4 arcmin to be seen under indoor lighting, based on Blackwell-type threshold data and Ricco's law for small spots. Taking about 3.5 arcmin (≈1.0e-3 rad), 4 mm / 1.0e-3 ≈ 4 m. Acuity alone (1 arcmin) would allow ~14 m, but the low contrast is the real limit.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

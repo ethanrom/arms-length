@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d4mm_c30",
+  "run": 3,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:34:29.177Z",
+  "imageSha256": "9ff338c88ac8158ac6927bd3ba494f5cbe47e8b2d19ff1ec37ca2e97fe5e8a19",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 4 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9955,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 749,
+    "totalTokens": 1431
+  },
+  "text": "{\"distance_m\": 12, \"reasoning_short\": \"This is a rough estimate from typical threshold data. A spot 4 mm wide with 30% contrast is a small, moderately low-contrast target. For tiny spots, detection depends on contrast times area (Ricco's law). At normal indoor light, published thresholds suggest a 30% spot needs to span about 1 to 1.2 arcmin, slightly more than a fully black dot would. 4 mm divided by about 1.15 arcmin (0.00033 rad) gives roughly 12 m. At the pure 1 arcmin acuity limit it would be about 13.7 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

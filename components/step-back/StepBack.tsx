@@ -145,15 +145,15 @@ export function StepBack({
             {ready &&
               concerns.map((c) => {
                 const o = thresholdLabelOpacity(distance, c.keyDistanceM);
-                if (o <= 0.01) return null;
+                if (o <= 0.25) return null; // the label stays at full contrast while it is shown
                 const faded = distance > c.keyDistanceM;
                 const toLeft = c.anchor.x / frame.width > 0.55;
                 return (
                   <div
                     key={c.id}
                     aria-hidden="true"
-                    className="pointer-events-none absolute"
-                    style={{ left: percent((c.anchor.x / frame.width) * 100), top: percent((c.anchor.y / frame.height) * 100), opacity: o }}
+                    className="tag-in pointer-events-none absolute"
+                    style={{ left: percent((c.anchor.x / frame.width) * 100), top: percent((c.anchor.y / frame.height) * 100) }}
                   >
                     <span
                       className={`absolute block h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-paper shadow-[0_0_0_1.5px_var(--ink)] ${faded ? "bg-transparent" : "bg-ink"}`}

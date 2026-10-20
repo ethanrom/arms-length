@@ -35,17 +35,17 @@ export function WhatIfReveal({ whatIf, view, src, alt, frame, anchors }: WhatIfR
           <div className="hidden sm:block">
             <DistanceAxisHeader anchors={anchors} />
           </div>
-          <dl className="mt-1">
+          <div className="mt-1">
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="eyebrow">{whatIf.beforeLabel}</dt>
-              <dd className="num font-mono text-[0.75rem]">visible to {formatDistance(beforeDistanceM)}</dd>
+              <span className="eyebrow">{whatIf.beforeLabel}</span>
+              <span className="num font-mono text-[0.75rem]">visible to {formatDistance(beforeDistanceM)}</span>
             </div>
             <DistanceBar maxM={beforeDistanceM} intervalM={[interval[0], interval[1]]} relief={false} tickM={anchors.map((a) => a.distanceM)} ghostM={afterDistanceM} />
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="eyebrow">{whatIf.afterLabel}</dt>
-              <dd className="num font-mono text-[0.75rem]">visible to {formatDistance(afterDistanceM)} (dashed)</dd>
+              <span className="eyebrow">{whatIf.afterLabel}</span>
+              <span className="num font-mono text-[0.75rem]">visible to {formatDistance(afterDistanceM)} (dashed)</span>
             </div>
-          </dl>
+          </div>
         </div>
       </div>
 

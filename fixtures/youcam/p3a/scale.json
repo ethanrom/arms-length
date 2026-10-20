@@ -1,0 +1,18 @@
+{
+  "mmPerPx": 0.175681,
+  "relSd": 0.03888,
+  "source": "iris",
+  "irisPx": 66.655,
+  "frame": {
+    "width": 1080,
+    "height": 1575
+  },
+  "eyesIrisPx": [
+    66.083,
+    67.227
+  ],
+  "faceWidthPx": 718.7,
+  "faceWidthMm": 126.3,
+  "interpupillaryMm": 60.2,
+  "generatedBy": "scripts/scale/fixtures.ts: MediaPipe Face Landmarker float16 v1, @mediapipe/tasks-vision 1.1.1, iris 11.71 mm"
+}

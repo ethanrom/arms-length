@@ -14,6 +14,7 @@ export const SHADES = path.join(DIR, "shades.json");
 export const CEILINGS: Record<string, number> = {
   trio: 40, // p1a analysis, foundation grid, what-ifs (34 planned)
   p5a: 16, // the "fine skin" face: one HD analysis
+  half: 32, // half-strength simulations for the "Worth it?" metric: 2 groups x 4 personas x 4 units (approved by integrator 2026-10-21)
   cf: 16, // counterfactual simulations: the same face without under-eye shading, eye bags, lines or redness (4 x 4)
 };
 
@@ -123,6 +124,25 @@ export function buildPlan(): Record<string, PlanItem> {
       action: "api_skin_simulation",
       stem: "sim_counterfactual",
     };
+  }
+  // Order matters for the ledger: the first six tasks (24 units) are booked to Demo personas, the last two to the Reserve.
+  const groups: Record<string, { stem: string; body: Record<string, number> }> = {
+    a: { stem: "sim_improve_a05", body: { dark_circle: 0.5, eye_bags: 0.5, wrinkle: 0.5, redness: 0.5 } },
+    b: { stem: "sim_improve_b05", body: { spots: 0.5, pores: 0.5, acne: 0.5 } },
+  };
+  for (const persona of ["p1a", "p2b", "p3a", "p5a"]) {
+    for (const [g, { stem, body }] of Object.entries(groups)) {
+      plan[`${persona}_sim_improve_${g}05`] = {
+        job: "half",
+        persona,
+        kind: "simulation",
+        slug: "v2.0/task/skin-simulation",
+        body,
+        units: 4, // 4 or fewer concerns is the 4-unit tier
+        action: "api_skin_simulation",
+        stem,
+      };
+    }
   }
   return plan;
 }

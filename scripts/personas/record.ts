@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import JSONbig from "json-bigint";
-import { CEILING_UNITS, FIXTURES, STATE, WORK, buildPlan, type PlanItem } from "./common";
+import { CEILINGS, FIXTURES, STATE, WORK, buildPlan, type PlanItem } from "./common";
 
 const HOST = "https://yce-api-01.makeupar.com";
 const KEY = process.env.YOUCAM_API_KEY;
@@ -35,12 +35,20 @@ interface TaskRec {
 }
 interface State {
   startedAt?: number;
+  /** Balance at the start of the first job (trio). */
   balanceStart?: number;
+  balanceStartByJob?: Record<string, number>;
   files: Record<string, string>;
   tasks: Record<string, TaskRec>;
   /** A submit whose outcome is unknown. Nothing is submitted while this is set. */
   pending?: { label: string; action: string; at: number };
 }
+
+const plan0 = buildPlan();
+/** Units already recorded for a job. Tasks recorded before jobs existed all belong to "trio". */
+const jobUnits = (st: State, job: string) =>
+  Object.entries(st.tasks).reduce((s, [label, t]) => s + ((plan0[label]?.job ?? "trio") === job ? t.units : 0), 0);
+const jobStart = (st: State, job: string) => st.balanceStartByJob?.[job] ?? (job === "trio" ? st.balanceStart : undefined);
 
 const readState = (): State =>
   fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : { files: {}, tasks: {} };
@@ -184,8 +192,8 @@ async function submit(label: string, item: PlanItem): Promise<void> {
   let st = readState();
   if (st.tasks[label]) return; // never pay twice
   if (st.pending) throw new Error(`unconfirmed submit for ${st.pending.label}: run --recover first`);
-  const spent = Object.values(st.tasks).reduce((s, t) => s + t.units, 0);
-  if (spent + item.units > CEILING_UNITS) throw new Error(`budget guard: ${spent} + ${item.units} units would pass the ${CEILING_UNITS} ceiling`);
+  const spent = jobUnits(st, item.job);
+  if (spent + item.units > CEILINGS[item.job]) throw new Error(`budget guard: ${spent} + ${item.units} units would pass the ${CEILINGS[item.job]} ceiling of job ${item.job}`);
   const fileId = await ensureFile(st, item.persona);
   const body = { src_file_id: fileId, ...item.body };
   st = readState();
@@ -290,8 +298,8 @@ async function crossCheck(): Promise<void> {
   }
   const bal = await balance();
   console.log(`  history rows sum to ${sum} units for ${Object.keys(st.tasks).length} recorded tasks; planned ${Object.values(st.tasks).reduce((s, t) => s + t.units, 0)}`);
-  console.log(`  balance now ${bal}${st.balanceStart !== undefined ? ` (start of job ${st.balanceStart}, drop ${st.balanceStart - bal})` : ""}`);
-  writeWork("ledger-check.json", { balance: bal, balanceStart: st.balanceStart, historySum: sum, tasks: out });
+  console.log(`  balance now ${bal}`);
+  writeWork("ledger-check.json", { balance: bal, balanceStart: st.balanceStart, balanceStartByJob: st.balanceStartByJob, historySum: sum, tasks: out });
 }
 
 // ---------------- main ----------------
@@ -299,13 +307,13 @@ async function main() {
   const args = process.argv.slice(2);
   const plan = buildPlan();
   if (args.includes("--plan")) {
-    let total = 0;
+    const total: Record<string, number> = {};
     for (const [label, p] of Object.entries(plan)) {
       const done = readState().tasks[label] ? " [recorded]" : "";
       console.log(`${label.padEnd(26)} ${String(p.units).padStart(2)} unit(s)  ${p.slug}  ${JSON.stringify(p.body).slice(0, 150)}${done}`);
-      total += p.units;
+      total[p.job] = (total[p.job] ?? 0) + p.units;
     }
-    console.log(`total planned ${total} units (ceiling ${CEILING_UNITS})`);
+    for (const [job, units] of Object.entries(total)) console.log(`job ${job}: ${units} units planned (ceiling ${CEILINGS[job]})`);
     return;
   }
   if (args.includes("--credit")) {
@@ -332,16 +340,22 @@ async function main() {
   let st = readState();
   if (st.pending && !(await recover())) process.exit(1);
   st = readState();
-  const have = Object.values(st.tasks).reduce((s, t) => s + t.units, 0);
   const todo = labels.filter((l) => !st.tasks[l]);
-  const add = todo.reduce((s, l) => s + plan[l].units, 0);
-  console.log(`labels: ${labels.join(", ")}\n  recorded so far ${have} units, this run adds ${add}, ceiling ${CEILING_UNITS}`);
-  if (have + add > CEILING_UNITS) throw new Error("would exceed the unit ceiling");
+  console.log(`labels: ${labels.join(", ")}`);
+  for (const job of new Set(labels.map((l) => plan[l].job))) {
+    const have = jobUnits(st, job);
+    const add = todo.filter((l) => plan[l].job === job).reduce((s, l) => s + plan[l].units, 0);
+    console.log(`  job ${job}: recorded so far ${have} units, this run adds ${add}, ceiling ${CEILINGS[job]}`);
+    if (have + add > CEILINGS[job]) throw new Error(`would exceed the unit ceiling of job ${job}`);
+  }
 
   const before = await balance();
-  if (st.balanceStart === undefined) {
-    st.balanceStart = before;
-    saveState(st);
+  for (const job of new Set(todo.map((l) => plan[l].job))) {
+    if (jobStart(st, job) === undefined) {
+      st.balanceStartByJob = { ...st.balanceStartByJob, [job]: before };
+      if (job === "trio") st.balanceStart = before;
+      saveState(st);
+    }
   }
   console.log(`  balance ${before}`);
 
@@ -361,9 +375,9 @@ async function main() {
       }
     }
     const now = await balance();
-    const start = readState().balanceStart!;
-    console.log(`  balance ${now} (drop since the job started: ${start - now})`);
-    if (start - now > CEILING_UNITS) throw new Error("balance dropped past the ceiling: stopping");
+    const start = jobStart(readState(), item.job)!;
+    console.log(`  balance ${now} (drop since job ${item.job} started: ${start - now})`);
+    if (start - now > CEILINGS[item.job]) throw new Error("balance dropped past the ceiling: stopping");
   }
   console.log("cross-check against credit history:");
   await crossCheck();

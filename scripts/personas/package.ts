@@ -69,10 +69,12 @@ async function main() {
   const plan = buildPlan();
   const state = fs.existsSync(path.join(WORK, "..", "state.json")) ? JSON.parse(fs.readFileSync(path.join(WORK, "..", "state.json"), "utf8")) : { tasks: {} };
 
-  await packageAnalysis("p1a_hd", "p1a");
-
   for (const [label, item] of Object.entries(plan)) {
-    if (item.kind === "analysis" || !state.tasks[label]?.done) continue;
+    if (!state.tasks[label]?.done) continue;
+    if (item.kind === "analysis") {
+      await packageAnalysis(label, item.persona);
+      continue;
+    }
     packageRender(label, item.persona, item.stem!, item.body); // VTO: version + effects; simulation: the strengths
   }
 

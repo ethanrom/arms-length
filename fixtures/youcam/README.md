@@ -6,11 +6,14 @@ live API. Load them with `lib/youcam/fixtures.ts`.
 
 ## Provenance
 
-- The three input photos are **synthetic faces generated in Gemini**. Nobody real is shown.
+- The four input photos are **synthetic faces generated in Gemini**. Nobody real is shown.
   - `p1a`: light olive skin with acne, 1080x1610. The raw 848x1264 photo was upscaled 1.274x (Lanczos3, JPEG q95) to a
-    1080 px short side; the face already fills about 72% of the width, so there is no crop (`scripts/personas/prepare-p1a.ts`).
+    1080 px short side; the face already fills about 72% of the width, so there is no crop (`scripts/personas/prepare-input.ts`).
   - `p2b`: deep brown skin, 1080x1341.
   - `p3a`: fair skin, 1080x1575.
+  - `p5a`: light East Asian skin with very subtle freckling, the "fine skin" relief example, 1080x1350. The raw 928x1152 photo had the
+    face at 55% of the width, so it was cropped to x 102, y 103, 732x915 (face about 70%) and upscaled 1.475x (Lanczos3, JPEG q95)
+    (`scripts/personas/prepare-input.ts`). HD analysis only: no renders recorded.
 - Everything else is the unedited output of the API for those photos. The JSON is trimmed as described below; the mask and
   render images are byte-identical to what was downloaded, and the inputs are the files that were uploaded.
 - Removed on purpose: task ids, file ids, presigned S3 URLs and signatures, the account's storage prefix. No API keys.
@@ -23,8 +26,8 @@ live API. Load them with `lib/youcam/fixtures.ts`.
 | Upload | `POST /s2s/v2.0/file` | one JPEG per persona |
 | Skin Analysis HD | `POST /s2s/v2.1/task/skin-analysis` | `dst_actions`: `hd_acne`, `hd_age_spot`, `hd_pore`, `hd_wrinkle`, `hd_dark_circle`, `hd_redness`, `hd_eye_bag`, `hd_texture`; `format: "json"` |
 | Skin Analysis SD (p2b only) | same endpoint | `dst_actions`: `acne`, `age_spot`, `pore`, `wrinkle`, `dark_circle_v2`, `redness`, `eye_bag`, `texture`; `format: "json"` |
-| Makeup VTO (all three) | `POST /s2s/v2.0/task/makeup-vto` | body `version: "1.0"` plus `effects` |
-| Skin Simulation (all three) | `POST /s2s/v2.0/task/skin-simulation` | body: concern strengths, 0 to 1 (`spots`, `redness`, `dark_circle`, `acne`) |
+| Makeup VTO (p1a, p2b, p3a) | `POST /s2s/v2.0/task/makeup-vto` | body `version: "1.0"` plus `effects` |
+| Skin Simulation (p1a, p2b, p3a) | `POST /s2s/v2.0/task/skin-simulation` | body: concern strengths, 0 to 1 (`spots`, `redness`, `dark_circle`, `acne`) |
 
 Results come from polling `GET /s2s/<same path>/<task_id>`. The persona job (the p1a analysis, the new grid renders and the
 what-ifs) was run by `scripts/personas/record.ts` and packaged by `scripts/personas/package.ts`.
@@ -46,6 +49,8 @@ p3a/
 p1a/
   input.jpg, analysis.hd.json, masks/hd/*.png (17), scale.json
   renders/                       foundation grid + simulation
+p5a/
+  input.jpg, analysis.hd.json, masks/hd/*.png (17), scale.json   (no renders)
 <persona>/renders/offsets.json   measured alignment of each render to input.jpg (see quirk 8)
 ```
 
@@ -121,17 +126,17 @@ persona folder, for example `masks/hd/hd_pore_whole.png`. For `resize_image` the
    - p1a: 1080x1610, `dx` 0, `dy` 0, no padding: the same size and no shift.
    The output size alone does not give the shift, so a size heuristic is wrong for p3a and p1a. Within a persona every render has
    the same geometry (sd 0.03 to 0.15 px, NCC at least 0.86). Simulations are pixel-aligned (dx, dy within 0.03 px) for all three.
-9. **Not recorded:** an SD run for p3a and p1a; concealer for p3a and p1a; simulations other than the three above; foundation
+9. **Not recorded:** an SD run for p3a, p1a and p5a; any render for p5a; concealer for p3a and p1a; simulations other than the three above; foundation
    below 25 (a skin_smooth 0/0 render without makeup is the input itself).
 
 ## Size
 
-About 40 MiB in total: renders 34.8 MiB (a VTO render is 1.6 to 1.8 MiB, a simulation 2.0 MiB), HD masks 3.8 MiB for three
-personas, SD masks 0.5 MiB, inputs 1.1 MiB, JSON 30 KB. The largest mask is 213 KB, so no mask was re-encoded. The renders
+About 40 MiB in total: renders 34.8 MiB (a VTO render is 1.6 to 1.8 MiB, a simulation 2.0 MiB), HD masks 4.7 MiB for four
+personas, SD masks 0.5 MiB, inputs 1.5 MiB, JSON 30 KB. The largest mask is 213 KB, so no mask was re-encoded. The renders
 were left byte-identical: palette quantisation would change pixel values, and a lossless re-encode saved little (none for VTO,
 about 24% for the simulation).
 
 ## scale.json (per persona)
 Iris-ruler scale for the analysed frame (`input.jpg`), computed by `scripts/scale/fixtures.ts` (`npx tsx scripts/scale/fixtures.ts p1a`
-for one persona) with MediaPipe Face Landmarker in headless Chrome. mm per px: p1a 0.1630, p2b 0.1699, p3a 0.1757. Fields are the `ScaleEstimate` contract (`mmPerPx`, `relSd`, `source: "iris"`, `irisPx`)
+for one persona) with MediaPipe Face Landmarker in headless Chrome. mm per px: p1a 0.1630, p2b 0.1699, p3a 0.1757, p5a 0.1754. Fields are the `ScaleEstimate` contract (`mmPerPx`, `relSd`, `source: "iris"`, `irisPx`)
 plus diagnostics. `mmPerPx` applies to the analysed (resized) frame, not the original photo.

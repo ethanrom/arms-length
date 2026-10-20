@@ -15,9 +15,9 @@ Contents: [1. The idea](#1-how-arms-length-uses-youcam) | [2. Endpoints](#2-ever
 Arm's Length answers one question: **from how far can another person see each thing in your skin analysis?**
 YouCam HD Skin Analysis finds the features: spots, pores, wrinkles, acne, dark circles, eye bags and redness.
 Our layer then measures each one in millimetres (the iris is the ruler) and in contrast, and applies published
-vision science to turn that into a distance. Makeup Virtual Try-On (foundation) is the "least makeup" lever:
+vision science to turn that into a distance. Makeup Virtual Try-On (foundation) is "the lightest touch" lever:
 we render a few coverage levels and re-measure each one. Skin Simulation is the "what if": the same photo with a
-concern turned down by half, and the difference between the two measured the same way ("Worth it?", section 7). Our
+concern simulated at half strength, and the difference between the two measured the same way ("Worth it?", section 7). Our
 layer also works on any YouCam Skin Analysis result you already have, through one drop-in route (section 8). No
 language model is involved. Same photo in, same numbers out.
 
@@ -313,7 +313,7 @@ recorded (`sim_counterfactual.png`) and the machinery is what the second use run
 **2. The half-strength improvement ("Worth it?").** Two calls per face at strength 0.5 (group A: `dark_circle`, `eye_bags`,
 `wrinkle`, `redness`; group B: `spots`, `pores`, `acne`; 4 units each). Each target is measured again as the difference
 between the photo and the simulation and run through the same visibility model, which gives the farthest distance at which
-the *change* would still be detectable. Pores: nobody notices; under-eye: across a room. 0.5 is our choice, not a
+the *change* would still be detectable. Pores: a small change; under-eye: a large soft area, so a small change reaches far. 0.5 is our choice, not a
 calibrated "realistic improvement": on the regions we checked it removes 55% to 64% of what 1.0 removes. How it is computed
 is in [MODEL.md](MODEL.md#10-worth-it-the-difference-an-improvement-would-make) and the table for every face is in
 [EVAL.md](EVAL.md#7-what-would-an-improvement-change-worth-it).

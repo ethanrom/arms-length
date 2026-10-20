@@ -57,6 +57,17 @@ describe("worthIt", () => {
     }
   });
 
+  it("carries the typical-observer twins of the difference distances, never above the bound", () => {
+    for (const w of run(full)) {
+      expect(w.differenceNominalProfile, w.concern).toHaveLength(PROFILE_DISTANCES_M.length);
+      expect(w.differenceNominalMaxDistanceM!, w.concern).toBeLessThanOrEqual(w.differenceMaxDistanceM);
+      w.differenceNominalProfile!.forEach((p, i) => expect(p.count).toBeLessThanOrEqual(w.differenceProfile[i].count));
+    }
+    // Nothing measured: no nominal fields either.
+    const [none] = run(half, ["acne"]);
+    expect(none.differenceNominalProfile).toBeUndefined();
+  });
+
   it("keeps the order asked for, only the concerns asked for, and reports an unmeasured concern as nothing", () => {
     expect(run(half, ["dark_circle", "pore"]).map((w) => w.concern)).toEqual(["dark_circle", "pore"]);
     const [only, none] = run(half, ["pore", "acne"]);

@@ -5,6 +5,8 @@
 import type { ConcernId } from "@/lib/contracts/concerns";
 
 export interface ConcernCopy {
+  /** The one name used for a card, a mask label or a share line: capitalised, plural. Everywhere in the product, no synonyms. */
+  title: string;
   singular: string;
   plural: string;
   /**
@@ -21,52 +23,63 @@ export interface ConcernCopy {
  * - age_spot is "dark spots": says what you see, and does not tie a mark to getting older.
  * - acne is "breakouts", not "blemishes". A blemish is literally a mark that spoils something; a breakout is
  *   something that happens and passes, which is also what the acne mask picks up (active spots).
- * - wrinkle is "lines": the everyday word, with no ageing subtext.
+ * - wrinkle is "fine lines": the everyday word, with no ageing subtext.
+ * - one noun per concern everywhere (expert panel, 2026-10-21): Dark spots, Breakouts, Pores, Fine lines, Under-eye shadows,
+ *   Under-eye puffiness, Redness. Never "age spots", "acne marks", "dark circles" or "eye bags" in copy; the linter catches
+ *   the first two. "Dark circles" stays a search and alt-text term only.
  */
 export const CONCERN_COPY: Record<ConcernId, ConcernCopy> = {
   pore: {
+    title: "Pores",
     singular: "pore",
     plural: "pores",
     agreement: "plural",
     explainer: "Pores are the tiny openings in the skin where natural oil reaches the surface. Everyone has them.",
   },
   age_spot: {
+    title: "Dark spots",
     singular: "dark spot",
     plural: "dark spots",
     agreement: "plural",
-    explainer: "Small flat patches a shade darker than the skin around them, more common after years of sun.",
+    explainer: "Small flat patches a shade darker than the skin around them.",
   },
   acne: {
+    title: "Breakouts",
     singular: "breakout",
     plural: "breakouts",
     agreement: "plural",
     explainer: "Small bumps or reddish spots that tend to come and go.",
   },
   wrinkle: {
-    singular: "line",
-    plural: "lines",
+    title: "Fine lines",
+    singular: "fine line",
+    plural: "fine lines",
     agreement: "plural",
-    explainer: "Creases where the skin folds as your face moves, most often around the eyes, mouth and forehead.",
+    explainer: "Fine creases where the skin folds as your face moves, most often around the eyes, mouth and forehead.",
   },
   dark_circle: {
+    title: "Under-eye shadows",
     singular: "under-eye shadow",
     plural: "under-eye shadows",
     agreement: "plural",
     explainer: "A darker tone in the skin under the eyes, shaped by how light falls on the face as well as by skin colour.",
   },
   eye_bag: {
+    title: "Under-eye puffiness",
     singular: "under-eye puffiness",
     plural: "under-eye puffiness",
     agreement: "singular",
     explainer: "A soft fullness under the eyes, where the surface curves out and catches light and shadow.",
   },
   redness: {
+    title: "Redness",
     singular: "redness",
     plural: "redness",
     agreement: "singular",
     explainer: "Areas where the skin looks pinker or redder than the skin around it, often on the cheeks and around the nose.",
   },
   texture: {
+    title: "Skin texture",
     singular: "skin texture",
     plural: "skin texture",
     agreement: "singular",
@@ -82,6 +95,11 @@ export function concernName(id: ConcernId, form: "singular" | "plural" = "plural
 export function concernNoun(id: ConcernId): string {
   const c = CONCERN_COPY[id];
   return c.agreement === "plural" ? c.plural : c.singular;
+}
+
+/** "Dark spots": the capitalised plural for a heading, a mask label or a share line. */
+export function concernTitle(id: ConcernId): string {
+  return CONCERN_COPY[id].title;
 }
 
 export function concernExplainer(id: ConcernId): string {

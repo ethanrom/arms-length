@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c30",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:26.914Z",
+  "imageSha256": "34d52126d37cbe2326f0a37bb405558c0d29656ac49789c657bc323fb03c4b79",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9996,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 800,
+    "totalTokens": 1482
+  },
+  "text": "{\"distance_m\": 3.5, \"reasoning_short\": \"This is a detection task, not a resolution task, so the limit is set by contrast and spot size rather than the 1 arcmin acuity figure. For small spots, total contrast and area trade off against each other. At indoor light levels, Blackwell-type threshold data are roughly: 1 arcmin needs about 100% contrast and 3.6 arcmin needs about 10%. Interpolating, a 30%-contrast spot needs to subtend about 2 arcmin (5.8e-4 rad). Distance ≈ 2 mm / 5.8e-4 rad ≈ 3.4 m, so about 3.5 m. Using the simple 1 arcmin rule instead would give about 6.9 m, which overstates the range for this lower contrast.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

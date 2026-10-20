@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d4mm_c30",
+  "run": 5,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:35:57.574Z",
+  "imageSha256": "9ff338c88ac8158ac6927bd3ba494f5cbe47e8b2d19ff1ec37ca2e97fe5e8a19",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 4 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 7204,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 524,
+    "totalTokens": 1206
+  },
+  "text": "{\"distance_m\": 14, \"reasoning_short\": \"A 4 mm spot with 30% contrast against the skin is a detection task, not a resolution task. Under Ricco's law, contrast × area is roughly constant at threshold. A 100%-contrast dark dot in indoor light is detectable at about 0.5 arcmin across. At 30% contrast the needed diameter is about 0.5/√0.3 ≈ 0.9–1 arcmin. Taking 1 arcmin: distance = 0.004 m / 2.9e-4 rad ≈ 14 m. This is an estimate, since real thresholds vary with the observer and lighting.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

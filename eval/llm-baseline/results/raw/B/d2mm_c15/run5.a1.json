@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c15",
+  "run": 5,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:35:41.541Z",
+  "imageSha256": "925b0a874c93fdea62daf92d4eeda7e7699749c5e3f2c4f8ecd1b6c5ef0d3286",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 15% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9646,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 759,
+    "totalTokens": 1441
+  },
+  "text": "{\"distance_m\": 3, \"reasoning_short\": \"Spot detection, not acuity, is the limit, and for spots this small threshold contrast scales roughly with 1/(angle²) (Ricco's law). From Blackwell-type data recalled from memory (not exact), a 1′ disc needs roughly 50% contrast at photopic levels. A 15% spot therefore needs about 1′ × √(0.5/0.15) ≈ 1.8–2′, a little more under dimmer indoor light. A 2 mm spot subtends 2′ (5.8e-4 rad) at about 3.4 m, so reliable detection is roughly 3 m. Treat this as an order-of-magnitude estimate, not a precise limit.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

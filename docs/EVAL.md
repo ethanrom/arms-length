@@ -11,11 +11,14 @@ page shows what backs that claim, in the order a sceptical reader would ask. How
 | Do the numbers behave sensibly? | Distances grow with size, contrast and margin; the lookup tables match direct computation | [3](#3-properties-the-tests-enforce) |
 | What does it say for typical features? | Table of nominal and bound distances | [4](#4-illustrative-distances) |
 | Can I check one prediction myself? | The walk-back self-test | [5](#5-check-one-prediction-yourself) |
-| Is it better than asking an AI? | Head-to-head pending | [6](#6-why-not-just-ask-an-ai) |
+| Is it better than asking an AI? | Claude Opus 5.5 is good at the general recipe (about 1.3x from our value when told size and contrast), but it gives a different number each time, breaks the size law and does not measure the face | [6](#6-why-not-just-ask-an-ai) |
+| What would an improvement be worth? | Per face and concern: a simulated change to pores is small for a typical viewer; a large soft area shows even a small change from far | [7](#7-what-would-an-improvement-change-worth-it) |
+| How much makeup is enough? | The knee of the foundation coverage curve, checked on renders | [8](#8-the-lightest-touch-on-the-recorded-renders) |
 
 **What is not validated yet:** there is no human study of distances for real skin features (ModelFest used calibrated
-test patterns on a display), the demo faces are synthetic, and YouCam's repeatability on the same photo has not been
-measured. [MODEL.md](MODEL.md#limitations) lists the limits of the claim.
+test patterns on a display), the demo faces are synthetic, YouCam's repeatability on the same photo has not been
+measured, the AI comparison has no ground truth on real faces, and the Skin Simulation behind "Worth it?" is YouCam's
+rendering, which we cannot inspect. [MODEL.md](MODEL.md#limitations) lists the limits of the claim.
 
 ## 1. ModelFest: human data
 
@@ -209,6 +212,7 @@ setting (45 cd/m^2, capped at 10 m).
 | Spot | 4 mm disk | 10% | 3.8 m | 5.8 m | 6.4 m |
 | Freckle | 2 mm disk | 15% | 2.5 m | 3.7 m | 4.0 m |
 | Papule | 5 mm disk | 15% | 6.2 m | 9.1 m | 10+ m |
+| Under-eye shadow (a large soft area) | 35 mm soft-edged disk | 3% | 11.5 m | 22.9 m | 10+ m |
 
 <!-- generated:distances:end -->
 
@@ -217,6 +221,10 @@ for a sharp one. A pore as a phone photo usually measures it (0.3 mm wide, dilut
 anyone but a very close viewer: its bound is about the length of a selfie. A sharp, strong pore (30% contrast) carries to
 just under 1 m. The same rules produce the nominal and bound values the app shows, and the Step-back picture applies the
 same thresholds.
+
+The last row is a large soft area, such as an under-eye shadow: even at 3% contrast it carries 11.5 m for an average
+observer and 22.9 m for the bound at 30 cd/m^2. That is why we do not lead with a distance for these (MODEL.md,
+section 9).
 
 ## 5. Check one prediction yourself
 
@@ -232,31 +240,245 @@ screen's true luminance is unknown.
 
 ## 6. Why not just ask an AI?
 
-**Status: head-to-head pending. This section is an outline; there are no results yet and none are implied.**
+A general-purpose vision language model gives a sensible generic answer to "from how far can people see this?" Is that a
+substitute for measuring? We ran the head-to-head: **Claude Opus 5.5 via Amazon Bedrock** (`global.anthropic.claude-opus-5-5`,
+Converse API) against the visibility model, in 65 real calls. Everything here comes from `eval/llm-baseline/`: the prompts
+(`prompts.md`), every raw reply (`results/raw/`), `results/summary.json` and the chart. The tables below are generated from
+that file.
 
-*The question.* A general-purpose vision language model will give a sensible generic answer to "from how far can people
-see this?" ("pores usually are not visible at conversation distance"). Is that a substitute for measuring?
+![Asking an AI versus measuring it: Claude Opus 5.5 answers against the model, for nine synthetic skin patches, and the doubling ratios](../eval/llm-baseline/results/chart.svg)
 
-*Planned design.*
+**The short version.** The AI is good at the general recipe, and we did not expect that. When we told it a spot's size and
+contrast, its median answer for each patch landed a typical **1.3x** from our average-observer distance. "An LLM gives
+nonsense" is not what we found. What it cannot do is what the product does: **measure the inputs on each face** (size,
+contrast and location, from the photo and YouCam's masks), **give the same answer every time**, and **scale lawfully**
+(a spot twice as wide is visible from twice as far).
 
-1. **Stimuli.** Synthetic skin patches with planted features of known size and contrast, and the three demo personas.
-   For the planted features the reference distances are the model's own nominal and bound values, which are exact for a
-   planted feature.
-2. **Ask.** Show the same image and the same prompt to a vision language model, five times each, and ask from how far each
-   marked feature stops being visible. No tools, no hints about the method.
-3. **Measure.** Error against the reference as a ratio (log scale); run-to-run spread over the five answers; whether the
-   ranking of features by distance is stable. Arm's Length has zero spread by construction: same photo, same numbers.
-4. **Report.** One chart and a short table in the README and the submission text, with the cost of the calls.
+### Setup
 
-*What it can and cannot show.* It tests whether an AI reproduces a number our model computes, so it speaks to repeatability,
-specificity (numbers pinned to exact locations) and the audit trail, not to whether the number is physically right. That
-rests on the ModelFest comparison above and the walk-back test. Each distance in the app opens a chain of receipts: YouCam
-found it here, it is X mm wide (iris ruler), it has Y% contrast, so at d it subtends Z arcmin and needs T% contrast.
+- 65 calls: 20 for Test A and 45 for Test B, with no retries. Each call is independent: one user message with one image and
+  one text block, no history. `maxTokens` was 4000 and nothing else was set (this model takes no sampling or thinking
+  parameters). The reply is JSON in plain text, parsed leniently.
+- **Cost:** 76,790 input and 40,155 output tokens, about **$1.11** at the list price we assumed ($4 per million input
+  tokens and $20 per million output tokens; Bedrock billing may differ). Test A cost $0.34 and Test B $0.77. No YouCam
+  units were used.
 
-*To do:* the stimuli generator, the prompt and the scoring script; the run (a few dollars of model calls, no YouCam units);
-the chart.
+### Test A: the four recorded faces (20 calls)
 
-## 7. Reproduce
+The four demo photos (synthetic faces), five independent asks each, with the interpupillary distance given as about 63 mm.
+The question asks for the **farthest** distance at which each concern could still be seen, so the matching number of ours
+is the bound of the farthest target. We also show how many of the face's targets are still in view at 1.5 m. "10+" is our
+10 m cap. Fine lines and redness are left out of this table: in the committed run our numbers for them were measured
+against a Skin Simulation, a basis we withdrew (MODEL.md, section 3), while the four concerns below do not depend on it.
+
+<!-- generated:llm-faces:start -->
+
+| Face | Concern | Claude: median (min to max), m | Run-to-run CV | Ours: farthest, bound (m) | Ours: in view at 1.5 m |
+| --- | --- | --- | --- | --- | --- |
+| p1a | Pores | 0.8 (0.6 to 1) | 22% | 4.1 | 150 of 450 |
+| p2b | Pores | 0.8 (0.6 to 1) | 25% | 4.2 | 342 of 649 |
+| p3a | Pores | 0.8 (0.6 to 1) | 22% | 3.1 | 81 of 221 |
+| p5a | Pores | 0.8 (0.6 to 0.8) | 15% | 3.1 | 55 of 250 |
+| p1a | Dark spots | 1.5 (1 to 1.5) | 17% | 10+ | 62 of 64 |
+| p2b | Dark spots | 4 (3.5 to 4) | 7% | 10+ | 88 of 89 |
+| p3a | Dark spots | 6 (5 to 6) | 8% | 10+ | 187 of 194 |
+| p5a | Dark spots | 2.5 (2.5 to 3) | 10% | 7.1 | 50 of 53 |
+| p1a | Breakouts | 3 (3 to 4) | 14% | 9.1 | 24 of 40 |
+| p2b | Breakouts | null in 5 of 5 runs | - | 5.1 | 13 of 18 |
+| p3a | Breakouts | null in 5 of 5 runs | - | 3.2 | 5 of 5 |
+| p5a | Breakouts | null in 5 of 5 runs | - | 2.5 | 3 of 3 |
+| p1a | Under-eye shadows | 4 (3 to 5) | 20% | 10+ | 2 of 2 |
+| p2b | Under-eye shadows | 6 (5 to 7) | 12% | 10+ | 2 of 2 |
+| p3a | Under-eye shadows | 3.5 (3 to 3.5) | 7% | 10+ | 3 of 3 |
+| p5a | Under-eye shadows | 4 (3 to 5) | 18% | 10+ | 2 of 2 |
+
+<!-- generated:llm-faces:end -->
+
+- **Consistency is better than we expected, and still not zero.** Over the 19 of 24 face-and-concern cells in which Claude
+  gave several numbers (including the two concerns not shown), the median run-to-run spread (CV) is 15% and the highest answer is a median 1.4x the lowest (worst 1.7x). One cell flips on
+  whether the concern exists at all: p1a fine lines was a number in 3 runs and null in 2.
+- **The numbers barely move with the face.** Pores are 0.8 m on every face. The share of pores in view at 1.5 m, by our
+  count, is 33%, 53%, 37% and 22% (p1a, p2b, p3a, p5a).
+- **Breakouts were null on three faces** where YouCam found 18, 5 and 3 of them (visible from at most 5.1, 3.2 and 2.5 m by
+  our bound). Claude is looking at pixels with no mask to guide it.
+- **Where they agree.** On p2b and p5a Claude answered "null" for redness in all five runs, and YouCam's redness mask is
+  empty on both faces. For under-eye shadows Claude says 3.5 to 6 m and ours is at the 10 m cap, which is expected for a
+  large soft area (MODEL.md, section 9).
+- **What it cannot return** is the thing the product shows: *which* marks, *where*, and *how many* at a given distance.
+  It gives one number per concern.
+- **Ours is identical on every run.** Computing the four faces twice in one process gives byte-identical results
+  (SHA-256 `528cec5a...` in `summary.json`). The model has no randomness: the same photo gives the same numbers.
+- **These are not contradictions in every case.** Our farthest-target number is a deliberately generous one-sided bound.
+  A lower answer can be right for a typical viewer. There is no ground truth for these faces, so Test A measures
+  consistency and sensitivity to the individual face, not who is right.
+
+### Test B: nine synthetic patches (45 calls)
+
+Nine 60 x 60 mm patches at 10 px/mm: a uniform skin tone (sRGB 208, 154, 124), a centred dark disk of 1, 2 or 4 mm and a
+Weber contrast of 5%, 15% or 30% in linear light, and a printed millimetre ruler along the bottom edge. Claude was **told
+the size and the contrast in words**, everything our model knows, five asks per patch.
+
+**Reference.** The Watson & Ahumada (2005) Standard A model, validated against ModelFest observers in section 1 (0.69 dB
+RMS over 41 stimuli), through `lib/vision` at the default indoor light (45 cd/m^2, 20/20). "Average observer" is margin
+0 and the bound is 6 dB. Two caveats: this is a model of human vision validated on lab patterns, not a measurement of
+people looking at these patches; and the step from ModelFest's 30 cd/m^2 to 45 cd/m^2 is an unverified heuristic
+(MODEL.md, limitation 6). The distances here are not capped at 10 m.
+
+<!-- generated:llm-patches:start -->
+
+| Spot | Our model: average observer to bound (m) | Claude: median (min to max), m | CV | Median over average-observer value | Answers inside our range |
+| --- | --- | --- | --- | --- | --- |
+| 1 mm, 5% | 0.66 to 1.1 | 0.9 (0.7 to 1.2) | 27% | 1.36x | 3 of 5 |
+| 2 mm, 5% | 1.3 to 2.1 | 2 (1.4 to 3) | 30% | 1.51x | 3 of 5 |
+| 4 mm, 5% | 2.6 to 4.3 | 4.5 (4 to 6) | 18% | 1.70x | 2 of 5 |
+| 1 mm, 15% | 1.4 to 2 | 1.7 (1.4 to 2) | 16% | 1.25x | 5 of 5 |
+| 2 mm, 15% | 2.7 to 4 | 3.5 (2.3 to 4) | 20% | 1.28x | 4 of 5 |
+| 4 mm, 15% | 5.5 to 8 | 6 (5 to 9) | 28% | 1.10x | 2 of 5 |
+| 1 mm, 30% | 2 to 2.9 | 3 (2.5 to 3.5) | 16% | 1.49x | 2 of 5 |
+| 2 mm, 30% | 4 to 5.8 | 5 (3.5 to 7) | 27% | 1.24x | 2 of 5 |
+| 4 mm, 30% | 8 to 12 | 7 (7 to 14) | 36% | 0.87x | 0 of 5 |
+
+<!-- generated:llm-patches:end -->
+
+- **Error factor.** Taking the median answer per patch, Claude is off the average-observer distance by a geometric mean of
+  **1.33x** (worst 1.70x, at 4 mm and 5%). Counting all 45 answers it is 1.39x. Eight of the nine medians are above the
+  average-observer value, so it leans toward "visible from farther". By the medians this is a decent estimate.
+- **In range.** **23 of 45 answers (51%)** fall between our average-observer distance and our bound; the other 22 miss it by
+  up to 1.4x. By any single ask, being inside the range is a coin flip.
+- **Run-to-run spread.** Five identical asks about one patch differ by 16% to 36% (CV, median 27%), and the highest of the
+  five is 1.4x to 2.1x the lowest. That spread is as wide as our whole average-observer-to-bound band (1.4x to 1.6x).
+  Ours has zero spread.
+
+**The size law.** Visibility depends only on the angle a feature subtends, so at a fixed contrast the farthest distance
+must double when the spot doubles. Our model gives exactly 2.0 for every doubling by construction (a test checks it).
+Claude's ratio of medians, against that ideal of 2.0:
+
+<!-- generated:llm-scaling:start -->
+
+| Contrast | Doubling | Our model | Claude: ratio of medians | Claude: lowest to highest over 25 answer pairs |
+| --- | --- | --- | --- | --- |
+| 5% | 1 to 2 mm | 2.0 | 2.22 | 1.17 to 4.29 |
+| 5% | 2 to 4 mm | 2.0 | 2.25 | 1.33 to 4.29 |
+| 15% | 1 to 2 mm | 2.0 | 2.06 | 1.15 to 2.86 |
+| 15% | 2 to 4 mm | 2.0 | 1.71 | 1.25 to 3.91 |
+| 30% | 1 to 2 mm | 2.0 | 1.67 | 1.00 to 2.80 |
+| 30% | 2 to 4 mm | 2.0 | 1.40 | 1.00 to 4.00 |
+
+<!-- generated:llm-scaling:end -->
+
+Averaged over the three contrasts, the ratio of medians is 1.98 for 1 to 2 mm and 1.79 for 2 to 4 mm, so the *average* is
+not far from 2. It is not stable: a single pair of answers can give anything from 1.0x to 4.3x, and at 30% contrast the
+medians rise by only 1.7x and 1.4x.
+
+**Why.** Claude's own short reasoning (stored in each raw reply) states the right recipe: a spot is visible when it subtends
+at least some threshold angle for its contrast, so the distance is size divided by that angle (28 of the 45 replies cite
+Ricco's law, 31 cite Blackwell thresholds, and 44 give an angle in arcminutes). A single threshold angle per contrast would
+give exact doubling. But the angle is recalled afresh each time: for the 4 mm, 30% spot it used about 2 arcmin in one ask
+(answer 7 m) and about 1.15 arcmin in another (12 m). That is the spread, and it is where the law breaks.
+
+### What this does and does not show
+
+- **Fairly put:** the AI knows the general recipe and, told the size and contrast, lands within about 1.3x. Our advantage is
+  not a better formula. It is that we **measure the inputs per face** (size in millimetres, contrast in linear light, where
+  each mark is), are **deterministic**, and **scale physically lawfully**. Those are what let the app say "most of your
+  pores are out of sight across a table" and open a chain of receipts, with the exact counts, for each number.
+- **One model, one prompt wording, five asks per item.** A different prompt, or the median of many asks, would shrink the
+  noise by roughly the square root of the number of asks. That costs N calls per number and still gives no per-feature
+  counts. We did not try it.
+- **Test B is the AI's best case:** an isolated disk, size and contrast supplied, one concern. It still misses our range on
+  half its answers.
+- **Not shown:** that the AI is wrong on real faces. There is no ground truth for them. The self-test (section 5) is how our
+  numbers get checked, not this comparison.
+- **Our side is a model too.** The claim is a one-sided bound, validated on ModelFest, not a prediction for any one person.
+- The AI's general advice ("pores usually are not visible at conversation distance") is often sensible, and fine to read.
+  It is not a per-face, per-feature measurement.
+
+## 7. What would an improvement change? (Worth it)
+
+For each face and concern: the distance at which the *difference* between the photo and YouCam's Skin Simulation at
+**half strength** stays detectable, through the same detector and the same 6 dB margin (how it is computed: MODEL.md,
+section 10). The table is generated by `scripts/docs/product-tables.ts`, which runs `worthIt` on the recorded simulations
+(`sim_improve_a05` for lines, under-eye shadows, puffiness and redness; `sim_improve_b05` for pores, dark spots and
+breakouts). Every count is "at most": a ceiling for an ideal observer looking straight at the mark. "10+" is the 10 m cap.
+Concerns YouCam found nothing for (redness on p2b and p5a) have no row.
+
+<!-- generated:worthit:start -->
+
+| Face | Concern | Found | Farthest change (m) | At most, at 1 m | at 1.5 m | at 2.5 m | at 4 m |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| p1a | Pores | 450 | 3.2 | 129 (29%) | 38 (8%) | 4 (1%) | 0 (0%) |
+| p1a | Dark spots | 64 | 9.8 | 47 (73%) | 38 (59%) | 22 (34%) | 8 (13%) |
+| p1a | Breakouts | 40 | 8.3 | 24 (60%) | 13 (33%) | 7 (18%) | 5 (13%) |
+| p1a | Fine lines | 93 | 10+ | 77 (83%) | 66 (71%) | 36 (39%) | 19 (20%) |
+| p1a | Under-eye shadows | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
+| p1a | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
+| p1a | Redness | 5 | 2.1 | 1 (20%) | 1 (20%) | 0 (0%) | 0 (0%) |
+| p2b | Pores | 649 | 2.6 | 230 (35%) | 91 (14%) | 1 (0%) | 0 (0%) |
+| p2b | Dark spots | 89 | 10+ | 60 (67%) | 55 (62%) | 31 (35%) | 14 (16%) |
+| p2b | Breakouts | 18 | 4.2 | 12 (67%) | 4 (22%) | 1 (6%) | 1 (6%) |
+| p2b | Fine lines | 188 | 10+ | 159 (85%) | 142 (76%) | 101 (54%) | 50 (27%) |
+| p2b | Under-eye shadows | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
+| p2b | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
+| p3a | Pores | 221 | 2.7 | 67 (30%) | 25 (11%) | 1 (0%) | 0 (0%) |
+| p3a | Dark spots | 194 | 6.9 | 136 (70%) | 92 (47%) | 33 (17%) | 8 (4%) |
+| p3a | Breakouts | 5 | 2.4 | 5 (100%) | 3 (60%) | 0 (0%) | 0 (0%) |
+| p3a | Fine lines | 207 | 10+ | 175 (85%) | 148 (71%) | 91 (44%) | 41 (20%) |
+| p3a | Under-eye shadows | 3 | 10+ | 3 (100%) | 3 (100%) | 3 (100%) | 3 (100%) |
+| p3a | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
+| p3a | Redness | 4 | 10+ | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) |
+| p5a | Pores | 250 | 2.6 | 42 (17%) | 11 (4%) | 1 (0%) | 0 (0%) |
+| p5a | Dark spots | 53 | 4.1 | 22 (42%) | 13 (25%) | 6 (11%) | 1 (2%) |
+| p5a | Breakouts | 3 | 2.1 | 3 (100%) | 1 (33%) | 0 (0%) | 0 (0%) |
+| p5a | Fine lines | 107 | 7.9 | 82 (77%) | 63 (59%) | 28 (26%) | 6 (6%) |
+| p5a | Under-eye shadows | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
+| p5a | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
+
+<!-- generated:worthit:end -->
+
+- **Pores: a small change.** A half-strength change to pores is detectable beyond 4 m on none of the four faces, on at most
+  4% to 14% of their pores across a table (1.5 m), and the farthest single pore reaches only 2.6 to 3.2 m.
+- **Dark spots, lines and breakouts are in between,** and depend on the face: at 4 m, at most 2% to 16% of dark spots, 6% to
+  27% of lines and 0 to 13% of breakouts could show a change.
+- **Under-eye shadows and puffiness: across a room.** The change is detectable at the 10 m cap on every recorded face. This
+  is the large-soft-area effect (MODEL.md, section 9): a small change over a large area reaches far. It says the area is
+  large, not that anyone would notice.
+- **What it is for.** It separates a change in the picture that a viewer could tell apart from one they could not. A
+  simulated softening of pores would not change what a typical person across the table sees; a simulated lightening of
+  under-eye shadows could. It says nothing about what any product or routine would do.
+
+## 8. The lightest touch on the recorded renders
+
+The least-coverage search (MODEL.md, section 11) run on the recorded foundation grid at 1.5 m, replayed from the fixtures
+(no live calls). Each cell is the share of the concern's marks still detectable at 1.5 m, by our bound, after that render.
+The search renders 50 first, then 75 and 100, and 25 only when 50 already reaches the knee, so no cell is shown for 25.
+"Least coverage" is the knee: the lowest coverage that achieves at least 80% of the reduction full coverage achieves. A
+small concern moves in big steps (p3a has 5 breakout markers, so steps of 20%). Dark circles and eye bags have no makeup
+lever.
+
+<!-- generated:least-makeup:start -->
+
+| Face | Concern | Found | No makeup | Coverage 50 | 75 | 100 | Least coverage |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| p1a | Dark spots | 64 | 97% | 83% | 69% | 56% | 100 (knee) |
+| p1a | Pores | 450 | 33% | 21% | 17% | 12% | 100 (knee) |
+| p1a | Breakouts | 40 | 60% | 38% | 30% | 30% | 75 (knee) |
+| p2b | Dark spots | 89 | 99% | 93% | 89% | 84% | 100 (knee) |
+| p2b | Pores | 649 | 53% | 33% | 26% | 22% | 75 (knee) |
+| p2b | Breakouts | 18 | 72% | 44% | 33% | 28% | 75 (knee) |
+| p3a | Dark spots | 194 | 96% | 92% | 82% | 71% | 100 (knee) |
+| p3a | Pores | 221 | 37% | 27% | 24% | 21% | 100 (knee) |
+| p3a | Breakouts | 5 | 100% | 100% | 40% | 20% | 100 (knee) |
+
+<!-- generated:least-makeup:end -->
+
+- **No concern reached "at most 10% detectable across a table" at any coverage,** so every row reports a knee, not a
+  guarantee of hiding.
+- **Foundation does most for pores and breakouts,** and least for dark spots: pores fall from 33%, 53% and 37% to 12%, 22%
+  and 21% at full coverage, while dark spots fall from 97%, 99% and 96% to 56%, 84% and 71%.
+- The foundation lever was measured on one face in the spike (spot contrast -30% at coverage 50 and -45% at 100;
+  [YOUCAM.md](YOUCAM.md#4-integration-notes-we-learned-the-hard-way), note 5), and the grid uses one cheek-matched shade per face.
+
+## 9. Reproduce
 
 ```bash
 npm ci
@@ -264,10 +486,14 @@ npx tsx eval/run.ts --detector=standard     # about 10 s; rewrites eval/results/
 npm test                                    # all the checks above, offline (recorded YouCam responses only)
 
 npx tsx scripts/vision/build-tables.ts --check    # rebuild the lookup tables and report the difference
-npx tsx scripts/docs/eval-tables.ts --write       # refresh the generated tables in this file
+npx tsx scripts/docs/eval-tables.ts --write       # refresh the generated tables in this file (ModelFest, distances, the AI comparison)
 npx tsx scripts/docs/params-table.ts --write      # refresh the generated tables in MODEL.md
+npx tsx scripts/docs/product-tables.ts --write    # refresh the worth-it and least-makeup tables (about a minute; --check to verify)
+
+npx tsx eval/llm-baseline/run.ts --offline        # rebuild the AI comparison's summary and chart from its cached replies (no network)
 ```
 
 `npm run eval -- --detector=standard` does the same as the first command. Running without `--detector=standard` uses the
 stand-in detector described above, which is not the product model. The output is deterministic: running it again leaves
-the committed files unchanged.
+the committed files unchanged. Calling the model again for the AI comparison (`npm run spike -- eval/llm-baseline/run.ts`)
+needs AWS credentials and spends a few dollars; the cached replies are committed so nobody has to.

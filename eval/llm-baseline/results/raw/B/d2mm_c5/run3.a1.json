@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c5",
+  "run": 3,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:34:07.049Z",
+  "imageSha256": "085ca3668fa94068a04d5f168e8ad1237e590e5c0e487f49ff133e475b62b46a",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 5% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 10506,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 745,
+    "totalTokens": 1427
+  },
+  "text": "{\"distance_m\": 2, \"reasoning_short\": \"Rough estimate: about 2 m. 20/20 acuity (resolving about 1 arcmin) applies only to high-contrast detail. A small spot at only 5% contrast must look larger before it can be detected. By Ricco's law, contrast × area stays roughly constant for tiny targets. Under typical indoor (photopic) lighting, a 100% contrast spot is detectable at about 0.8 arcmin. At 5% contrast the threshold size grows by about √20, to roughly 3.5 arcmin (about 1 mrad). This approximately agrees with my recollection of Blackwell-type threshold data, though those figures are not checked. The 2 mm spot subtends 1 mrad at 2 mm / 0.001 ≈ 2 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

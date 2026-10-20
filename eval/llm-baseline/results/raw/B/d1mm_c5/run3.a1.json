@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c5",
+  "run": 3,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:47.031Z",
+  "imageSha256": "d0738fcf80e054793dbb17a7a91fee6fdf5ec865f18443ab602fe2c1485ec9f5",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 5% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 19990,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 696,
+    "totalTokens": 1378
+  },
+  "text": "{\"distance_m\": 0.7, \"reasoning_short\": \"This is an estimate. A faint, small spot is limited by contrast, not by 20/20 acuity (about 1 arcmin), which would allow about 3.4 m. For tiny targets, threshold contrast multiplied by spot area stays roughly constant (Ricco's law). Assuming a high-contrast spot of about 1 arcmin is just detectable, a 5% spot must be about sqrt(20), or roughly 4.5 arcmin, wide. Allowing for dimmer indoor light raises this to about 5 arcmin. A 1 mm spot subtends 5 arcmin at about 0.001 / (5 × 2.91e-4), which is roughly 0.7 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

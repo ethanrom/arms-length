@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c5",
+  "run": 5,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:35:31.109Z",
+  "imageSha256": "085ca3668fa94068a04d5f168e8ad1237e590e5c0e487f49ff133e475b62b46a",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 5% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 7743,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 617,
+    "totalTokens": 1299
+  },
+  "text": "{\"distance_m\": 3, \"reasoning_short\": \"Roughly 3 m (estimate, about 2–4 m). At 5% contrast under indoor light, a small disk needs to subtend about 2–3 arcmin to be detected (Blackwell-type and contrast-sensitivity data). The 2 mm spot subtends about 2.3 arcmin at 3 m. This is an approximation from standard data, not an exact limit.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

@@ -70,4 +70,25 @@ describe("profile in the visibility report", () => {
     const circles = report.concerns.find((c) => c.concern === "dark_circle")!;
     expect(circles.profile!.every((p) => p.count === 2)).toBe(true);
   });
+
+  it("also carries a nominal profile (average observer), counted the same way and never above the bound", () => {
+    const report = buildVisibilityReport(measurements, DEFAULT_VIEWING);
+    for (const c of report.concerns) {
+      const nominals = report.targets.filter((t) => t.concern === c.concern).map((t) => t.nominalM as number);
+      expect(c.nominalProfile).toHaveLength(PROFILE_DISTANCES_M.length);
+      expect(c.nominalMaxDistanceM).toBe(Math.max(...nominals));
+      expect(c.nominalMaxDistanceM!).toBeLessThanOrEqual(c.maxDistanceM);
+      c.nominalProfile!.forEach((p, i) => {
+        expect(p.distanceM).toBe(c.profile![i].distanceM);
+        expect(p.count).toBe(nominals.filter((x) => x >= p.distanceM).length);
+        expect(p.count).toBeLessThanOrEqual(c.profile![i].count);
+      });
+    }
+    // The 6 dB margin is what separates the two: with none, the profiles coincide.
+    const flat = buildVisibilityReport(measurements, { ...DEFAULT_VIEWING, marginDb: 0 });
+    for (const c of flat.concerns) expect(c.nominalProfile).toEqual(c.profile);
+    // The farthest spot differs between observers by roughly the margin's distance factor.
+    const spots = report.concerns.find((c) => c.concern === "age_spot")!;
+    expect(spots.nominalMaxDistanceM!).toBeLessThan(spots.maxDistanceM);
+  });
 });

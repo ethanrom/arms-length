@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c30",
+  "run": 5,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:35:47.659Z",
+  "imageSha256": "5a266cadb252b6178cdabe44b07359579da6c6fafcf07f750d650e3d4b874da1",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9886,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 778,
+    "totalTokens": 1460
+  },
+  "text": "{\"distance_m\": 3.4, \"reasoning_short\": \"The spot behaves as a small, low-contrast target, so detection rather than resolution sets the limit. Below roughly 6 arcmin, Ricco's law makes threshold contrast fall roughly with target area. My approximate recollection of Blackwell-type indoor data is that a dark disc about 0.6 arcmin across needs near-100% contrast. A 30% spot then needs about 0.6/sqrt(0.3), or roughly 1.1 arcmin, so about 1 arcmin. A 1 mm spot subtends 1 arcmin (0.00029 rad) at about 3.4 m. This is an estimate, not a precise threshold.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

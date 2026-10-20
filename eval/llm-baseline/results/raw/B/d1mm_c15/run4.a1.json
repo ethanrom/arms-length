@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c15",
+  "run": 4,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:34:55.270Z",
+  "imageSha256": "faed5a94143420f419fb58be576aa238b744700f56bed6131651de4a3a46ea0c",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 15% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 9003,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 671,
+    "totalTokens": 1353
+  },
+  "text": "{\"distance_m\": 1.4, \"reasoning_short\": \"Estimate only: there is no single exact cutoff. Small low-contrast spots obey Ricco's law, where threshold contrast × spot area is roughly constant. Assume a ~100% contrast dot is just detectable at ~1 arcmin under indoor light. Then a 15% contrast spot needs about 6–7× the area, or ~2.5 arcmin across (~7.3e-4 rad). A 1 mm spot subtends that angle at 1 mm / 7.3e-4 ≈ 1.4 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d4mm_c30",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:29.204Z",
+  "imageSha256": "9ff338c88ac8158ac6927bd3ba494f5cbe47e8b2d19ff1ec37ca2e97fe5e8a19",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 4 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 8433,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 595,
+    "totalTokens": 1277
+  },
+  "text": "{\"distance_m\": 7, \"reasoning_short\": \"A rough estimate of about 7 m, based on approximate threshold rules rather than measured data. A 30% contrast spot needs a larger visual angle than the 1 arcmin a 20/20 eye resolves at full contrast. Using Ricco's law (contrast × area roughly constant for tiny spots) and Blackwell-style thresholds for indoor light, it needs about 2 arcmin (0.00058 rad). A 4 mm spot subtends that at 4 mm ÷ 0.00058 ≈ 6.9 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

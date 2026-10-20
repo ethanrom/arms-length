@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d2mm_c15",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:33:16.336Z",
+  "imageSha256": "925b0a874c93fdea62daf92d4eeda7e7699749c5e3f2c4f8ecd1b6c5ef0d3286",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 2 mm across and 15% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 10551,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 797,
+    "totalTokens": 1479
+  },
+  "text": "{\"distance_m\": 3.5, \"reasoning_short\": \"This is an estimate, not an exact value. For tiny spots, the eye sums light over area, so the threshold contrast times the spot's area stays roughly constant. Under indoor lighting, a black dot (100% contrast) is detectable at roughly 0.7 arcmin across. At 15% contrast the threshold diameter scales by 1/√0.15, giving about 1.8–2 arcmin. That is broadly consistent with Blackwell's disc-detection data. A 2 mm spot spans 2 arcmin (≈5.8×10⁻⁴ rad) at about 0.002 / 5.8×10⁻⁴ ≈ 3.4 m, so roughly 3–4 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

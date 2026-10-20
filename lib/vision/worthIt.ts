@@ -9,6 +9,7 @@
  * because a few percent of contrast over 3 to 4 cm is detectable from far away.
  *
  * Use a half-strength simulation: strength 1.0 beautifies beyond natural (spike, 2026-10-21).
+ * Words: it is a simulation of a possible change in the picture, never what a product or routine would do (lib/copy/worthit.ts).
  */
 import type { ConcernId, Measurements, RgbaImage, WhatIf } from "../contracts";
 import { DEFAULT_VIEWING, type ViewingConditions } from "../contracts/vision";
@@ -16,9 +17,17 @@ import { applyCounterfactual } from "../skin/counterfactual";
 import type { MeasureGeometry, RenderOffset } from "../skin/remeasure";
 import { buildVisibilityReport, detectabilityProfile } from "./report";
 
-/** The "Worth it?" fields of a `WhatIf`, plus how many targets the distances are over. */
+/**
+ * The "Worth it?" fields of a `WhatIf`, plus how many targets the distances are over. The nominal twins (average
+ * observer, margin 0) are what a visible-side sentence reads ("a typical person could see the difference from ...");
+ * the bound fields back the "wouldn't see it beyond ..." sentences. Proposed for the `WhatIf` contract.
+ */
 export type WorthIt = Pick<WhatIf, "concern"> &
-  Required<Pick<WhatIf, "differenceMaxDistanceM" | "differenceMedianDistanceM" | "differenceProfile">> & { targetCount: number };
+  Required<Pick<WhatIf, "differenceMaxDistanceM" | "differenceMedianDistanceM" | "differenceProfile">> & {
+    targetCount: number;
+    differenceNominalMaxDistanceM?: number;
+    differenceNominalProfile?: NonNullable<WhatIf["differenceProfile"]>;
+  };
 
 export interface WorthItOptions {
   viewing?: ViewingConditions;
@@ -54,6 +63,7 @@ export function worthIt(
       differenceMaxDistanceM: c?.maxDistanceM ?? 0,
       differenceMedianDistanceM: c?.medianDistanceM ?? 0,
       differenceProfile: c?.profile ?? detectabilityProfile([]),
+      ...(c?.nominalProfile ? { differenceNominalMaxDistanceM: c.nominalMaxDistanceM, differenceNominalProfile: c.nominalProfile } : {}),
     };
   });
 }

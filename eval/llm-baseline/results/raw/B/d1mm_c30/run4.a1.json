@@ -1,0 +1,24 @@
+{
+  "test": "B",
+  "item": "d1mm_c30",
+  "run": 4,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-opus-5-5",
+  "region": "ap-southeast-1",
+  "at": "2026-10-20T16:35:04.300Z",
+  "imageSha256": "5a266cadb252b6178cdabe44b07359579da6c6fafcf07f750d650e3d4b874da1",
+  "imageFormat": "png",
+  "prompt": "The image is a 60 mm x 60 mm patch of skin with a millimetre ruler printed along its bottom edge.\nThe dark spot is 1 mm across and 30% darker than the surrounding skin. Lighting is normal indoor. For an observer with perfect 20/20 vision looking straight at it, what is the farthest distance in metres at which the spot can still be seen?\nReply with JSON only, in this shape: {\"distance_m\": n, \"reasoning_short\": \"...\"}",
+  "latencyMs": 12263,
+  "stopReason": "end_turn",
+  "usage": {
+    "inputTokens": 682,
+    "outputTokens": 650,
+    "totalTokens": 1332
+  },
+  "text": "{\"distance_m\": 3.5, \"reasoning_short\": \"This is an estimate from typical small-spot detection data, not an exact value. Detecting a small spot is a contrast-times-area task (Ricco's law), not a resolution task like reading an eye chart. Under normal indoor light, a fully black dot on a light background can be noticed at roughly 0.5 arcmin. At 30% contrast it needs about 1/0.3 times the area, so about 1/sqrt(0.3) times the diameter. That gives roughly 0.9 to 1 arcmin. A 1 mm spot at 1 arcmin (0.00029 rad) is seen from about 1 mm / 0.00029 ≈ 3.4 m, and at 0.9 arcmin from about 3.8 m. So the spot stops being visible at roughly 3.5 m.\"}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

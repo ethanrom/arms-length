@@ -73,4 +73,6 @@ export interface WhatIf {
   differenceMaxDistanceM?: number;
   differenceMedianDistanceM?: number;
   differenceProfile?: { distanceM: number; count: number; fraction: number }[];
+  differenceNominalProfile?: { distanceM: number; count: number; fraction: number }[];
+  differenceNominalMaxDistanceM?: number;
 }

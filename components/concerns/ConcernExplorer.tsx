@@ -1,8 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { formatDistance } from "@/app/_lib/axis";
 import type { ConcernView } from "@/components/results/derive";
+import type { ScaleEstimate, ViewingConditions } from "@/lib/contracts";
 import { ReceiptTrigger } from "@/components/receipt/ReceiptSheet";
 import type { DistanceAnchor, OutOfScopeNote, ReceiptEntry } from "@/components/results/types";
 import { AnnotatedFace, cropAround } from "./AnnotatedFace";
@@ -17,13 +17,16 @@ interface ConcernExplorerProps {
   anchors: DistanceAnchor[];
   outOfScope: OutOfScopeNote[];
   receipts: ReceiptEntry[];
-  reliefWithinM: number;
+  /** How "out of sight" is decided, in a sentence (from lib/copy's rule). */
+  reliefNote: string;
+  scale: ScaleEstimate;
+  viewing: ViewingConditions;
 }
 
-export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, receipts, reliefWithinM }: ConcernExplorerProps) {
-  // Start with the farthest-carrying concern open, so the face is annotated from the first glance.
-  const farthest = views.length ? views[views.length - 1].id : null;
-  const [openId, setOpenId] = useState<string | null>(farthest);
+export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, receipts, reliefNote, scale, viewing }: ConcernExplorerProps) {
+  // Start with the most visible concern open, so the face is annotated from the first glance.
+  const first = views.find((v) => !v.relief) ?? views[0];
+  const [openId, setOpenId] = useState<string | null>(first ? first.id : null);
   const open = views.find((v) => v.id === openId) ?? null;
   const relief = views.filter((v) => v.relief);
   const visible = views.filter((v) => !v.relief);
@@ -54,13 +57,14 @@ export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, r
       </div>
 
       <div>
+        <p className="mb-4 max-w-[34rem] text-[0.8125rem] leading-relaxed text-muted">{reliefNote}</p>
         <div className="mb-1 hidden sm:block">
           <DistanceAxisHeader anchors={anchors} />
         </div>
 
         <Group
           id="relief"
-          heading={`Mostly out of sight by ${formatDistance(reliefWithinM)}`}
+          heading="Mostly out of sight"
           note="Nobody needs to look at these twice."
           views={relief}
           openId={openId}
@@ -68,20 +72,24 @@ export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, r
           tickM={tickM}
           anchors={anchors}
           receipts={receipts}
+          scale={scale}
+          viewing={viewing}
           src={src}
           alt={alt}
           frame={frame}
         />
         <Group
           id="visible"
-          heading={`Still visible past ${formatDistance(reliefWithinM)}`}
-          note="Ordered by how far each one carries."
+          heading="Still in view"
+          note="Most visible first."
           views={visible}
           openId={openId}
           onToggle={toggle}
           tickM={tickM}
           anchors={anchors}
           receipts={receipts}
+          scale={scale}
+          viewing={viewing}
           src={src}
           alt={alt}
           frame={frame}
@@ -120,12 +128,14 @@ interface GroupProps {
   tickM: number[];
   anchors: DistanceAnchor[];
   receipts: ReceiptEntry[];
+  scale: ScaleEstimate;
+  viewing: ViewingConditions;
   src: string;
   alt: string;
   frame: { width: number; height: number };
 }
 
-function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, receipts, src, alt, frame }: GroupProps) {
+function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, receipts, scale, viewing, src, alt, frame }: GroupProps) {
   if (views.length === 0) return null;
   return (
     <section aria-labelledby={`group-${id}`} className="mt-10 first:mt-0">
@@ -144,7 +154,9 @@ function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, rec
             onToggle={() => onToggle(v.id)}
             tickM={tickM}
             anchors={anchors}
-            receipt={receipts.find((r) => r.receipt.concern === v.id)}
+            receipt={receipts.find((r) => r.concern === v.id)}
+            scale={scale}
+            viewing={viewing}
             src={src}
             alt={alt}
             frame={frame}
@@ -155,6 +167,12 @@ function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, rec
   );
 }
 
+/** The scale-uncertainty whisker, carried from the bound over to the distance the bar is drawn at. */
+function scaledInterval([lo, hi]: [number, number], at: number, of: number): [number, number] {
+  const k = of > 0 ? at / of : 1;
+  return [lo * k, hi * k];
+}
+
 interface CardProps {
   view: ConcernView;
   open: boolean;
@@ -162,12 +180,14 @@ interface CardProps {
   tickM: number[];
   anchors: DistanceAnchor[];
   receipt: ReceiptEntry | undefined;
+  scale: ScaleEstimate;
+  viewing: ViewingConditions;
   src: string;
   alt: string;
   frame: { width: number; height: number };
 }
 
-function ConcernCard({ view, open, onToggle, tickM, receipt, src, alt, frame }: CardProps) {
+function ConcernCard({ view, open, onToggle, tickM, receipt, scale, viewing, src, alt, frame }: CardProps) {
   const panelId = useId();
   const { copy, visibility, relief } = view;
 
@@ -189,9 +209,7 @@ function ConcernCard({ view, open, onToggle, tickM, receipt, src, alt, frame }: 
               />
               <span className="eyebrow !text-ink-soft">{copy.title}</span>
               <span className="eyebrow ml-auto flex items-center gap-2 !tracking-[0.1em]">
-                <span className="num">
-                  {view.profile ? "Half gone by" : relief ? "Gone by" : "Up to"} {formatDistance(view.profile ? view.keyDistanceM : visibility.maxDistanceM)}
-                </span>
+                <span className="num">{copy.keyLine}</span>
                 <span
                   aria-hidden="true"
                   className="relative block h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110"
@@ -208,16 +226,29 @@ function ConcernCard({ view, open, onToggle, tickM, receipt, src, alt, frame }: 
           </button>
         </h4>
 
-        <div className="mt-4">
-          {view.profile ? (
-            <SurvivalCurve profile={view.profile} total={view.total} medianM={view.keyDistanceM} relief={relief} tickM={tickM} />
-          ) : (
-            <DistanceBar maxM={visibility.maxDistanceM} intervalM={visibility.intervalM} relief={relief} tickM={tickM} />
-          )}
-        </div>
-        {receipt && (
+        {/* A large soft area states no distance, so it gets neither a bar nor a curve. */}
+        {!view.soft && (
+          <div className="mt-4">
+            {view.profile ? (
+              <SurvivalCurve profile={view.profile} nominalProfile={view.nominalProfile} medianM={view.keyDistanceM} relief={relief} tickM={tickM} />
+            ) : (
+              <DistanceBar maxM={view.keyDistanceM} intervalM={scaledInterval(visibility.intervalM, view.keyDistanceM, visibility.maxDistanceM)} relief={relief} tickM={tickM} />
+            )}
+          </div>
+        )}
+        {receipt && view.targets.some((t) => t.id === receipt.targetId) && (
           <div className="mt-1">
-            <ReceiptTrigger entry={receipt} title={copy.title} src={src} alt={alt} frame={frame} />
+            <ReceiptTrigger
+              entry={receipt}
+              visibility={visibility}
+              target={view.targets.find((t) => t.id === receipt.targetId)!}
+              scale={scale}
+              viewing={viewing}
+              title={copy.title}
+              src={src}
+              alt={alt}
+              frame={frame}
+            />
           </div>
         )}
 

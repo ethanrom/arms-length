@@ -23,6 +23,7 @@ import { createYouCamClient, type ChargeEvent, type YouCamClient } from "./clien
 import { MAKEUP_UNITS, analysisUnits, simulationUnits, type Engine } from "./costs";
 import { YouCamError, engineError, gateError } from "./errors";
 import { liveFileRef, parseFileRef } from "./fileref";
+import { signTaskId, verifyTaskToken } from "./tasktokens";
 import { decodeImageDataUrl, sniffImage, type ImageInfo } from "./imageinfo";
 import { normalizeAnalysis, resizeImageSource } from "./normalize";
 import { buildRender } from "./render";
@@ -48,11 +49,26 @@ export interface AnalysisInput extends AnalysisRequest {
   engine?: Engine;
 }
 
+/**
+ * Live responses carry the YouCam tasks they created as opaque signed tokens, so the browser can ask for them to be
+ * deleted when the visitor leaves (cleanup below). Proposed contract fields: AnalysisResponse.taskIds and RenderResult.taskIds.
+ */
+export type WithTasks<T> = T & { taskIds?: string[] };
+
+export interface CleanupResult {
+  /** Tasks YouCam confirmed deleted. */
+  deleted: number;
+  /** Tokens that were not ours, or deletes YouCam refused or could not be reached for. */
+  failed: number;
+}
+
 export interface YouCamService {
-  analysis(body: AnalysisInput, accessCode: string | null): Promise<AnalysisResponse>;
-  makeup(body: MakeupRequest, accessCode: string | null): Promise<RenderResponse>;
-  simulate(body: SimulateRequest, accessCode: string | null): Promise<RenderResponse>;
+  analysis(body: AnalysisInput, accessCode: string | null): Promise<WithTasks<AnalysisResponse>>;
+  makeup(body: MakeupRequest, accessCode: string | null): Promise<WithTasks<RenderResponse>>;
+  simulate(body: SimulateRequest, accessCode: string | null): Promise<WithTasks<RenderResponse>>;
   status(accessCode: string | null): Promise<StatusResponse>;
+  /** Deletes the YouCam tasks (and their files and outputs) a session created. Free; needs a configured access code. */
+  cleanup(tokens: string[], accessCode: string | null): Promise<CleanupResult>;
 }
 
 /** Decoded and checked upload: JPEG or PNG, at most 10 MB, with a readable header. */
@@ -83,7 +99,9 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
 
 export function createService(deps: ServiceDeps): YouCamService {
   const ledger = deps.ledger ?? writeLedger;
-  const deleteTasks = () => deps.env().YOUCAM_DELETE_TASKS === "1";
+  // On unless explicitly "0": deleting at the end of a session is what the privacy line promises.
+  const deleteTasks = () => deps.env().YOUCAM_DELETE_TASKS !== "0";
+  const secret = () => deps.env().YOUCAM_API_KEY ?? "";
 
   async function gate(code: string | null, kind: GuardKind, cost: number): Promise<Extract<Decision, { ok: true }>> {
     const decision = await deps.guard.decide(code, kind, { cost, reserve: true });
@@ -91,28 +109,27 @@ export function createService(deps: ServiceDeps): YouCamService {
     return decision;
   }
 
-  /** Runs one paid operation: client wiring, ledger, daily-slot release and optional task cleanup. */
-  async function paid<T>(
+  /**
+   * Runs one paid operation: client wiring, ledger, daily-slot release. The tasks it created come back as signed tokens
+   * (not deleted here: deleting a task also removes its input file, which later renders of the session still use).
+   */
+  async function paid<T extends object>(
     decision: Extract<Decision, { ok: true }>,
     run: (client: YouCamClient, track: (taskId: string) => void) => Promise<T>,
-  ): Promise<T> {
+  ): Promise<WithTasks<T>> {
     let submitted = false;
-    let taskId: string | undefined;
-    let client: YouCamClient | undefined;
+    const tasks: string[] = [];
     try {
-      client = deps.createClient((event) => {
+      const client = deps.createClient((event) => {
         submitted = true;
         deps.guard.noteSpend(event.units);
         ledger({ action: event.action, units: event.units, codeHash: decision.codeHash, maybe: event.maybe });
       });
-      return await run(client, (id) => {
-        taskId = id;
-      });
+      const value = await run(client, (id) => tasks.push(id));
+      return deleteTasks() && tasks.length > 0 ? { ...value, taskIds: tasks.map((id) => signTaskId(secret(), id)) } : value;
     } catch (error) {
       if (!submitted) decision.release();
       throw error;
-    } finally {
-      if (client && taskId && deleteTasks()) await client.deleteTask(taskId);
     }
   }
 
@@ -186,6 +203,22 @@ export function createService(deps: ServiceDeps): YouCamService {
         const image = await client.download(run.url);
         return buildRender("simulation", image, ref.frame, run.units, "live");
       });
+    },
+
+    async cleanup(tokens, code) {
+      if (!deleteTasks() || !deps.guard.accepts(code)) return { deleted: 0, failed: 0 };
+      const verified = tokens.map((token) => verifyTaskToken(secret(), token));
+      const mine = [...new Set(verified.filter((id): id is string => id !== null))];
+      const foreign = verified.filter((id) => id === null).length;
+      let client: YouCamClient;
+      try {
+        client = deps.createClient();
+      } catch {
+        return { deleted: 0, failed: mine.length + foreign };
+      }
+      const results = await Promise.allSettled(mine.map((id) => client.deleteTask(id)));
+      const deleted = results.filter((r) => r.status === "fulfilled" && r.value).length;
+      return { deleted, failed: foreign + mine.length - deleted };
     },
 
     async status(code) {

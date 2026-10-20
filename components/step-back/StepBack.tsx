@@ -17,6 +17,7 @@ import {
   toUnit,
 } from "@/app/_lib/axis";
 import type { ScaleEstimate, ViewingConditions } from "@/lib/contracts";
+import { stepBackCounter } from "@/lib/copy";
 import { statusAt, type ConcernView } from "@/components/results/derive";
 import type { DistanceAnchor } from "@/components/results/types";
 import { DistanceTape } from "./DistanceTape";
@@ -96,7 +97,8 @@ export function StepBack({
       : (below ?? above)?.label ?? "";
 
   const visibleNow = concerns.filter((c) => statusAt(c, distance).state === "most");
-  const valueText = `${spokenDistance(distance)}${near ? `, ${near.label.toLowerCase()}` : ""}. ${visibleNow.length} of ${concerns.length} concerns still visible.`;
+  const valueText = `${spokenDistance(distance)}${near ? `, ${near.label.toLowerCase()}` : ""}. ${visibleNow.length} of ${concerns.length} concerns can still be picked out.`;
+  const marked = concerns.filter((c) => !c.soft);
 
   const [num, unit] = formatDistance(distance).split(" ");
   const statusIndex = Math.min(statusLines.length - 1, Math.floor(frames.progress * statusLines.length));
@@ -143,7 +145,7 @@ export function StepBack({
 
             {/* concern labels, strongest as the slider crosses each threshold */}
             {ready &&
-              concerns.map((c) => {
+              marked.map((c) => {
                 const o = thresholdLabelOpacity(distance, c.keyDistanceM);
                 if (o <= 0.25) return null; // the label stays at full contrast while it is shown
                 const faded = distance > c.keyDistanceM;
@@ -219,33 +221,23 @@ export function StepBack({
                 const st = statusAt(c, distance);
                 const on = st.state !== "none";
                 return (
-                  <li key={c.id} className="flex items-center gap-3 py-3">
-                    <StateDot state={st.state} />
-                    <span className={`serif text-[1.125rem] leading-snug transition-colors duration-300 ${on ? "text-ink" : "text-muted"}`}>{c.copy.title}</span>
-                    {c.profile ? (
-                      <>
-                        <span aria-hidden="true" className="ml-auto hidden h-1 w-14 bg-rule sm:block">
-                          <span className="block h-1 bg-ink" style={{ width: percent((st.count! / st.total) * 100) }} />
-                        </span>
-                        <span className="num min-w-[6.75rem] text-right text-[0.8125rem] text-muted max-sm:ml-auto">
-                          <span className={on ? "text-[0.9375rem] text-ink" : ""}>{st.count}</span> of {st.total}
-                          <span className="sr-only"> detectable</span>
-                        </span>
-                      </>
-                    ) : (
-                      <span className="num ml-auto text-right text-[0.8125rem] text-muted">
-                        <span className={on ? "text-ink" : ""}>{on ? "Visible" : "Out of sight"}</span>
-                        <span className="ml-2 hidden sm:inline">
-                          {c.relief ? "gone by" : "up to"} {formatDistance(c.visibility.maxDistanceM)}
-                        </span>
+                  <li key={c.id} className="py-3">
+                    <div className="flex items-center gap-3">
+                      <StateDot state={st.state} />
+                      <span className={`serif text-[1.125rem] leading-snug transition-colors duration-300 ${on ? "text-ink" : "text-muted"}`}>{c.copy.title}</span>
+                      <span aria-hidden="true" className="ml-auto block h-1 w-14 bg-rule">
+                        <span className="block h-1 bg-ink" style={{ width: percent(st.outOfSight * 100) }} />
                       </span>
-                    )}
+                    </div>
+                    <p data-counter={c.id} className="num mt-1 pl-[1.375rem] text-[0.8125rem] leading-snug text-muted">
+                      {stepBackCounter(c.visibility, distance)}
+                    </p>
                   </li>
                 );
               })}
             </ul>
             <p className="mt-4 max-w-sm text-[0.8125rem] leading-relaxed text-muted">
-              Counts are marks an observer with perfect eyesight could still pick out from here. {rendererNote}
+              The bar fills as more of each concern drops out of sight for a typical sharp-eyed person looking right at it. {rendererNote}
             </p>
           </div>
 
@@ -286,7 +278,7 @@ export function StepBack({
           onChange={(d) => setDistance(clampDistance(d))}
           onUserInput={stopIntro}
           anchors={anchors}
-          marks={concerns.map((c) => ({ id: c.id, label: c.copy.title, distanceM: c.keyDistanceM }))}
+          marks={marked.map((c) => ({ id: c.id, label: c.copy.title, distanceM: c.keyDistanceM }))}
           valueText={valueText}
           label="Step back: viewing distance"
         />

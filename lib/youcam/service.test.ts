@@ -40,7 +40,7 @@ function youcam(world: World): FakeHandler {
   };
 }
 
-function setup(world: Partial<World> = {}, overrides: Partial<GuardConfig> = {}) {
+function setup(world: Partial<World> = {}, overrides: Partial<GuardConfig> = {}, env: Record<string, string> = {}) {
   const state: World = { analysisPoll: ANALYSIS, putStatus: 200, ...world };
   const fake = fakeFetch(youcam(state));
   const make = (onCharge?: Parameters<typeof createYouCamClient>[0]["onCharge"]) =>
@@ -50,7 +50,7 @@ function setup(world: Partial<World> = {}, overrides: Partial<GuardConfig> = {})
     config: () => ({ codes: [CODE], killSwitch: false, unitFloor: 100, analysisDailyCap: 2, renderDailyCap: 10, ...overrides }),
     getBalance: () => make().credit(),
   });
-  const service = createService({ env: () => ({}), createClient: make, guard, ledger });
+  const service = createService({ env: () => env, createClient: make, guard, ledger });
   return { service, ledger, calls: fake.calls, state };
 }
 
@@ -79,6 +79,34 @@ describe("service (live path, fake YouCam)", () => {
       ["skin_analysis_hd", 16, hashCode(CODE), false],
       ["makeup_vto", 1, hashCode(CODE), false],
     ]);
+  });
+
+  test("live responses carry signed task tokens; nothing is deleted until cleanup, which honours only its own tokens", async () => {
+    const { service, calls } = setup({}, {}, { YOUCAM_API_KEY: "test-key-123" });
+    const analysis = await service.analysis({ image: pngDataUrl(1080, 1341) }, CODE);
+    const render = await service.makeup({ fileRef: analysis.fileRef, effects: [{ category: "foundation", palettes: [{ coverageIntensity: 50 }] }] }, CODE);
+    expect(analysis.taskIds).toHaveLength(1);
+    expect(render.taskIds).toHaveLength(1);
+    expect(analysis.taskIds![0]).not.toBe(TASK_ID); // signed, not the raw id
+    const deletes = () => calls.filter((c) => c.url.endsWith("/s2s/v2.0/task/delete"));
+    expect(deletes()).toHaveLength(0);
+
+    const forged = `${TASK_ID}.${"0".repeat(24)}`;
+    expect(await service.cleanup([...analysis.taskIds!, ...render.taskIds!, forged], "wrong-code")).toEqual({ deleted: 0, failed: 0 });
+    expect(deletes()).toHaveLength(0);
+
+    // The fake service gives every task the same id: one delete, one forged token refused.
+    expect(await service.cleanup([...analysis.taskIds!, ...render.taskIds!, forged], CODE)).toEqual({ deleted: 1, failed: 1 });
+    expect(deletes().map((c) => c.body)).toEqual([{ task_id: TASK_ID }]);
+    expect(deletes()[0].headers.authorization).toBe("Bearer test-key-123");
+  });
+
+  test("YOUCAM_DELETE_TASKS=0 switches the session-end delete off: no tokens, no delete calls", async () => {
+    const { service, calls } = setup({}, {}, { YOUCAM_DELETE_TASKS: "0" });
+    const analysis = await service.analysis({ image: pngDataUrl(1080, 1341) }, CODE);
+    expect(analysis.taskIds).toBeUndefined();
+    expect(await service.cleanup(["a.b"], CODE)).toEqual({ deleted: 0, failed: 0 });
+    expect(calls.some((c) => c.url.endsWith("/task/delete"))).toBe(false);
   });
 
   test("refusals are free: no code, too-small photo, wrong format and oversize make no YouCam call", async () => {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { KioskMock } from "@/components/brands/KioskMock";
-import { getMockResults } from "@/lib/mock/personas";
+import { loadDemoResults } from "@/lib/integration/demo";
 
 export const metadata: Metadata = {
   title: "For brands",
@@ -22,7 +22,7 @@ const GETS = [
 ];
 
 export default function ForBrandsPage() {
-  const demo = getMockResults("p2b");
+  const demo = loadDemoResults("p2b");
   const concerns = (demo?.report.concerns ?? []).slice(-2).map((c) => ({
     concern: c.concern,
     targetCount: c.targetCount,
@@ -67,7 +67,7 @@ export default function ForBrandsPage() {
           </div>
         </div>
         <p className="max-w-sm border-l border-ink pl-5 text-[0.9375rem] leading-relaxed text-ink-soft lg:justify-self-end">
-          Layout shell. The endpoint shape follows the drop-in contract; the numbers below come from a demo face and are illustrative.
+          The endpoint shape follows the drop-in contract. The numbers below were measured on a recorded synthetic face.
         </p>
       </div>
 

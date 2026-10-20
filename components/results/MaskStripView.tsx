@@ -3,7 +3,7 @@ import type { MaskStrip } from "./types";
 
 /**
  * "What YouCam detected": the raw masks from the analysis, laid over the photo. They are the visible starting
- * input for everything measured below.
+ * input for everything measured below. Each thumbnail is the photo with that concern's transparent overlay on top.
  */
 export function MaskStripView({ strip, compact }: { strip: MaskStrip; compact?: boolean }) {
   const w = compact ? 68 : 92;
@@ -20,14 +20,17 @@ export function MaskStripView({ strip, compact }: { strip: MaskStrip; compact?: 
             <figure>
               <div className="stage relative overflow-hidden" style={{ width: w, height: h }}>
                 <Image
-                  src={m.image}
+                  src={strip.photo}
                   alt=""
-                  width={w * 2}
-                  height={h * 2}
+                  fill
+                  unoptimized
                   sizes={`${w}px`}
-                  className="h-full w-full object-cover"
-                  style={m.note ? { opacity: 0.55 } : undefined}
+                  className="object-cover"
+                  style={{ objectPosition: "50% 38%", opacity: m.note ? 0.55 : 1 }}
                 />
+                {!m.note && (
+                  <Image src={m.image} alt="" fill unoptimized sizes={`${w}px`} className="object-cover" style={{ objectPosition: "50% 38%" }} />
+                )}
               </div>
               <figcaption className="mt-1.5 max-w-[5.75rem] text-[0.6875rem] leading-tight text-ink-soft">
                 {m.label}

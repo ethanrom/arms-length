@@ -8,21 +8,28 @@ import { ShareCardPreview } from "@/components/share/ShareCardPreview";
 import { StepBack } from "@/components/step-back/StepBack";
 import { MaskStripView } from "./MaskStripView";
 import { Section } from "@/components/ui/Section";
-import { WhatIfReveal } from "@/components/whatif/WhatIfReveal";
+import { WorthItReveal } from "@/components/whatif/WorthItReveal";
 import { deriveConcernViews } from "./derive";
+import type { ConcernId } from "@/lib/contracts";
 import type { ResultsData } from "./types";
 
-export function ResultsExperience({ data }: { data: ResultsData }) {
+interface ResultsExperienceProps {
+  data: ResultsData;
+  /** Live sessions: run the coverage try-ons for a concern on request. */
+  onRunCoverage?: (concern: ConcernId) => void;
+  /** Where "back" goes: the face chooser for demo faces, the start of the flow for a live session. */
+  back?: { href: string; label: string };
+}
+
+export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", label: "Choose another face" } }: ResultsExperienceProps) {
   const views = useMemo(() => deriveConcernViews(data), [data]);
   const { persona, frame, alt, measurements, report, anchors } = data;
 
-  const coverageView = data.coverage ? views.find((v) => v.id === data.coverage?.concern) : undefined;
-  const whatIfView = data.whatIf ? views.find((v) => v.id === data.whatIf?.whatIf.concern) : undefined;
   const chapters = [
     { id: "step-back", label: "Step back" },
     { id: "what-others-see", label: "What others see" },
-    ...(data.coverage ? [{ id: "make-it-disappear", label: "Make it disappear" }] : []),
-    ...(data.whatIf ? [{ id: "what-if", label: "What if" }] : []),
+    ...(data.coverage ? [{ id: "make-it-disappear", label: data.coverage.title }] : []),
+    ...(data.worthIt ? [{ id: "worth-it", label: "Worth it?" }] : []),
     { id: "share", label: "Share" },
   ];
 
@@ -30,8 +37,8 @@ export function ResultsExperience({ data }: { data: ResultsData }) {
     <main id="main" tabIndex={-1} className="outline-none" style={{ "--stage": data.stageGrey } as CSSProperties}>
       <header className="page pb-6 pt-5 md:pb-8 md:pt-6">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2">
-          <Link href="/try" className="link inline-flex min-h-11 items-center gap-2 text-[0.875rem] text-muted hover:text-ink">
-            <span aria-hidden="true">&larr;</span> Choose another face
+          <Link href={back.href} className="link inline-flex min-h-11 items-center gap-2 text-[0.875rem] text-muted hover:text-ink">
+            <span aria-hidden="true">&larr;</span> {back.label}
           </Link>
           <nav aria-label="On this page" className="-mx-5 w-[calc(100%+2.5rem)] overflow-x-auto px-5 sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
             <ol className="flex gap-x-6 whitespace-nowrap sm:flex-wrap font-mono text-[0.6875rem] uppercase tracking-[0.1em]">
@@ -61,6 +68,20 @@ export function ResultsExperience({ data }: { data: ResultsData }) {
             <p className="mt-2 max-w-[30rem] text-[0.8125rem] leading-relaxed text-muted">{data.provenance}</p>
           </div>
         </div>
+        <p className="serif mt-6 max-w-3xl text-[clamp(1.25rem,1rem+1vw,1.75rem)] leading-snug" style={{ fontWeight: 380 }}>
+          {data.summary}
+        </p>
+        <p className="mt-3 max-w-3xl text-[0.8125rem] leading-relaxed text-muted">
+          {data.disclaimers.estimate}
+          {data.disclaimers.synthetic ? ` ${data.disclaimers.synthetic}` : ""}
+        </p>
+        {data.notices.length > 0 && (
+          <ul className="mt-4 max-w-3xl space-y-1 border-l-2 border-ink pl-4 text-[0.875rem] leading-relaxed text-ink-soft" aria-label="Notes about this reading">
+            {data.notices.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        )}
       </header>
 
       <div className="page pb-8 md:pb-10">
@@ -108,7 +129,9 @@ export function ResultsExperience({ data }: { data: ResultsData }) {
           anchors={anchors}
           outOfScope={data.outOfScope}
           receipts={data.receipts}
-          reliefWithinM={data.reliefWithinM}
+          reliefNote={data.reliefNote}
+          scale={measurements.scale}
+          viewing={report.viewing}
         />
       </Section>
 
@@ -116,37 +139,38 @@ export function ResultsExperience({ data }: { data: ResultsData }) {
         <Section
           id="make-it-disappear"
           index="03"
-          eyebrow={`For ${data.coverage.title.toLowerCase()}`}
+          eyebrow="Checked on a virtual try-on"
           title={
             <>
-              Make it <em className="font-normal italic">disappear</em> at a distance you choose
+              The lightest <em className="font-normal italic">touch</em>
             </>
           }
           lede={data.coverage.lede}
         >
           <MakeItDisappear
             coverage={data.coverage}
-            view={coverageView}
+            views={views}
             src={persona.image}
             frame={frame}
             scale={measurements.scale}
             viewing={report.viewing}
+            onRun={onRunCoverage}
           />
         </Section>
       )}
 
-      {data.whatIf && (
+      {data.worthIt && (
         <Section
-          id="what-if"
+          id="worth-it"
           index={data.coverage ? "04" : "03"}
-          eyebrow={`For ${data.whatIf.title.toLowerCase()}`}
+          eyebrow={data.worthIt.credit.slice(1, -1)}
           title={
             <>
-              What <em className="font-normal italic">if</em>
+              Worth <em className="font-normal italic">it?</em>
             </>
           }
         >
-          <WhatIfReveal whatIf={data.whatIf} view={whatIfView} src={persona.image} alt={alt} frame={frame} anchors={anchors} />
+          <WorthItReveal worthIt={data.worthIt} src={persona.image} alt={alt} frame={frame} anchors={anchors} disclaimer={data.disclaimers.simulation} />
         </Section>
       )}
 
@@ -155,7 +179,7 @@ export function ResultsExperience({ data }: { data: ResultsData }) {
         index={String(chapters.length).padStart(2, "0")}
         eyebrow="The comforting ones travel well"
         title="Share what others see"
-        lede="Three lines and a face. The card is the same markup that will become the preview image when it is shared."
+        lede="Three lines and a face, in the same words as above."
       >
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-16">
           <ShareCardPreview data={data.share} imageSrc={persona.image} />

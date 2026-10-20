@@ -79,6 +79,18 @@ describe("YouCam client", () => {
     expect(sd.calls.find((c) => c.method === "POST")!.body).toMatchObject({ dst_actions: SD_ACTIONS });
   });
 
+  test("deleteTask posts {task_id} to /s2s/v2.0/task/delete and says whether YouCam accepted it", async () => {
+    const { client, calls } = setup((call) => (call.url.endsWith("/s2s/v2.0/task/delete") ? json({ status: 200 }) : new Response("no", { status: 599 })));
+    expect(await client.deleteTask(TASK_ID)).toBe(true);
+    const sent = calls.find((c) => c.url.endsWith("/s2s/v2.0/task/delete"))!;
+    expect(sent.method).toBe("POST");
+    expect(sent.body).toEqual({ task_id: TASK_ID });
+    expect(sent.headers.authorization).toBe("Bearer test-key-123");
+
+    const refused = setup(() => json({ status: 400, error_code: "InvalidTaskId" }, 400));
+    expect(await refused.client.deleteTask(TASK_ID)).toBe(false);
+  });
+
   test("429 on a submit is retried, 400 and 401 are not", async () => {
     let attempts = 0;
     const throttled = youcam([OUTPUT], () =>

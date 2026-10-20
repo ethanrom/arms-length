@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { POST as analysis } from "@/app/api/youcam/analysis/route";
+import { POST as cleanup } from "@/app/api/youcam/cleanup/route";
 import { POST as makeup } from "@/app/api/youcam/makeup/route";
 import { POST as simulate } from "@/app/api/youcam/simulate/route";
 import { GET as status } from "@/app/api/youcam/status/route";
@@ -21,7 +22,23 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("app/api/youcam routes (replay, no network)", () => {
+  test("status in replay mode says replay_only, whatever the code", async () => {
+    for (const headers of [{}, { "x-access-code": "nope" }, { "x-access-code": "judge-alpha" }] as Record<string, string>[]) {
+      const res = await status(new Request("http://localhost/api/youcam/status", { headers }));
+      expect(await res.json()).toEqual({ live: false, reason: "replay_only" } satisfies StatusResponse);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+    }
+  });
+
+  test("in replay mode an uploaded photo is answered with the p2b recording, labelled replay", async () => {
+    const res = await analysis(post("analysis", { image: "data:image/png;base64,AAAA" }));
+    expect(res.status).toBe(200);
+    const a = (await res.json()) as AnalysisResponse;
+    expect(a).toMatchObject({ fileRef: "persona:p2b", source: "replay", unitsCharged: 0 });
+  });
+
   test("status explains why live is unavailable and never echoes the code", async () => {
+    vi.stubEnv("YOUCAM_MODE", "live");
     const none = await status(new Request("http://localhost/api/youcam/status"));
     expect(await none.json()).toEqual({ live: false, reason: "no_code" } satisfies StatusResponse);
     expect(none.headers.get("cache-control")).toBe("no-store");
@@ -29,7 +46,7 @@ describe("app/api/youcam routes (replay, no network)", () => {
     const wrong = await status(new Request("http://localhost/api/youcam/status", { headers: { "x-access-code": "nope" } }));
     expect(await wrong.json()).toEqual({ live: false, reason: "bad_code" });
 
-    // A valid code in replay mode: live can never run, which reads as switched off.
+    // A valid code but no API key: live can never run, which reads as switched off.
     const valid = await status(new Request("http://localhost/api/youcam/status", { headers: { "x-access-code": "judge-alpha" } }));
     expect(await valid.json()).toEqual({ live: false, reason: "kill_switch" });
   });
@@ -47,6 +64,17 @@ describe("app/api/youcam routes (replay, no network)", () => {
     expect(((await s.json()) as RenderResponse).source).toBe("replay");
   });
 
+  test("cleanup needs a configured code (header or body), ignores tokens it did not sign, and validates its body", async () => {
+    const noCode = await cleanup(post("cleanup", { taskIds: ["abc.def"] }));
+    expect(await noCode.json()).toEqual({ deleted: 0, failed: 0 });
+    const forgedViaBody = await cleanup(post("cleanup", { taskIds: ["abc.def"], accessCode: "judge-alpha" }));
+    expect(await forgedViaBody.json()).toEqual({ deleted: 0, failed: 1 });
+    const forgedViaHeader = await cleanup(post("cleanup", { taskIds: ["abc.def"] }, { "x-access-code": "judge-alpha" }));
+    expect(await forgedViaHeader.json()).toEqual({ deleted: 0, failed: 1 });
+    expect((await cleanup(post("cleanup", { taskIds: "no" }))).status).toBe(400);
+    expect((await cleanup(post("cleanup", { taskIds: Array.from({ length: 40 }, (_, i) => `t${i}.x`) }))).status).toBe(400);
+  });
+
   test("bad input gets a plain-language ApiError: invalid body, both image and persona, oversize, no code for a live image", async () => {
     const error = async (res: Response) => ((await res.json()) as ApiError).error;
 
@@ -62,6 +90,7 @@ describe("app/api/youcam routes (replay, no network)", () => {
     const big = await analysis(post("analysis", JSON.stringify({ image: "x".repeat(15_000_000) })));
     expect(big.status).toBe(413);
 
+    vi.stubEnv("YOUCAM_MODE", "live");
     const live = await analysis(post("analysis", { image: "data:image/png;base64,AAAA" }));
     expect(live.status).toBe(415); // unreadable image is refused before the access-code gate
     const unknown = await analysis(post("analysis", { persona: "nobody" }));

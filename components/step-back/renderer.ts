@@ -1,5 +1,5 @@
 /**
- * INTEGRATION POINT: the one place that decides which DistanceRenderer draws the Step back images.
- * Today it is the placeholder blur from lib/mock. Swap this line for the real renderer from lib/vision.
+ * The one place that decides which DistanceRenderer draws the Step back images: the real one from lib/vision (the same
+ * model that gives the numbers). Also used on the main thread if module workers are unavailable.
  */
-export { mockDistanceRenderer as distanceRenderer } from "@/lib/mock/distanceRenderer";
+export { renderDistanceView as distanceRenderer } from "@/lib/vision/renderer";

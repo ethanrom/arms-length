@@ -16,8 +16,9 @@ import {
 import { faceBoxFromLandmarks, guidance, type CaptureQuality } from "@/lib/capture/quality";
 import type { CaptureResult } from "@/lib/capture/types";
 import type { Box, Size2 } from "@/lib/contracts";
+import { PRIVACY_LINE } from "@/lib/integration/privacy";
 
-export const CONSENT_TEXT = "Your photo is sent to YouCam for analysis and deleted after your session.";
+export const CONSENT_TEXT = PRIVACY_LINE;
 
 const LIVE_INTERVAL_MS = 200; // about 5 checks per second
 const STABLE_TICKS = 3; // a guidance message must hold this long before it is announced
@@ -351,7 +352,9 @@ export function CaptureFlow({ onCapture }: CaptureFlowProps) {
                 <figcaption className="text-sm text-zinc-700">
                   {review.result.size.width} × {review.result.size.height} px.{" "}
                   {review.result.engine === "hd"
-                    ? "Enough detail for the high-detail analysis."
+                    ? review.result.upscaled
+                      ? "Enlarged to reach the high-detail analysis, so the finest detail is less certain. A phone photo gives the most."
+                      : "Enough detail for the high-detail analysis."
                     : "This is under 1080 px on its short side, so it uses the standard-detail analysis."}
                 </figcaption>
               )}

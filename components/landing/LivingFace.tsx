@@ -2,30 +2,50 @@
 
 import Image from "next/image";
 import { animate, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
-import { clampDistance, formatDistance, fromUnit, locateAmongAnchors, spokenDistance, toUnit } from "@/app/_lib/axis";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  DEFAULT_STOPS,
+  clampDistance,
+  formatDistance,
+  fromUnit,
+  layerOpacities,
+  locateAmongAnchors,
+  spokenDistance,
+  toUnit,
+} from "@/app/_lib/axis";
 import type { DistanceAnchor } from "@/components/results/types";
 import { DistanceTape } from "@/components/step-back/DistanceTape";
+import { FrameCanvas } from "@/components/step-back/FrameCanvas";
+import { useDistanceFrames } from "@/components/step-back/useDistanceFrames";
+import { DEFAULT_VIEWING, type ScaleEstimate, type ViewingConditions } from "@/lib/contracts";
 
 const EASE = [0.45, 0, 0.2, 1] as const;
+
+// Used only if the page is rendered without a recorded reading; the real call site always passes both.
+const FALLBACK_SCALE: ScaleEstimate = { mmPerPx: 0.17, relSd: 0.04, source: "iris" };
 
 interface LivingFaceProps {
   src: string;
   alt: string;
   frame: { width: number; height: number };
   anchors: DistanceAnchor[];
+  /** The photo's scale and viewing conditions, so the stops are drawn by the real distance renderer. */
+  scale?: ScaleEstimate;
+  viewing?: ViewingConditions;
 }
 
 /**
  * Landing visual: one face that steps back from the mirror to across a room, once, then hands the slider over.
- * Uses a CSS blur as an illustration; the results page draws the real thing through the DistanceRenderer.
+ * The stops are drawn by the same renderer as the results page (in a worker); until they are ready a CSS blur stands in.
  */
-export function LivingFace({ src, alt, frame, anchors }: LivingFaceProps) {
+export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, viewing = DEFAULT_VIEWING }: LivingFaceProps) {
   const reduce = useReducedMotion();
   const [picked, setPicked] = useState<number | null>(null);
   const [auto, setAuto] = useState(0.25);
   const [playing, setPlaying] = useState(false);
   const controls = useRef<{ stop: () => void } | null>(null);
+  const frames = useDistanceFrames(src, scale, viewing, DEFAULT_STOPS, 900);
+  const real = frames.status === "ready";
 
   const play = () => {
     controls.current?.stop();
@@ -56,24 +76,35 @@ export function LivingFace({ src, alt, frame, anchors }: LivingFaceProps) {
     setPlaying(false);
   };
 
-  // Matches the mock renderer: sigma grows with distance; the photo is already "seen" from the mirror.
-  const sigma = 0.62 * 3.37 * Math.sqrt(Math.max(0, distance * distance - 0.0625));
+  const opacities = useMemo(() => layerOpacities(DEFAULT_STOPS, distance), [distance]);
+  // The stand-in blur: sigma grows with distance; the photo is already "seen" from the mirror.
+  const sigma = real ? 0 : 0.62 * 3.37 * Math.sqrt(Math.max(0, distance * distance - 0.0625));
   const { near, below, above } = locateAmongAnchors(anchors, distance);
   const where = near ? near.label : below && above ? `Between ${below.label.toLowerCase()} and ${above.label.toLowerCase()}` : "";
 
   return (
     <div>
       <div className="stage on-stage relative h-[min(66svh,600px)] min-h-[24rem] overflow-hidden">
-        <Image
-          src={src}
-          alt={alt}
-          width={frame.width}
-          height={frame.height}
-          sizes="(min-width: 1024px) 40vw, 100vw"
-          preload
-          className="h-full w-full scale-[1.04] object-cover"
-          style={{ filter: `blur(${sigma.toFixed(2)}px)`, objectPosition: "50% 30%" }}
-        />
+        <div className="absolute inset-0 scale-[1.04]">
+          <Image
+            src={src}
+            alt={alt}
+            width={frame.width}
+            height={frame.height}
+            sizes="(min-width: 1024px) 40vw, 100vw"
+            preload
+            className="h-full w-full object-cover"
+            style={{ filter: sigma > 0 ? `blur(${sigma.toFixed(2)}px)` : undefined, objectPosition: "50% 30%" }}
+          />
+          {DEFAULT_STOPS.map((s, i) => (
+            <FrameCanvas
+              key={s}
+              image={frames.frames[i] ?? null}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ opacity: real ? opacities[i] : 0, objectPosition: "50% 30%" }}
+            />
+          ))}
+        </div>
         <div className="absolute left-3 top-3 border border-ink/15 bg-paper px-3 py-2 sm:left-4 sm:top-4 sm:px-4 sm:py-2.5" aria-hidden="true">
           <span className="eyebrow block !text-[0.625rem]">Seen from</span>
           <span className="serif num mt-0.5 block text-[1.875rem] leading-none sm:text-[2.25rem]">{formatDistance(distance)}</span>

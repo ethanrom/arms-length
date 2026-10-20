@@ -17,6 +17,12 @@ export const analysisBody = z
     message: "Send either an image or a persona.",
   });
 
+/** POST /api/youcam/cleanup: the task tokens a session collected. The code may ride in the body for sendBeacon. */
+export const cleanupBody = z.strictObject({
+  taskIds: z.array(z.string().min(3).max(200)).max(24),
+  accessCode: z.string().max(200).optional(),
+});
+
 export const makeupBody = z.strictObject({
   fileRef: z.string().min(1).max(300),
   // Effects pass through as-is (makeup_vto.yaml); YouCam validates the per-category fields, and a rejected

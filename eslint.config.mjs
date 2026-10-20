@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     ".claude/**",
+    "public/mediapipe/**",
     ".playwright-mcp/**",
     // Throwaway spike scripts (not shipped).
     "scripts/spikes/**",

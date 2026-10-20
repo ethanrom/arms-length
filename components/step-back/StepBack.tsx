@@ -17,6 +17,7 @@ import {
   toUnit,
 } from "@/app/_lib/axis";
 import type { ScaleEstimate, ViewingConditions } from "@/lib/contracts";
+import { stepBackCounter } from "@/lib/copy";
 import { statusAt, type ConcernView } from "@/components/results/derive";
 import type { DistanceAnchor } from "@/components/results/types";
 import { DistanceTape } from "./DistanceTape";
@@ -219,27 +220,26 @@ export function StepBack({
                 const st = statusAt(c, distance);
                 const on = st.state !== "none";
                 return (
-                  <li key={c.id} className="flex items-center gap-3 py-3">
-                    <StateDot state={st.state} />
-                    <span className={`serif text-[1.125rem] leading-snug transition-colors duration-300 ${on ? "text-ink" : "text-muted"}`}>{c.copy.title}</span>
-                    {c.profile ? (
-                      <>
-                        <span aria-hidden="true" className="ml-auto hidden h-1 w-14 bg-rule sm:block">
+                  <li key={c.id} className="py-3">
+                    <div className="flex items-center gap-3">
+                      <StateDot state={st.state} />
+                      <span className={`serif text-[1.125rem] leading-snug transition-colors duration-300 ${on ? "text-ink" : "text-muted"}`}>{c.copy.title}</span>
+                      {c.profile ? (
+                        <span aria-hidden="true" className="ml-auto block h-1 w-14 bg-rule">
                           <span className="block h-1 bg-ink" style={{ width: percent((st.count! / st.total) * 100) }} />
                         </span>
-                        <span className="num min-w-[6.75rem] text-right text-[0.8125rem] text-muted max-sm:ml-auto">
-                          <span className={on ? "text-[0.9375rem] text-ink" : ""}>{st.count}</span> of {st.total}
-                          <span className="sr-only"> detectable</span>
+                      ) : (
+                        <span className="num ml-auto text-right text-[0.8125rem] text-muted">
+                          <span className={on ? "text-ink" : ""}>{on ? "Visible" : "Out of sight"}</span>
+                          <span className="ml-2 hidden sm:inline">
+                            {c.relief ? "gone by" : "up to"} {formatDistance(c.visibility.maxDistanceM)}
+                          </span>
                         </span>
-                      </>
-                    ) : (
-                      <span className="num ml-auto text-right text-[0.8125rem] text-muted">
-                        <span className={on ? "text-ink" : ""}>{on ? "Visible" : "Out of sight"}</span>
-                        <span className="ml-2 hidden sm:inline">
-                          {c.relief ? "gone by" : "up to"} {formatDistance(c.visibility.maxDistanceM)}
-                        </span>
-                      </span>
-                    )}
+                      )}
+                    </div>
+                    <p data-counter={c.id} className="num mt-1 pl-[1.375rem] text-[0.8125rem] leading-snug text-muted">
+                      {stepBackCounter(c.visibility, distance)}
+                    </p>
                   </li>
                 );
               })}

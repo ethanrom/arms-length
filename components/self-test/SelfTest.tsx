@@ -2,7 +2,8 @@
 
 import { useId, useState } from "react";
 import { formatDistance, toUnit } from "@/app/_lib/axis";
-import type { SelfTestCopy, SelfTestPrediction, SelfTestTarget } from "@/lib/mock/selfTest";
+import { compareObserved } from "@/lib/selftest/predict";
+import type { SelfTestCopy, SelfTestPrediction, SelfTestTarget } from "@/lib/integration/selfTest";
 
 const CARD_W_MM = 85.6; // ISO/IEC 7810 ID-1
 const CARD_H_MM = 53.98;
@@ -23,8 +24,8 @@ const STEPS = [
 ] as const;
 
 /**
- * UI shell for the walk-back self-test. Calibration and the target are drawn for real; the measured distance
- * is typed in, and the prediction comes from props until the model is wired in.
+ * The walk-back self-test. Calibration and the target are drawn for real at the calibrated size; the measured distance
+ * is typed in and compared with the model's prediction (lib/selftest) for the average viewer and for the bound.
  */
 export function SelfTest({ target, prediction, copy }: SelfTestProps) {
   const [step, setStep] = useState<Step>(1);
@@ -132,9 +133,9 @@ function CardOutline({ width, height, className, upright }: { width: number; hei
 
 function WalkBack({ target, pxPerMm, onBack, onNext }: { target: SelfTestTarget; pxPerMm: number; onBack: () => void; onNext: () => void }) {
   const d = target.diameterMm * pxPerMm;
-  // A mid-grey field with a slightly darker disc: the contrast of the spot against its surround.
-  const field = 138;
-  const spot = Math.round(field * (1 - target.contrast));
+  // A mid-grey field with a slightly darker disc: the sRGB values the prediction was computed for.
+  const field = target.fieldSrgb;
+  const spot = target.discSrgb;
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
       <div>
@@ -194,7 +195,7 @@ function Compare({
   const id = useId();
   const m = Number(measured.replace(",", "."));
   const has = Number.isFinite(m) && m > 0;
-  const within = has && m <= prediction.intervalM[1];
+  const side = has ? compareObserved(m, prediction).side : null;
   const pct = (d: number) => `${toUnit(d, { min: 0.25, max: 6 }) * 100}%`;
 
   return (
@@ -236,16 +237,14 @@ function Compare({
         <div className="border-t border-ink pt-5" aria-live="polite">
           <p className="eyebrow">The model says</p>
           <p className="serif num mt-2 text-[clamp(2.25rem,1.6rem+2.8vw,4rem)] leading-none tracking-[-0.02em]" style={{ fontWeight: 340 }}>
-            gone beyond {formatDistance(prediction.distanceM)}
+            gone beyond {formatDistance(prediction.boundM)}
           </p>
-          <p className="num mt-2 font-mono text-[0.75rem] text-muted">
-            plausible range {formatDistance(prediction.intervalM[0])} to {formatDistance(prediction.intervalM[1])}
-          </p>
+          <p className="num mt-2 font-mono text-[0.75rem] text-muted">average viewer: about {formatDistance(prediction.nominalM)}</p>
 
-          <div className="relative mt-8 h-14" role="img" aria-label={`Model limit ${formatDistance(prediction.distanceM)}${has ? `, you ${formatDistance(m)}` : ""}`}>
+          <div className="relative mt-8 h-14" role="img" aria-label={`Average viewer ${formatDistance(prediction.nominalM)}, model limit ${formatDistance(prediction.boundM)}${has ? `, you ${formatDistance(m)}` : ""}`}>
             <div className="absolute inset-x-0 top-6 h-px bg-rule-strong" />
-            <div className="absolute top-[1.3rem] h-2.5 border border-ink" style={{ left: pct(prediction.intervalM[0]), width: `calc(${pct(prediction.intervalM[1])} - ${pct(prediction.intervalM[0])})` }} />
-            <span className="absolute top-6 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-ink bg-paper" style={{ left: pct(prediction.distanceM) }} />
+            <div className="absolute top-[1.3rem] h-2.5 border border-ink" style={{ left: pct(prediction.nominalM), width: `calc(${pct(prediction.boundM)} - ${pct(prediction.nominalM)})` }} />
+            <span className="absolute top-6 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-ink bg-paper" style={{ left: pct(prediction.boundM) }} />
             {has && (
               <>
                 <span className="absolute top-6 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink shadow-[0_0_0_2px_var(--paper)]" style={{ left: pct(Math.min(6, Math.max(0.25, m))) }} />
@@ -257,7 +256,7 @@ function Compare({
           </div>
 
           <p className="mt-6 min-h-16 max-w-[34rem] text-[1rem] leading-relaxed text-ink-soft">
-            {has ? (within ? copy.consistent : copy.beyond) : "Enter the distance to see how your eyes compare."}
+            {side ? copy[side === "below" ? "below" : side === "inside" ? "inside" : "above"] : "Enter the distance to see how your eyes compare."}
           </p>
         </div>
         <p className="mt-8 max-w-[34rem] border-t border-rule pt-4 text-[0.8125rem] leading-relaxed text-muted">{copy.caveat}</p>

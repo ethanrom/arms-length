@@ -1,8 +1,7 @@
 /**
- * View model for the results experience. Everything the UI shows (numbers and sentences) arrives in this shape.
- * Today `lib/mock` fills it with illustrative data; at integration `lib/copy` (sentences) and the real
- * pipeline (VisibilityReport, Measurements, CoveragePlan, WhatIf) fill it instead. Components never write
- * results strings themselves.
+ * View model for the results experience. Everything the UI shows (numbers and sentences) arrives in this shape,
+ * built by lib/integration/viewModel.ts from a `ReadingBundle`: numbers from the real pipeline, sentences from
+ * lib/copy (and lib/integration/copy.ts). Components never write results strings themselves.
  */
 import type {
   ConcernId,
@@ -24,51 +23,24 @@ export interface DistanceAnchor {
 }
 
 /**
- * The computation chain behind one concern's distance, with real numbers, for the "How we know" sheet.
- * Evaluated for the concern's most visible target at `distanceM`.
+ * Which "How we know" chain to open: the concern's most visible target. The sheet computes the numbers for any distance
+ * (lib/integration/receipt.ts) from the target in `ResultsData.measurements`, so the verdict follows the model exactly.
  */
-export interface Receipt {
+export interface ReceiptEntry {
   concern: ConcernId;
   targetId: string;
   /** Closed outline of the YouCam mask component, in frame px. */
-  maskOutline: Point[];
-  /** Width of the feature, measured with the iris as ruler (mm). */
-  sizeMm: number;
-  /** How far it differs from the skin around it, in percent. */
-  contrastPct: number;
-  /** Visual angle it covers at `distanceM`, in minutes of arc. */
-  angleArcmin: number;
-  /** Contrast an ideal observer needs at that angle to see it, in percent. */
-  thresholdPct: number;
-  /** The viewing distance the angle and threshold are evaluated at. */
-  distanceM: number;
+  outline: Point[];
+  /** Distances the sheet offers, and the one it opens on. */
+  distancesM: number[];
+  defaultDistanceM: number;
 }
 
-/** The four steps of a receipt, as sentences. */
-export interface ReceiptCopy {
-  /** "YouCam found it here." */
-  found: string;
-  /** "It's 2.9 mm wide." */
-  size: string;
-  /** "It's 18% darker than the skin around it." */
-  contrast: string;
-  /** "At 1 m it covers 8.9 arcmin. At that size people need about 14% contrast to see it." */
-  angle: string;
-  /** "It has 36%, so it's visible." */
-  verdict: string;
-  /** Where step 4 comes from. */
-  model: string;
-}
-
-export interface ReceiptEntry {
-  receipt: Receipt;
-  copy: ReceiptCopy;
-}
-
-/** One YouCam mask, composited on the photo, for the "What YouCam detected" strip. */
+/** One YouCam mask, drawn over the photo, for the "What YouCam detected" strip. */
 export interface MaskThumb {
   concern: ConcernId;
   label: string;
+  /** Transparent overlay of the mask, same aspect as the photo. */
   image: string;
   /** Present when the mask is empty or the concern is not about visibility. */
   note?: string;
@@ -77,6 +49,9 @@ export interface MaskThumb {
 export interface MaskStrip {
   title: string;
   note: string;
+  /** The photo the overlays sit on. */
+  photo: string;
+  frame: { width: number; height: number };
   items: MaskThumb[];
 }
 
@@ -87,11 +62,15 @@ export interface ConcernCopy {
   title: string;
   /** Lower case, sits on the face while the slider crosses the threshold: "pores fade here". */
   fadeLabel: string;
+  /** relief: gone by conversation distance, or at most a tenth of its marks show across a table. From lib/copy. */
+  tone: "relief" | "visible";
   /** The kind sentence leading the card. */
   headline: string;
-  /** One line under it, with the numbers. */
+  /** One line under it, with the numbers (YouCam's own score is the last sentence). */
   detail: string;
-  /** What the number means, in plain words (the "i"). */
+  /** The chip on the card: "Half gone by 1.5 m", "Up to 10 m+". */
+  keyLine: string;
+  /** What the concern is, then what the number means, in plain words (the "i"). */
   explainer: string;
   /** Confidence statement with the reason. */
   confidence: string;
@@ -103,49 +82,61 @@ export interface OutOfScopeNote {
   reason: string;
 }
 
-/** One target distance for "make it disappear": the least coverage that gets there, with sentences. */
+/** The least coverage for one concern, with sentences. `state` is only ever not "ready" in a live session. */
 export interface CoverageOption {
-  plan: CoveragePlan;
-  /** "Foundation at 60% coverage keeps age spots out of sight beyond 1 m." */
+  concern: ConcernId;
+  title: string;
+  plan: CoveragePlan | null;
   headline: string;
   /** "foundation coverage 60%"; null when no lever is needed or none works. */
   leverLabel: string | null;
   /** The lever without its value, for a caption next to the big number: "foundation coverage". */
   leverName: string | null;
-  /** The honest detail: verified on a render, or not met. */
   detail: string;
-  /** Shown as the "after" face; the "before" is the persona photo. */
-  afterImage: string;
-  /** True when the after image is a stand-in, not the render for this exact lever value. */
-  afterIsPreview: boolean;
+  /** Shown as the "after" face, aligned to the photo; null when nothing is rendered. */
+  afterImage: string | null;
+  /** idle: waiting for "Make it disappear"; running: renders in progress; error: failed (see detail). */
+  state: "ready" | "idle" | "running" | "error";
 }
 
 export interface CoverageView {
-  concern: ConcernId;
   title: string;
   /** Lead-in under the section title. */
   lede: string;
+  targetM: number;
   options: CoverageOption[];
 }
 
-export interface WhatIfView {
-  whatIf: WhatIf;
+/** One concern's "Worth it?" line. */
+export interface WorthItItem {
+  concern: ConcernId;
   title: string;
-  /** "If these spots faded by half, they'd disappear beyond 1.4 m." */
+  whatIf: WhatIf;
+  /** "A half-strength change could show from up to 10 m or more." */
   headline: string;
   detail: string;
-  /** Label under each side of the comparison. */
+  /** Shown as the improved face: the group's half-strength simulation, aligned to the photo. */
+  afterImage: string;
+}
+
+export interface WorthItView {
+  title: string;
+  lede: string;
+  /** "(YouCam Skin Simulation, half strength)" */
+  credit: string;
   beforeLabel: string;
   afterLabel: string;
-  afterImage: string;
-  afterIsPreview: boolean;
+  items: WorthItItem[];
+  /** pending: the simulations are still being drawn (live sessions); error: they could not be. */
+  state: "ready" | "pending" | "error";
+  message?: string;
 }
 
 export interface ShareLine {
   concern: ConcernId;
   /** "Pores" */
   label: string;
-  /** "out of sight beyond 40 cm" */
+  /** "at most 342 of 649 show across a table" */
   sentence: string;
   distanceM: number;
   tone: "relief" | "visible";
@@ -160,6 +151,7 @@ export interface ShareData {
 
 export interface ResultsData {
   persona: PersonaBundle;
+  source: "demo" | "live" | "replay";
   /** Natural size of the photo in px (the frame every coordinate is in). */
   frame: { width: number; height: number };
   alt: string;
@@ -167,15 +159,18 @@ export interface ResultsData {
   stageGrey: string;
   measurements: Measurements;
   report: VisibilityReport;
+  /** In display order: relief first, from lib/copy. */
   concerns: ConcernCopy[];
   outOfScope: OutOfScopeNote[];
   anchors: DistanceAnchor[];
-  /** Concerns that vanish at or before this distance count as "relief" (default: conversation distance). */
-  reliefWithinM: number;
+  /** How the groups below are decided, in a sentence. */
+  reliefNote: string;
+  /** One line about the whole face, from lib/copy `summaryLine`. */
+  summary: string;
   coverage: CoverageView | null;
-  whatIf: WhatIfView | null;
+  worthIt: WorthItView | null;
   share: ShareData;
-  /** The "How we know" receipts, one per concern. */
+  /** The "How we know" chains, one per concern. */
   receipts: ReceiptEntry[];
   /** YouCam's own masks, the starting input. */
   maskStrip: MaskStrip;
@@ -183,8 +178,10 @@ export interface ResultsData {
   tagline: string;
   /** Label on the Step back hero: what is and is not drawn. */
   heroLabel: string;
-  /** Where these results came from: "A replay of a recorded YouCam skin analysis of a synthetic face." */
+  /** Where these results came from, in a sentence. */
   provenance: string;
+  /** Things worth knowing about this reading (an enlarged photo, a smaller analysis, replay mode). */
+  notices: string[];
   /** Honest status lines for the analysing state. */
   statusLines: string[];
   /** Small print under the Step back hero: says which renderer drew it. */

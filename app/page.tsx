@@ -1,13 +1,26 @@
 import Link from "next/link";
 import { LivingFace } from "@/components/landing/LivingFace";
-import { MOCK_ANCHORS } from "@/lib/mock/anchors";
+import { TAPE_ANCHORS, keyDistanceOf, keyLine, titleOf } from "@/lib/integration/copy";
+import { loadBundle } from "@/lib/integration/demo";
+import { toneOf } from "@/lib/copy";
 
-const CHART = [
-  { size: "clamp(2.4rem, 1.2rem + 5.4vw, 5.25rem)", label: "Under-eye shadows", value: "visible from 3 m" },
-  { size: "clamp(1.9rem, 1rem + 3.6vw, 3.75rem)", label: "Age spots", value: "half in view at 1.6 m" },
-  { size: "clamp(1.5rem, 0.9rem + 2.4vw, 2.6rem)", label: "Pores", value: "most gone by 85 cm" },
-  { size: "clamp(1.25rem, 0.8rem + 1.6vw, 1.85rem)", label: "Fine lines", value: "most gone by 50 cm" },
+/** Row sizes, biggest first: the chart gets smaller the way an eye chart does, as the distance shrinks. */
+const CHART_SIZES = [
+  "clamp(2.4rem, 1.2rem + 5.4vw, 5.25rem)",
+  "clamp(1.9rem, 1rem + 3.6vw, 3.75rem)",
+  "clamp(1.5rem, 0.9rem + 2.4vw, 2.6rem)",
+  "clamp(1.25rem, 0.8rem + 1.6vw, 1.85rem)",
 ];
+
+/** A real reading (Synthetic face A): four concerns, the farthest-carrying first. */
+function chartRows() {
+  const bundle = loadBundle("p2b");
+  if (!bundle) return [];
+  return [...bundle.report.concerns]
+    .sort((a, b) => keyDistanceOf(b) - keyDistanceOf(a))
+    .slice(0, CHART_SIZES.length)
+    .map((cv, i) => ({ size: CHART_SIZES[i], label: titleOf(cv.concern), value: keyLine(cv, toneOf(cv)) }));
+}
 
 const PRINCIPLES = [
   {
@@ -28,6 +41,8 @@ const PRINCIPLES = [
 ];
 
 export default function Home() {
+  const chart = chartRows();
+  const face = loadBundle("p2b");
   return (
     <main id="main" tabIndex={-1} className="outline-none">
       <section className="page grid gap-12 pb-16 pt-10 md:pt-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:gap-14 lg:pb-24 lg:pt-14">
@@ -60,10 +75,12 @@ export default function Home() {
 
         <div className="rise" style={{ animationDelay: "200ms" }}>
           <LivingFace
-            src="/demo/p2b/input.jpg"
+            src={face?.image ?? "/demo/p2b/photo.jpg"}
             alt="Synthetic portrait of a man with deep brown skin, shown blurring as the viewing distance grows."
-            frame={{ width: 1080, height: 1341 }}
-            anchors={MOCK_ANCHORS}
+            frame={face?.frame ?? { width: 1080, height: 1341 }}
+            anchors={TAPE_ANCHORS}
+            scale={face?.scale}
+            viewing={face?.viewing}
           />
         </div>
       </section>
@@ -82,11 +99,11 @@ export default function Home() {
             <p className="lede mt-5 max-w-sm">
               Eye charts measure the smallest detail you can still make out. We turn that around: for each concern on your face, how far back can someone stand before it is gone?
             </p>
-            <p className="mt-5 text-[0.8125rem] text-muted">An example reading. Yours comes from your own photo.</p>
+            <p className="mt-5 text-[0.8125rem] text-muted">A real reading of a synthetic face. Yours comes from your own photo.</p>
           </div>
 
           <div aria-label="Example reading" role="group" className="border-t border-ink">
-            {CHART.map((row) => (
+            {chart.map((row) => (
               <div key={row.label} className="flex items-baseline justify-between gap-6 border-b border-rule py-4 md:py-5">
                 <span className="serif leading-none tracking-[-0.02em]" style={{ fontSize: row.size, fontWeight: 360 }}>
                   {row.label}

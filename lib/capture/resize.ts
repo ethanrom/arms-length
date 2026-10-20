@@ -13,7 +13,13 @@ export const MIN_FACE_FRACTION = 0.6;
 export const HD_MIN_SHORT = 1080;
 export const SD_MIN_SHORT = 480;
 export const MAX_LONG = 1919;
+/** Largest enlargement when only reaching SD's minimum (a tiny source). */
 export const MAX_UPSCALE = 1.25;
+/**
+ * Largest enlargement that still takes the HD engine (integration, 2026-10-21): a webcam frame cannot reach a 1080 px
+ * short side otherwise. The plan says so (`upscaled`) and the app tells the user the finest detail is less certain.
+ */
+export const HD_MAX_UPSCALE = 2;
 /** Output frame is portrait 4:5 (height / width) where the source allows: the face mesh is about 1.3x taller than wide. */
 const FRAME_ASPECT = 1.25;
 /** Keep at least this much of the frame's height around the face (forehead and chin margin). */
@@ -31,6 +37,8 @@ export interface ResizePlan {
   engine: "hd" | "sd";
   /** False when even SD cannot be reached within the upscale limit. */
   ok: boolean;
+  /** True when the output is an enlargement of the source pixels (only HD can be: SD never enlarges past reaching 480 px). */
+  upscaled: boolean;
   /** Face width as a fraction of the output width. */
   faceFraction: number;
   reason?: "invalid_input" | "source_too_small";
@@ -47,6 +55,7 @@ function invalid(srcW: number, srcH: number): ResizePlan {
     scale: 1,
     engine: "sd",
     ok: false,
+    upscaled: false,
     faceFraction: 0,
     reason: "invalid_input",
   };
@@ -94,7 +103,7 @@ export function planResize(srcW: number, srcH: number, faceBox: Box): ResizePlan
 
   let engine: "hd" | "sd";
   let scale: number;
-  if (hdScale <= Math.min(MAX_UPSCALE, capScale)) {
+  if (hdScale <= Math.min(HD_MAX_UPSCALE, capScale)) {
     engine = "hd";
     scale = hdScale;
   } else {
@@ -117,6 +126,7 @@ export function planResize(srcW: number, srcH: number, faceBox: Box): ResizePlan
     scale: outScale,
     engine,
     ok,
+    upscaled: ok && outScale > 1 + 1e-9,
     faceFraction: (faceBox.w * outScale) / target.width,
     ...(ok ? {} : { reason: "source_too_small" as const }),
   };

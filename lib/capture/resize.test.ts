@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import type { Box } from "@/lib/contracts";
-import { MAX_LONG, MAX_UPSCALE, planResize } from "./resize";
+import { HD_MAX_UPSCALE, MAX_LONG, MAX_UPSCALE, planResize } from "./resize";
 
 const faceAt = (cx: number, cy: number, w: number, aspect = 1.3): Box => ({
   x: cx - w / 2,
@@ -31,14 +31,29 @@ describe("planResize", () => {
     expect(Math.max(plan.target.width, plan.target.height)).toBeLessThanOrEqual(1919);
   });
 
-  test("a 720p webcam frame gives SD at native resolution (no upscale)", () => {
+  test("a 720p webcam frame reaches HD by enlarging up to 2x, and says it was enlarged", () => {
     const plan = planResize(1280, 720, faceAt(640, 360, 380));
+    expect(plan.engine).toBe("hd");
+    expect(plan.ok).toBe(true);
+    expect(plan.upscaled).toBe(true);
+    expect(plan.scale).toBeGreaterThan(1.5);
+    expect(plan.scale).toBeLessThanOrEqual(HD_MAX_UPSCALE + 1e-9);
+    expect(Math.min(plan.target.width, plan.target.height)).toBe(1080);
+    expect(plan.faceFraction).toBeGreaterThanOrEqual(0.6);
+  });
+
+  test("a smaller webcam face falls back to SD at native resolution (no enlargement)", () => {
+    const plan = planResize(1280, 720, faceAt(640, 360, 340));
     expect(plan.engine).toBe("sd");
     expect(plan.ok).toBe(true);
+    expect(plan.upscaled).toBe(false);
     expect(plan.scale).toBe(1);
     expect(plan.crop.h).toBeLessThanOrEqual(720);
     expect(Math.min(plan.target.width, plan.target.height)).toBeGreaterThanOrEqual(480);
-    expect(plan.faceFraction).toBeGreaterThanOrEqual(0.6);
+  });
+
+  test("a phone-sized crop that is downscaled is not flagged as enlarged", () => {
+    expect(planResize(3024, 4032, faceAt(1512, 1900, 1500)).upscaled).toBe(false);
   });
 
   test("a face that nearly fills a short frame keeps its whole head and stays inside the photo", () => {
@@ -49,13 +64,14 @@ describe("planResize", () => {
     expect(plan.crop.x + plan.crop.w).toBeLessThanOrEqual(1280);
   });
 
-  test("upscaling is capped at 1.25x: a 900 px crop reaches HD, an 800 px crop does not", () => {
-    const hd = planResize(1200, 1500, faceAt(600, 750, 900 * 0.7));
+  test("HD enlargement is capped at 2x: a 600 px crop reaches HD, a 500 px crop does not", () => {
+    const hd = planResize(1200, 1500, faceAt(600, 750, 600 * 0.7));
     expect(hd.engine).toBe("hd");
-    expect(hd.scale).toBeLessThanOrEqual(MAX_UPSCALE + 1e-9);
+    expect(hd.upscaled).toBe(true);
+    expect(hd.scale).toBeLessThanOrEqual(HD_MAX_UPSCALE + 1e-9);
     expect(hd.target.width).toBe(1080);
 
-    const sd = planResize(1200, 1500, faceAt(600, 750, 800 * 0.7));
+    const sd = planResize(1200, 1500, faceAt(600, 750, 500 * 0.7));
     expect(sd.engine).toBe("sd");
     expect(sd.scale).toBe(1);
     expect(sd.target.width).toBe(sd.crop.w);
@@ -110,7 +126,8 @@ describe("planResize", () => {
         expect(crop.y + crop.h).toBeGreaterThanOrEqual(face.y + face.h - tol);
         if (p.ok) {
           expect(Math.max(target.width, target.height)).toBeLessThanOrEqual(MAX_LONG);
-          expect(target.width / crop.w).toBeLessThanOrEqual(MAX_UPSCALE + 1 / crop.w);
+          expect(target.width / crop.w).toBeLessThanOrEqual((p.engine === "hd" ? HD_MAX_UPSCALE : MAX_UPSCALE) + 1 / crop.w);
+          expect(p.upscaled).toBe(p.scale > 1 + 1e-9);
           expect(p.faceFraction).toBeGreaterThan(0.6);
         }
         if (p.engine === "hd") {

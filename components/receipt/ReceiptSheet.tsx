@@ -1,16 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { formatDistance } from "@/app/_lib/axis";
 import { cropAround } from "@/components/concerns/AnnotatedFace";
+import type { Target } from "@/components/results/derive";
 import type { ReceiptEntry } from "@/components/results/types";
+import type { ScaleEstimate, ViewingConditions } from "@/lib/contracts";
+import { buildReceipt, receiptSentences, type ReceiptNumbers } from "@/lib/integration/receipt";
+import { IRIS_DIAMETER_MM } from "@/lib/scale/iris";
 
-/** Population mean visible iris diameter (Rüfer et al., 2005): the ruler in step 2. */
-const IRIS_MM = 11.71;
+const IRIS_MM = IRIS_DIAMETER_MM;
 
 interface ReceiptTriggerProps {
   entry: ReceiptEntry;
+  /** The measured target the receipt is about (from `ResultsData.measurements`). */
+  target: Target;
+  scale: ScaleEstimate;
+  viewing: ViewingConditions;
   /** "Age spots" */
   title: string;
   src: string;
@@ -19,16 +26,26 @@ interface ReceiptTriggerProps {
   className?: string;
 }
 
-/** A "How we know" button and the sheet it opens: the four-step chain behind one distance, with real numbers. */
-export function ReceiptTrigger({ entry, title, src, alt, frame, className }: ReceiptTriggerProps) {
+const pct = (v: number) => (v < 10 ? v.toFixed(1) : String(Math.round(v)));
+
+/**
+ * A "How we know" button and the sheet it opens: the four-step chain behind one distance, with real numbers from
+ * lib/integration/receipt.ts. The distance can be changed; the verdict is the model's bound at that distance.
+ */
+export function ReceiptTrigger({ entry, target, scale, viewing, title, src, alt, frame, className }: ReceiptTriggerProps) {
   const [open, setOpen] = useState(false);
+  const [distanceM, setDistanceM] = useState(entry.defaultDistanceM);
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const groupId = useId();
 
   useEffect(() => {
     const d = dialog.current;
     if (open && d && !d.open) d.showModal();
   }, [open]);
+
+  const numbers = useMemo(() => buildReceipt(target, scale, viewing, distanceM), [target, scale, viewing, distanceM]);
+  const sentences = useMemo(() => (numbers ? receiptSentences(numbers) : null), [numbers]);
 
   return (
     <>
@@ -55,13 +72,13 @@ export function ReceiptTrigger({ entry, title, src, alt, frame, className }: Rec
           if (e.target === dialog.current) dialog.current?.close();
         }}
       >
-        {open && (
+        {open && numbers && sentences && (
           <div className="px-6 pb-10 pt-6 sm:px-8">
             <div className="flex items-start justify-between gap-6">
               <div>
                 <p className="eyebrow">How we know</p>
                 <h2 id={titleId} className="title mt-2 text-[1.875rem]">
-                  {title}, at {formatDistance(entry.receipt.distanceM)}
+                  {title}, at {formatDistance(distanceM)}
                 </h2>
               </div>
               <button type="button" onClick={() => dialog.current?.close()} className="-mr-2 -mt-1 grid h-11 w-11 shrink-0 place-items-center" aria-label="Close">
@@ -71,22 +88,40 @@ export function ReceiptTrigger({ entry, title, src, alt, frame, className }: Rec
               </button>
             </div>
 
+            <fieldset className="mt-6">
+              <legend className="eyebrow">Seen from</legend>
+              <div className="mt-3 inline-flex flex-wrap border border-ink" role="radiogroup" aria-label="Viewing distance">
+                {entry.distancesM.map((d) => (
+                  <label key={d} className="relative cursor-pointer">
+                    <input type="radio" name={groupId} className="peer sr-only" checked={d === distanceM} onChange={() => setDistanceM(d)} />
+                    <span className="num flex min-h-11 min-w-[4.25rem] items-center justify-center border-l border-ink px-3 text-[0.9375rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink">
+                      {formatDistance(d)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
             <ol className="mt-8">
-              <Step n="01" sentence={entry.copy.found}>
-                <MaskCrop entry={entry} src={src} alt={alt} frame={frame} />
+              <Step n="01" sentence={sentences.found}>
+                <MaskCrop outline={entry.outline} src={src} alt={alt} frame={frame} />
               </Step>
-              <Step n="02" sentence={entry.copy.size}>
-                <RulerBars sizeMm={entry.receipt.sizeMm} />
+              <Step n="02" sentence={sentences.size}>
+                <RulerBars numbers={numbers} />
               </Step>
-              <Step n="03" sentence={entry.copy.contrast}>
-                <Readout value={`${entry.receipt.contrastPct}`} unit="%" caption="against the surrounding skin" />
+              <Step n="03" sentence={sentences.contrast}>
+                <Readout
+                  value={pct(numbers.contrastPct)}
+                  unit="%"
+                  caption={numbers.basis === "counterfactual" ? "against the same face without it" : "against the surrounding skin"}
+                />
               </Step>
-              <Step n="04" sentence={entry.copy.angle}>
-                <Compare entry={entry} />
-                <p className="mt-5 serif text-[1.5rem] leading-snug" style={{ fontWeight: 400 }}>
-                  {entry.copy.verdict}
+              <Step n="04" sentence={sentences.angle}>
+                <Compare numbers={numbers} />
+                <p className="mt-5 serif text-[1.5rem] leading-snug" style={{ fontWeight: 400 }} aria-live="polite">
+                  {sentences.verdict}
                 </p>
-                <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted">{entry.copy.model}</p>
+                <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted">{sentences.model}</p>
               </Step>
             </ol>
           </div>
@@ -120,14 +155,13 @@ function Readout({ value, unit, caption }: { value: string; unit: string; captio
   );
 }
 
-function MaskCrop({ entry, src, alt, frame }: { entry: ReceiptEntry; src: string; alt: string; frame: { width: number; height: number } }) {
-  const pts = entry.receipt.maskOutline;
-  const x0 = Math.min(...pts.map((p) => p.x));
-  const y0 = Math.min(...pts.map((p) => p.y));
-  const x1 = Math.max(...pts.map((p) => p.x));
-  const y1 = Math.max(...pts.map((p) => p.y));
+function MaskCrop({ outline, src, alt, frame }: { outline: { x: number; y: number }[]; src: string; alt: string; frame: { width: number; height: number } }) {
+  const x0 = Math.min(...outline.map((p) => p.x));
+  const y0 = Math.min(...outline.map((p) => p.y));
+  const x1 = Math.max(...outline.map((p) => p.x));
+  const y1 = Math.max(...outline.map((p) => p.y));
   const crop = cropAround({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, frame, 1.1, 4 / 3, 190);
-  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ") + " Z";
+  const d = outline.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ") + " Z";
 
   return (
     <div className="stage on-stage relative overflow-hidden" style={{ aspectRatio: `${crop.w} / ${crop.h}` }}>
@@ -137,6 +171,7 @@ function MaskCrop({ entry, src, alt, frame }: { entry: ReceiptEntry; src: string
         width={frame.width}
         height={frame.height}
         sizes="480px"
+        unoptimized
         className="absolute max-w-none"
         style={{
           width: `${(frame.width / crop.w) * 100}%`,
@@ -153,13 +188,16 @@ function MaskCrop({ entry, src, alt, frame }: { entry: ReceiptEntry; src: string
   );
 }
 
-function RulerBars({ sizeMm }: { sizeMm: number }) {
+const mm = (v: number) => (v < 1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : String(Math.round(v)));
+
+function RulerBars({ numbers }: { numbers: ReceiptNumbers }) {
+  const sizeMm = numbers.sizeMm;
   const domain = Math.max(IRIS_MM, sizeMm) * 1.04;
-  const w = (mm: number) => `${(mm / domain) * 100}%`;
+  const w = (v: number) => `${(v / domain) * 100}%`;
   return (
     <div>
-      <Readout value={sizeMm < 1 ? sizeMm.toFixed(2) : sizeMm < 10 ? sizeMm.toFixed(1) : String(Math.round(sizeMm))} unit="mm" />
-      <div className="mt-5 space-y-3" role="img" aria-label={`The feature is ${sizeMm.toFixed(2)} millimetres wide; the iris used as the ruler is ${IRIS_MM} millimetres.`}>
+      <Readout value={mm(sizeMm)} unit="mm" />
+      <div className="mt-5 space-y-3" role="img" aria-label={`The feature is ${mm(sizeMm)} millimetres; the iris used as the ruler is ${IRIS_MM} millimetres.`}>
         <div>
           <div className="flex justify-between font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-muted">
             <span>Iris, the ruler</span>
@@ -169,8 +207,8 @@ function RulerBars({ sizeMm }: { sizeMm: number }) {
         </div>
         <div>
           <div className="flex justify-between font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-muted">
-            <span>This feature</span>
-            <span className="num">{sizeMm < 1 ? sizeMm.toFixed(2) : sizeMm.toFixed(1)} mm</span>
+            <span>{numbers.kind === "line" ? "This line, across" : "This feature"}</span>
+            <span className="num">{mm(sizeMm)} mm</span>
           </div>
           <div className="mt-1.5 h-2 bg-ink" style={{ width: `max(3px, ${w(sizeMm)})` }} />
         </div>
@@ -179,9 +217,9 @@ function RulerBars({ sizeMm }: { sizeMm: number }) {
   );
 }
 
-function Compare({ entry }: { entry: ReceiptEntry }) {
-  const { angleArcmin, contrastPct, thresholdPct } = entry.receipt;
-  const domain = Math.max(contrastPct, thresholdPct) * 1.1;
+function Compare({ numbers }: { numbers: ReceiptNumbers }) {
+  const { angleArcmin, contrastPct, thresholdPct, distanceM } = numbers;
+  const domain = Math.max(contrastPct, thresholdPct) * 1.1 || 1;
   const w = (v: number) => `${(v / domain) * 100}%`;
   const rows = [
     { label: "Needed at this size", value: thresholdPct, solid: false },
@@ -189,13 +227,13 @@ function Compare({ entry }: { entry: ReceiptEntry }) {
   ];
   return (
     <div>
-      <Readout value={angleArcmin.toFixed(1)} unit="arcmin" caption={`at ${formatDistance(entry.receipt.distanceM)}`} />
-      <div className="mt-5 space-y-3" role="img" aria-label={`Contrast needed ${thresholdPct} percent; contrast it has ${contrastPct} percent.`}>
+      <Readout value={angleArcmin < 10 ? angleArcmin.toFixed(1) : String(Math.round(angleArcmin))} unit="arcmin" caption={`at ${formatDistance(distanceM)}`} />
+      <div className="mt-5 space-y-3" role="img" aria-label={`Contrast needed ${pct(thresholdPct)} percent; contrast it has ${pct(contrastPct)} percent.`}>
         {rows.map((r) => (
           <div key={r.label}>
             <div className="flex justify-between font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-muted">
               <span>{r.label}</span>
-              <span className="num">{r.value}%</span>
+              <span className="num">{pct(r.value)}%</span>
             </div>
             <div className={`mt-1.5 h-2 ${r.solid ? "bg-ink" : "border border-ink"}`} style={{ width: `max(3px, ${w(r.value)})` }} />
           </div>

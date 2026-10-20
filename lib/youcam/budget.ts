@@ -93,6 +93,8 @@ export interface BudgetGuard {
   decide(code: string | null, kind: GuardKind, options: { cost: number; reserve: boolean }): Promise<Decision>;
   /** Lowers the cached balance after a spend so a burst of requests cannot overshoot the floor. */
   noteSpend(units: number): void;
+  /** True for a configured access code. No budget, cap or kill-switch checks: for free clean-up calls that must still work. */
+  accepts(code: string | null): boolean;
 }
 
 interface Usage {
@@ -163,6 +165,11 @@ export function createBudgetGuard(options: BudgetGuardOptions): BudgetGuard {
 
     noteSpend(units) {
       if (cached) cached = { value: cached.value - units, at: cached.at };
+    },
+
+    accepts(code) {
+      if (!code) return false;
+      return options.config().codes.map((candidate) => sameCode(candidate, code)).some(Boolean);
     },
   };
 }

@@ -4,7 +4,8 @@ import { CsfChart } from "@/components/how/CsfChart";
 import { IrisFigure } from "@/components/how/IrisFigure";
 import { MeasureFigure } from "@/components/how/MeasureFigure";
 import { MaskStripView } from "@/components/results/MaskStripView";
-import { getMockResults } from "@/lib/mock/personas";
+import { loadDemoResults } from "@/lib/integration/demo";
+import { formatDistance } from "@/lib/copy";
 
 function ChartPlaceholder() {
   return (
@@ -97,7 +98,8 @@ function Chapter({ id, n, title, children }: { id: string; n: string; title: Rea
 
 export default function HowItWorksPage() {
   // The figures reuse a demo face and its measured spots.
-  const demo = getMockResults("p2b");
+  const demo = loadDemoResults("p2b");
+  const half = (concern: string) => demo?.report.concerns.find((c) => c.concern === concern)?.medianDistanceM;
   const spots = demo?.measurements.features.filter((f) => f.concern === "age_spot" && f.centroid.x > 700) ?? [];
 
   return (
@@ -136,7 +138,7 @@ export default function HowItWorksPage() {
               You study your skin from about 25 cm, with the light on your side and all the time in the world. Everyone else meets your face from a metre or more, for a few seconds, mid-conversation. The question that matters is not &ldquo;what is on my skin?&rdquo; but &ldquo;what can anyone actually see, and from how far?&rdquo;
             </p>
             <p>
-              Arm&rsquo;s Length answers with a distance for each concern. Pores: most of them gone by 85 cm. Under-eye shadows: still there from across a room. No scores and no grades, just the farthest distance at which a person with perfect eyesight could still pick the thing out.
+              Arm&rsquo;s Length answers with a distance for each concern. Pores, on one demo face: half of them gone by {half("pore") ? formatDistance(half("pore")!) : "about a metre and a half"}. Under-eye shadows: still there from across a room. No scores and no grades, just the farthest distance at which a person with perfect eyesight could still pick the thing out.
             </p>
           </Chapter>
 
@@ -151,7 +153,7 @@ export default function HowItWorksPage() {
                   alt="Close crop of a synthetic face's left eye with the iris outlined and measured across its width."
                   frame={demo.frame}
                   crop={{ x: 246, y: 500, w: 220, h: 160 }}
-                  iris={{ cx: 356, cy: 592, r: 36 }}
+                  iris={{ cx: 356, cy: 592, r: (demo.measurements.scale.irisPx ?? 72) / 2 }}
                   stageGrey={demo.stageGrey}
                   label="Iris width ≈ 11.7 mm"
                 />

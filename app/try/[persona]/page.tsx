@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ResultsExperience } from "@/components/results/ResultsExperience";
-import { MOCK_PERSONA_IDS, getMockResults } from "@/lib/mock/personas";
+import { DEMO_IDS, loadDemoResults } from "@/lib/integration/demo";
 
 export function generateStaticParams() {
-  return MOCK_PERSONA_IDS.map((persona) => ({ persona }));
+  return DEMO_IDS.map((persona) => ({ persona }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/try/[persona]">): Promise<Metadata> {
   const { persona } = await params;
-  const data = getMockResults(persona);
+  const data = loadDemoResults(persona);
   return { title: data ? `What others see: ${data.persona.label}` : "Not found" };
 }
 
@@ -24,8 +24,7 @@ export default function PersonaPage({ params }: PageProps<"/try/[persona]">) {
 
 async function Results({ params }: { params: PageProps<"/try/[persona]">["params"] }) {
   const { persona } = await params;
-  // INTEGRATION: replace with the recorded persona bundle + lib/copy sentences (and live results behind the access code).
-  const data = getMockResults(persona);
+  const data = loadDemoResults(persona);
   if (!data) notFound();
   return <ResultsExperience data={data} />;
 }

@@ -73,13 +73,14 @@ describe("assessQuality", () => {
     expect(guidance(q)).toBe("Move closer.");
   });
 
-  test("a 720p webcam face passes at SD", () => {
+  test("a 720p webcam face passes at HD by enlarging, and a smaller one at SD", () => {
     const webcam = { width: 1280, height: 720 };
-    const q = assessQuality(
-      input({ size: webcam, face: { size: webcam, box: { x: 450, y: 120, w: 380, h: 480 } } }),
-    );
-    expect(q.ok).toBe(true);
-    expect(q.engine).toBe("sd");
+    const big = assessQuality(input({ size: webcam, face: { size: webcam, box: { x: 450, y: 120, w: 380, h: 480 } } }));
+    expect(big.ok).toBe(true);
+    expect(big.engine).toBe("hd");
+    const small = assessQuality(input({ size: webcam, face: { size: webcam, box: { x: 470, y: 130, w: 340, h: 440 } } }));
+    expect(small.ok).toBe(true);
+    expect(small.engine).toBe("sd");
   });
 
   test("a face cut off by the frame edge fails inFrame", () => {

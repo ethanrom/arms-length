@@ -64,7 +64,10 @@ export interface YouCamClient {
   skinAnalysis(fileId: string, engine: Engine): Promise<{ taskId: string; output: unknown[]; units: number }>;
   makeup(fileId: string, effects: MakeupEffect[]): Promise<{ taskId: string; url: string; units: number }>;
   simulate(fileId: string, strengths: SimulationStrengths): Promise<{ taskId: string; url: string; units: number }>;
-  /** Best effort. The request schema is not in the OpenAPI files we have; failures are swallowed. */
+  /**
+   * Deletes a finished task with its input files and outputs. Free. One POST per task, body {task_id} (verified
+   * 2026-10-20: internal/research/task-delete.md). Resolves false when YouCam refused or could not be reached.
+   */
   deleteTask(taskId: string): Promise<boolean>;
   /** Downloads a presigned result URL (valid 2 h) without credentials. */
   download(url: string): Promise<DownloadedImage>;
@@ -278,7 +281,8 @@ export function createYouCamClient(options: ClientOptions): YouCamClient {
 
     async deleteTask(taskId) {
       try {
-        await api("POST", "/s2s/v2.0/task/delete", { task_ids: [taskId] }, false);
+        // Deleting twice is harmless, so it may retry like a read.
+        await api("POST", "/s2s/v2.0/task/delete", { task_id: taskId }, true);
         return true;
       } catch {
         return false;

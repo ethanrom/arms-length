@@ -1,6 +1,6 @@
 import type { RgbaImage, ScaleEstimate, ViewingConditions } from "@/lib/contracts";
 import { distanceRenderer } from "./renderer";
-import type { RenderMessage, RenderRequest } from "./render.worker";
+import type { RenderMessage, RenderRequest } from "@/workers/stepback.worker";
 
 export interface RenderJob {
   photo: RgbaImage;
@@ -42,7 +42,7 @@ function getWorker(): Worker | null {
   if (worker !== undefined) return worker;
   if (typeof Worker === "undefined") return (worker = null);
   try {
-    const w = new Worker(new URL("./render.worker.ts", import.meta.url), { type: "module" });
+    const w = new Worker(new URL("../../workers/stepback.worker.ts", import.meta.url), { type: "module" });
     w.onmessage = (e: MessageEvent<RenderMessage>) => {
       const msg = e.data;
       const p = pending.get(msg.id);

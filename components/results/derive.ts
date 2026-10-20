@@ -1,5 +1,7 @@
 import type { Box, ConcernVisibility, Feature, Point, RegionMeasure } from "@/lib/contracts";
-import { fractionAt, type ProfilePoint } from "@/app/_lib/axis";
+import { hasProfile, keyDistanceOf } from "@/lib/integration/copy";
+import type { ProfilePoint } from "@/app/_lib/axis";
+import { profileAt } from "@/lib/copy";
 import type { ConcernCopy, ResultsData } from "./types";
 
 export type Target = Feature | RegionMeasure;
@@ -9,9 +11,9 @@ export interface ConcernView {
   id: string;
   visibility: ConcernVisibility;
   copy: ConcernCopy;
-  /** Out of sight by `reliefWithinM`: for many-feature concerns, when most marks are gone by then. */
+  /** Out of sight, as lib/copy judges it (`copy.tone`); the UI keeps no rule of its own. */
   relief: boolean;
-  /** The distance that orders and labels the concern: where half its marks fade, or the single mark's distance. */
+  /** The distance that labels the concern on the slider: where half its marks vanish, or the single area's limit. */
   keyDistanceM: number;
   /** Share of marks detectable at fixed distances, for concerns with many features (pores, spots, lines, acne). */
   profile: ProfilePoint[] | null;
@@ -35,26 +37,26 @@ function union(boxes: Box[]): Box {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
 
-/** Concerns ordered by how far they carry: the least visible first, so relief leads. */
+/** Concerns in the order lib/copy gives them (relief first, then the most visible first). */
 export function deriveConcernViews(data: ResultsData): ConcernView[] {
   const views: ConcernView[] = [];
-  for (const visibility of data.report.concerns) {
-    const copy = data.concerns.find((c) => c.concern === visibility.concern);
-    if (!copy) continue;
+  for (const copy of data.concerns) {
+    const visibility = data.report.concerns.find((c) => c.concern === copy.concern);
+    if (!visibility) continue;
     const targets: Target[] = [
       ...data.measurements.features.filter((f) => f.concern === visibility.concern),
       ...data.measurements.regions.filter((r) => r.concern === visibility.concern),
     ];
     if (targets.length === 0) continue;
-    const keyDistanceM = visibility.profile ? visibility.medianDistanceM : visibility.maxDistanceM;
     const top = targets.find((t) => t.id === visibility.topTargets[0]) ?? targets[0];
     views.push({
       id: visibility.concern,
       visibility,
       copy,
-      relief: keyDistanceM <= data.reliefWithinM,
-      keyDistanceM,
-      profile: visibility.profile ?? null,
+      relief: copy.tone === "relief",
+      keyDistanceM: keyDistanceOf(visibility),
+      // Many-feature concerns get a curve; a few areas (under-eye, redness) get a single bar. The rule is lib/copy's.
+      profile: hasProfile(visibility) ? (visibility.profile ?? null) : null,
       total: visibility.targetCount,
       targets,
       topIds: new Set(visibility.topTargets),
@@ -62,7 +64,7 @@ export function deriveConcernViews(data: ResultsData): ConcernView[] {
       bounds: union(targets.map((t) => t.bbox)),
     });
   }
-  return views.sort((a, b) => a.keyDistanceM - b.keyDistanceM);
+  return views;
 }
 
 export interface ConcernStatus {
@@ -78,7 +80,8 @@ export function statusAt(view: ConcernView, distanceM: number): ConcernStatus {
   if (!view.profile) {
     return { state: distanceM <= view.visibility.maxDistanceM ? "most" : "none", count: null, total: view.total };
   }
-  const fraction = fractionAt(view.profile, distanceM);
-  const count = Math.round(fraction * view.total);
+  // The same interpolation as the Step back counter sentence (lib/copy), so the bar and the words agree.
+  const { fraction, count: exact } = profileAt(view.profile, distanceM);
+  const count = Math.round(exact);
   return { state: count === 0 ? "none" : fraction >= 0.5 ? "most" : "some", count, total: view.total };
 }

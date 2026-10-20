@@ -18,6 +18,8 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npm run start -- -p ${PORT}`,
     url: baseURL,
+    // Recorded answers only: the live path is exercised end to end with no units (see app/api/youcam/analysis).
+    env: { YOUCAM_MODE: "replay" },
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },

@@ -207,6 +207,14 @@ export function finalizeCapture(source: HTMLCanvasElement, detection: Detection 
   const image = renderPlan(source, plan);
   // Landmarks were measured in source px; YouCam sees the resampled frame.
   const scale = rescaleEstimate(estimate, plan.scale);
-  const result: CaptureResult = { image, engine: plan.engine, scale, quality, size: plan.target };
+  const result: CaptureResult = {
+    image,
+    engine: plan.engine,
+    upscaled: plan.upscaled,
+    upscale: plan.scale,
+    scale,
+    quality,
+    size: plan.target,
+  };
   return { quality, result: quality.usable ? result : null, preview: image };
 }

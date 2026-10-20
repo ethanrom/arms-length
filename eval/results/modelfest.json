@@ -1,6 +1,6 @@
 {
-  "detector": "reference",
-  "detectorNote": "Reference stand-in (difference-of-Gaussians CSF), tuned on these same thresholds (in-sample). Not the product model.",
+  "detector": "standard",
+  "detectorNote": "Product detector from @/lib/vision/standard.",
   "viewing": {
     "luminanceCdM2": 30,
     "acuityScale": 1,
@@ -16,8 +16,8 @@
       "skinRelevant": false,
       "observedDb": -36.42,
       "observerSdDb": 2.69,
-      "predictedDb": -35.19172668457031,
-      "errorDb": 1.2282733154296892
+      "predictedDb": -35.53230285644531,
+      "errorDb": 0.8876971435546892
     },
     {
       "id": 2,
@@ -26,8 +26,8 @@
       "skinRelevant": false,
       "observedDb": -39.21,
       "observerSdDb": 3.59,
-      "predictedDb": -38.35578918457031,
-      "errorDb": 0.8542108154296884
+      "predictedDb": -39.09736633300781,
+      "errorDb": 0.11263366699218835
     },
     {
       "id": 3,
@@ -36,8 +36,8 @@
       "skinRelevant": false,
       "observedDb": -41.26,
       "observerSdDb": 3.58,
-      "predictedDb": -39.36103820800781,
-      "errorDb": 1.8989617919921855
+      "predictedDb": -40.40061950683594,
+      "errorDb": 0.8593804931640605
     },
     {
       "id": 4,
@@ -46,8 +46,8 @@
       "skinRelevant": false,
       "observedDb": -42.13,
       "observerSdDb": 4.26,
-      "predictedDb": -39.36241149902344,
-      "errorDb": 2.767588500976565
+      "predictedDb": -40.50361633300781,
+      "errorDb": 1.62638366699219
     },
     {
       "id": 5,
@@ -56,8 +56,8 @@
       "skinRelevant": false,
       "observedDb": -39.84,
       "observerSdDb": 3.67,
-      "predictedDb": -38.76091003417969,
-      "errorDb": 1.079089965820316
+      "predictedDb": -39.22645568847656,
+      "errorDb": 0.6135443115234409
     },
     {
       "id": 6,
@@ -66,8 +66,8 @@
       "skinRelevant": false,
       "observedDb": -36.87,
       "observerSdDb": 3.49,
-      "predictedDb": -37.52769470214844,
-      "errorDb": -0.6576947021484401
+      "predictedDb": -36.52656555175781,
+      "errorDb": 0.34343444824218494
     },
     {
       "id": 7,
@@ -76,8 +76,8 @@
       "skinRelevant": false,
       "observedDb": -32.42,
       "observerSdDb": 3.66,
-      "predictedDb": -35.07225036621094,
-      "errorDb": -2.652250366210936
+      "predictedDb": -32.37785339355469,
+      "errorDb": 0.042146606445314205
     },
     {
       "id": 8,
@@ -86,8 +86,8 @@
       "skinRelevant": false,
       "observedDb": -25.95,
       "observerSdDb": 4.18,
-      "predictedDb": -30.122909545898438,
-      "errorDb": -4.172909545898438
+      "predictedDb": -26.612777709960938,
+      "errorDb": -0.6627777099609382
     },
     {
       "id": 9,
@@ -96,8 +96,8 @@
       "skinRelevant": false,
       "observedDb": -19.19,
       "observerSdDb": 5.41,
-      "predictedDb": -20.297012329101562,
-      "errorDb": -1.1070123291015612
+      "predictedDb": -19.008865356445312,
+      "errorDb": 0.18113464355468878
     },
     {
       "id": 10,
@@ -106,8 +106,8 @@
       "skinRelevant": false,
       "observedDb": -11.35,
       "observerSdDb": 3.95,
-      "predictedDb": -5.541000366210938,
-      "errorDb": 5.808999633789061
+      "predictedDb": -11.290969848632812,
+      "errorDb": 0.059030151367187145
     },
     {
       "id": 11,
@@ -116,8 +116,8 @@
       "skinRelevant": false,
       "observedDb": -35.39,
       "observerSdDb": 3.22,
-      "predictedDb": -36.06101989746094,
-      "errorDb": -0.6710198974609369
+      "predictedDb": -36.01432800292969,
+      "errorDb": -0.6243280029296869
     },
     {
       "id": 12,
@@ -126,8 +126,8 @@
       "skinRelevant": false,
       "observedDb": -32.37,
       "observerSdDb": 2.63,
-      "predictedDb": -33.01231384277344,
-      "errorDb": -0.6423138427734401
+      "predictedDb": -32.62229919433594,
+      "errorDb": -0.25229919433594006
     },
     {
       "id": 13,
@@ -136,8 +136,8 @@
       "skinRelevant": false,
       "observedDb": -23.86,
       "observerSdDb": 3.37,
-      "predictedDb": -26.472702026367188,
-      "errorDb": -2.612702026367188
+      "predictedDb": -23.822250366210938,
+      "errorDb": 0.03774963378906193
     },
     {
       "id": 14,
@@ -146,8 +146,8 @@
       "skinRelevant": false,
       "observedDb": -10.27,
       "observerSdDb": 3.92,
-      "predictedDb": -14.927444458007812,
-      "errorDb": -4.657444458007813
+      "predictedDb": -9.685592651367188,
+      "errorDb": 0.5844073486328121
     },
     {
       "id": 15,
@@ -156,8 +156,8 @@
       "skinRelevant": false,
       "observedDb": -40.03,
       "observerSdDb": 3.45,
-      "predictedDb": -38.22807312011719,
-      "errorDb": 1.8019268798828136
+      "predictedDb": -38.93119812011719,
+      "errorDb": 1.0988018798828136
     },
     {
       "id": 16,
@@ -166,8 +166,8 @@
       "skinRelevant": false,
       "observedDb": -33.71,
       "observerSdDb": 3.65,
-      "predictedDb": -34.41307067871094,
-      "errorDb": -0.7030706787109366
+      "predictedDb": -32.82279968261719,
+      "errorDb": 0.8872003173828134
     },
     {
       "id": 17,
@@ -176,8 +176,8 @@
       "skinRelevant": false,
       "observedDb": -21.2,
       "observerSdDb": 5.34,
-      "predictedDb": -24.981307983398438,
-      "errorDb": -3.781307983398438
+      "predictedDb": -20.839462280273438,
+      "errorDb": 0.3605377197265618
     },
     {
       "id": 18,
@@ -186,8 +186,8 @@
       "skinRelevant": false,
       "observedDb": -35.46,
       "observerSdDb": 3.46,
-      "predictedDb": -35.01594543457031,
-      "errorDb": 0.44405456542968835
+      "predictedDb": -34.94178771972656,
+      "errorDb": 0.5182122802734384
     },
     {
       "id": 19,
@@ -196,8 +196,8 @@
       "skinRelevant": false,
       "observedDb": -36.88,
       "observerSdDb": 2.86,
-      "predictedDb": -36.13243103027344,
-      "errorDb": 0.7475689697265651
+      "predictedDb": -36.48536682128906,
+      "errorDb": 0.39463317871094006
     },
     {
       "id": 20,
@@ -206,8 +206,8 @@
       "skinRelevant": false,
       "observedDb": -35.09,
       "observerSdDb": 3.09,
-      "predictedDb": -35.09147644042969,
-      "errorDb": -0.0014764404296840894
+      "predictedDb": -35.04341125488281,
+      "errorDb": 0.04658874511719091
     },
     {
       "id": 21,
@@ -216,8 +216,8 @@
       "skinRelevant": false,
       "observedDb": -36.19,
       "observerSdDb": 3.16,
-      "predictedDb": -36.22444152832031,
-      "errorDb": -0.034441528320314774
+      "predictedDb": -36.60896301269531,
+      "errorDb": -0.4189630126953148
     },
     {
       "id": 22,
@@ -226,8 +226,8 @@
       "skinRelevant": false,
       "observedDb": -38.96,
       "observerSdDb": 4.12,
-      "predictedDb": -37.92045593261719,
-      "errorDb": 1.0395440673828134
+      "predictedDb": -38.42720031738281,
+      "errorDb": 0.5327996826171884
     },
     {
       "id": 23,
@@ -236,8 +236,8 @@
       "skinRelevant": false,
       "observedDb": -37.64,
       "observerSdDb": 4.21,
-      "predictedDb": -36.26701354980469,
-      "errorDb": 1.372986450195313
+      "predictedDb": -37.09785461425781,
+      "errorDb": 0.5421453857421881
     },
     {
       "id": 24,
@@ -246,8 +246,8 @@
       "skinRelevant": false,
       "observedDb": -38.27,
       "observerSdDb": 4.15,
-      "predictedDb": -36.71607971191406,
-      "errorDb": 1.5539202880859406
+      "predictedDb": -37.27088928222656,
+      "errorDb": 0.9991107177734406
     },
     {
       "id": 25,
@@ -256,8 +256,8 @@
       "skinRelevant": false,
       "observedDb": -36.51,
       "observerSdDb": 4.18,
-      "predictedDb": -35.72181701660156,
-      "errorDb": 0.7881829833984355
+      "predictedDb": -36.09672546386719,
+      "errorDb": 0.4132745361328105
     },
     {
       "id": 26,
@@ -266,8 +266,8 @@
       "skinRelevant": true,
       "observedDb": -32.73,
       "observerSdDb": 6.4,
-      "predictedDb": -33.11119079589844,
-      "errorDb": -0.3811907958984406
+      "predictedDb": -32.86262512207031,
+      "errorDb": -0.13262512207031563
     },
     {
       "id": 27,
@@ -276,8 +276,8 @@
       "skinRelevant": true,
       "observedDb": -30.52,
       "observerSdDb": 2.85,
-      "predictedDb": -31.614303588867188,
-      "errorDb": -1.094303588867188
+      "predictedDb": -30.629653930664062,
+      "errorDb": -0.10965393066406293
     },
     {
       "id": 28,
@@ -286,8 +286,8 @@
       "skinRelevant": true,
       "observedDb": -24.17,
       "observerSdDb": 2.12,
-      "predictedDb": -25.376815795898438,
-      "errorDb": -1.2068157958984358
+      "predictedDb": -24.146347045898438,
+      "errorDb": 0.023652954101564205
     },
     {
       "id": 29,
@@ -296,8 +296,8 @@
       "skinRelevant": true,
       "observedDb": -16.61,
       "observerSdDb": 3.51,
-      "predictedDb": -18.838577270507812,
-      "errorDb": -2.228577270507813
+      "predictedDb": -16.302108764648438,
+      "errorDb": 0.30789123535156193
     },
     {
       "id": 30,
@@ -306,8 +306,8 @@
       "skinRelevant": true,
       "observedDb": -38.72,
       "observerSdDb": 2.75,
-      "predictedDb": -38.18412780761719,
-      "errorDb": 0.5358721923828114
+      "predictedDb": -38.14567565917969,
+      "errorDb": 0.5743243408203114
     },
     {
       "id": 31,
@@ -316,8 +316,8 @@
       "skinRelevant": true,
       "observedDb": -18.68,
       "observerSdDb": 3.48,
-      "predictedDb": -17.877273559570312,
-      "errorDb": 0.8027264404296872
+      "predictedDb": -16.734695434570312,
+      "errorDb": 1.9453045654296872
     },
     {
       "id": 32,
@@ -326,8 +326,8 @@
       "skinRelevant": true,
       "observedDb": -12.51,
       "observerSdDb": 2.98,
-      "predictedDb": -15.681381225585938,
-      "errorDb": -3.1713812255859377
+      "predictedDb": -13.140792846679688,
+      "errorDb": -0.6307928466796877
     },
     {
       "id": 33,
@@ -336,8 +336,8 @@
       "skinRelevant": false,
       "observedDb": -27.77,
       "observerSdDb": 3.65,
-      "predictedDb": -28.764724731445312,
-      "errorDb": -0.9947247314453129
+      "predictedDb": -27.629013061523438,
+      "errorDb": 0.14098693847656207
     },
     {
       "id": 34,
@@ -346,8 +346,8 @@
       "skinRelevant": false,
       "observedDb": -27.14,
       "observerSdDb": 3.48,
-      "predictedDb": -28.741378784179688,
-      "errorDb": -1.601378784179687
+      "predictedDb": -27.549362182617188,
+      "errorDb": -0.40936218261718693
     },
     {
       "id": 36,
@@ -356,8 +356,8 @@
       "skinRelevant": false,
       "observedDb": -32.07,
       "observerSdDb": 2.99,
-      "predictedDb": -33.01231384277344,
-      "errorDb": -0.9423138427734372
+      "predictedDb": -32.31605529785156,
+      "errorDb": -0.24605529785156222
     },
     {
       "id": 37,
@@ -366,8 +366,8 @@
       "skinRelevant": false,
       "observedDb": -33.15,
       "observerSdDb": 2.55,
-      "predictedDb": -33.01231384277344,
-      "errorDb": 0.13768615722656108
+      "predictedDb": -32.62229919433594,
+      "errorDb": 0.5277008056640611
     },
     {
       "id": 38,
@@ -376,8 +376,8 @@
       "skinRelevant": false,
       "observedDb": -28.52,
       "observerSdDb": 2.32,
-      "predictedDb": -30.319290161132812,
-      "errorDb": -1.799290161132813
+      "predictedDb": -29.910049438476562,
+      "errorDb": -1.390049438476563
     },
     {
       "id": 39,
@@ -386,8 +386,8 @@
       "skinRelevant": false,
       "observedDb": -29.72,
       "observerSdDb": 2.25,
-      "predictedDb": -31.152877807617188,
-      "errorDb": -1.4328778076171886
+      "predictedDb": -30.554122924804688,
+      "errorDb": -0.8341229248046886
     },
     {
       "id": 40,
@@ -396,8 +396,8 @@
       "skinRelevant": true,
       "observedDb": -32.53,
       "observerSdDb": 2.99,
-      "predictedDb": -33.84315490722656,
-      "errorDb": -1.3131549072265614
+      "predictedDb": -32.97523498535156,
+      "errorDb": -0.44523498535156136
     },
     {
       "id": 41,
@@ -406,8 +406,8 @@
       "skinRelevant": false,
       "observedDb": -30.95,
       "observerSdDb": 2.95,
-      "predictedDb": -31.699447631835938,
-      "errorDb": -0.7494476318359382
+      "predictedDb": -31.726913452148438,
+      "errorDb": -0.7769134521484382
     },
     {
       "id": 42,
@@ -416,8 +416,8 @@
       "skinRelevant": false,
       "observedDb": -41.3,
       "observerSdDb": 3.59,
-      "predictedDb": -41.08039855957031,
-      "errorDb": 0.21960144042968466
+      "predictedDb": -41.91947937011719,
+      "errorDb": -0.6194793701171903
     }
   ],
   "excluded": [
@@ -432,8 +432,8 @@
       "reason": "random or photographic pixel content, not defined by parameters"
     }
   ],
-  "rmsAllDb": 1.9726072686246905,
-  "rmsSkinDb": 1.5999738754291257,
+  "rmsAllDb": 0.6879223852157182,
+  "rmsSkinDb": 0.7774286133547749,
   "nAll": 41,
   "nSkin": 8,
   "published": {

@@ -31,6 +31,8 @@ export interface AnalysisResponse {
   masks: Record<string, string>; // ConcernResult.maskRef -> PNG data URL (or public path in replay)
   unitsCharged: number;
   source: "live" | "replay";
+  /** Signed task tokens for session-end cleanup (POST /api/youcam/cleanup). */
+  taskIds?: string[];
 }
 
 /** POST /api/youcam/makeup */

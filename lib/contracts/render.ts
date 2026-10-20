@@ -22,6 +22,8 @@ export interface RenderResult {
   offset: { dx: number; dy: number };
   unitsCharged: number;
   source: "live" | "replay" | "preview";
+  /** Signed task tokens for session-end cleanup. */
+  taskIds?: string[];
 }
 
 export interface Lever {

@@ -15,7 +15,7 @@ import { CONCERN_COPY, concernBe, concernName, concernNoun, concernThem } from "
 import {
   anchorFor, CONVERSATION_M, DISTANCE_ANCHORS, formatDistance, formatInterval, type EverydayAnchor,
 } from "./distance";
-import { profileAt, reachM, shareWords } from "./profile";
+import { profileAt, reachM } from "./profile";
 
 export type Tone = "relief" | "visible";
 
@@ -191,27 +191,38 @@ function describeProfileRelief(cv: ConcernVisibility): ConcernDescription {
   };
 }
 
-/** Many-feature concerns, visible: the farthest everyday anchor where at least RELIEF_SHARE is still detectable. */
+/**
+ * Many-feature concerns, visible: the farthest everyday anchor where at least RELIEF_SHARE is still detectable.
+ * Counts are bounds, so every sentence says "at most" (or "could").
+ */
 function describeProfileVisible(cv: ConcernVisibility): ConcernDescription {
   const noun = concernNoun(cv.concern);
   const them = concernThem(cv.concern);
   const total = cv.targetCount;
   const reach = reachM(cv.profile!, RELIEF_SHARE);
   const anchor = EVERYDAY.filter((a) => a.m <= reach + 1e-9).pop() ?? nearestTable();
-  const here = profileAt(cv.profile!, anchor.m);
-  const count = Math.round(here.count);
+  const count = Math.round(profileAt(cv.profile!, anchor.m).count);
   const where = fromPhrase(anchor.phrase);
+  const hook = `See what would make ${them} disappear at ${formatDistance(CONVERSATION_M)}.`;
+  const note = roughEstimateNote(cv);
+  if (count >= total) {
+    return {
+      headline: `All ${total} of your ${noun} could show ${where}.`,
+      detail: join([`Sharp eyes looking right at ${them} could see all ${total} ${where}.`, note, hook]),
+      tone: "visible",
+    };
+  }
+  // Rounded up: a percentage shown for an upper bound must not dip below it.
+  const percent = Math.ceil((count / total) * 100 - 1e-9);
   return {
     headline: fitHeadline(
-      `${shareWords(here.fraction)} of your ${noun} show ${where}.`,
-      `${shareWords(here.fraction)} of ${noun} show ${where}.`,
+      `At most ${count} of your ${total} ${noun} show ${where}.`,
+      `At most ${count} of ${total} ${noun} show ${where}.`,
     ),
     detail: join([
-      count >= total
-        ? `All ${total} of your ${noun} could be seen ${where}, by sharp eyes looking right at ${them}.`
-        : `${capitalise(where)}, that's at most ${count} of your ${total} ${noun}, for sharp eyes looking right at ${them}.`,
-      roughEstimateNote(cv),
-      `See what would make ${them} disappear at ${formatDistance(CONVERSATION_M)}.`,
+      `${capitalise(where)}, at most ${count} of your ${total} ${noun} (${percent}%) could be seen, and only by sharp eyes looking right at ${them}.`,
+      note,
+      hook,
     ]),
     tone: "visible",
   };
@@ -233,7 +244,7 @@ export function describeConcern(cv: ConcernVisibility): ConcernDescription {
 }
 
 /**
- * The live counter for the Step-back slider, e.g. "143 of 656 pores detectable from here". The profile is read on a log
+ * The live counter for the Step-back slider, e.g. "At most 143 of 656 pores detectable from here". The profile is read on a log
  * distance axis and clamped outside its range (closer than the first point the count is a lower bound, beyond the last
  * an upper bound). Concerns without a profile get a yes/no line from the farthest target.
  */
@@ -241,10 +252,12 @@ export function stepBackCounter(cv: ConcernVisibility, distanceM: number): strin
   if (!CONCERNS[cv.concern].visibility || cv.targetCount === 0) return describeUnmeasured(cv).headline;
   if (cv.profile && CONCERN_COPY[cv.concern].agreement === "plural") {
     const n = Math.round(profileAt(cv.profile, distanceM).count);
-    return `${n} of ${cv.targetCount} ${concernName(cv.concern, cv.targetCount === 1 ? "singular" : "plural")} detectable from here`;
+    return `At most ${n} of ${cv.targetCount} ${concernName(cv.concern, cv.targetCount === 1 ? "singular" : "plural")} detectable from here`;
   }
   const seen = cv.maxDistanceM >= distanceM;
-  return `Your ${concernNoun(cv.concern)} ${concernBe(cv.concern)} ${seen ? "" : "no longer "}detectable from here`;
+  return seen
+    ? `Your ${concernNoun(cv.concern)} may be detectable from here`
+    : `Your ${concernNoun(cv.concern)} ${concernBe(cv.concern)} no longer detectable from here`;
 }
 
 const CONCERN_ORDER = Object.keys(CONCERNS) as ConcernId[];

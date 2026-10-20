@@ -422,22 +422,12 @@ export function dropMarkersInside(det: MarkerDetection, spots: Component[], widt
 }
 
 /**
- * A photo-measured pore wider than this is not an enlarged pore but another mark (a papule, a spot) that sits at a pore
- * location. Flament et al. (2015), Clin Cosmet Investig Dermatol 8:85-93, count facial pores from 250 um upward, and
- * enlarged pores are typically up to about 0.5 mm (an order-of-magnitude assumption, not a figure from that paper), so 1.2 mm is
- * more than twice the upper end. Such a feature is kept but its size becomes the 0.5 mm prior, flagged sizeSource "prior".
- * (Would sit in params.ts with the other marker parameters.)
- */
-export const PORE_MAX_PLAUSIBLE_MM = 1.2;
-export const PORE_IMPLAUSIBLE_PRIOR_MM = 0.5;
-
-/**
  * Size and contrast of one marker from the photo. Contrast is the 3x3 box at the mask location against a
  * robust surround annulus (the box absorbs the ~1 px mask registration error; a wider search for the
  * strongest position inflates contrast, see MARKER_PARAMS.searchRadiusPx). Size is the full width at
  * half the peak of the radial profile, on the luminance channel or (acne) the red-green channel,
  * whichever stands further above the noise. When neither does, the size is a stated prior
- * (sizeSource "prior") and the contrast is still reported; so it is for a pore wider than PORE_MAX_PLAUSIBLE_MM.
+ * (sizeSource "prior") and the contrast is still reported; so it is for a pore wider than P.PORE_MAX_PLAUSIBLE_MM.
  * Photo sizes are blur-limited (about 2 px minimum), so they are upper bounds on the physical size, with contrast
  * diluted correspondingly.
  */
@@ -510,8 +500,8 @@ function measureMarker(m: Marker, kind: "pore" | "acne", unitR: number, ctx: Mea
     return { ...base, diameterMm: priorPx * ctx.mmPerPx, sizeSource: "prior", contrast };
   }
   const dPx = Math.max(p.priorMinPx, 2 * rHalf);
-  if (kind === "pore" && dPx * ctx.mmPerPx > PORE_MAX_PLAUSIBLE_MM) {
-    return { ...base, diameterMm: PORE_IMPLAUSIBLE_PRIOR_MM, sizeSource: "prior", contrast };
+  if (kind === "pore" && dPx * ctx.mmPerPx > P.PORE_MAX_PLAUSIBLE_MM) {
+    return { ...base, diameterMm: P.PORE_IMPLAUSIBLE_PRIOR_MM, sizeSource: "prior", contrast };
   }
   return { ...base, diameterMm: dPx * ctx.mmPerPx, sizeSource: "photo", contrast };
 }

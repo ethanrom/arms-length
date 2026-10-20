@@ -44,22 +44,3 @@ export function reachM(profile: Profile, share: number): number {
   const t = (a.fraction - share) / (a.fraction - b.fraction);
   return Math.exp(Math.log(a.distanceM) + Math.max(0, t) * (Math.log(b.distanceM) - Math.log(a.distanceM)));
 }
-
-/**
- * A share in everyday words for "<share> of your pores show ...". Each word is true for its whole range, and every
- * entry is at most 15 characters so that the headline templates fit MAX_HEADLINE_CHARS.
- */
-const SHARE_WORDS: readonly (readonly [min: number, text: string])[] = [
-  [0.9, "Nearly all"],
-  [0.7, "Most"],
-  [0.55, "More than half"],
-  [0.42, "About half"],
-  [0.29, "About a third"],
-  [0.22, "About a quarter"],
-  [0.15, "About a fifth"],
-  [0, "About a tenth"],
-];
-
-export function shareWords(fraction: number): string {
-  return (SHARE_WORDS.find(([min]) => fraction >= min) ?? SHARE_WORDS[SHARE_WORDS.length - 1])[1];
-}

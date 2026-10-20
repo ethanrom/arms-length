@@ -19,7 +19,6 @@ import {
   proxemicZone,
   profileAt,
   reachM,
-  shareWords,
   stepBackCounter,
   summaryLine,
 } from "./index";
@@ -181,26 +180,26 @@ describe("describeConcern from the detectability profile", () => {
 
   test("visible: the share, at the farthest anchor where at least 10% is still detectable", () => {
     expect(describeConcern(spots)).toEqual({
-      headline: "About a third of your dark spots show from across a table.",
+      headline: "At most 200 of your 600 dark spots show from across a table.",
       detail:
-        "From across a table, that's at most 200 of your 600 dark spots, for sharp eyes looking right at them. " +
+        "From across a table, at most 200 of your 600 dark spots (34%) could be seen, and only by sharp eyes looking right at them. " +
         "See what would make them disappear at 1 m.",
       tone: "visible",
     });
     // 60/600 = 10% at 4 m: the farthest anchor that still holds 10% is across a room.
     const room = describeConcern(many("age_spot", 600, [600, 600, 590, 500, 200, 100, 60, 0]));
-    expect(room.headline).toBe("About a tenth of your dark spots show from across a room.");
-    expect(room.detail).toContain("From across a room, that's at most 60 of your 600 dark spots");
+    expect(room.headline).toBe("At most 60 of your 600 dark spots show from across a room.");
+    expect(room.detail).toContain("From across a room, at most 60 of your 600 dark spots (10%) could be seen");
     const all = describeConcern(many("acne", 5, [5, 5, 5, 5, 5, 1, 0, 0]));
-    expect(all.headline).toBe("Nearly all of your breakouts show from across a table.");
-    expect(all.detail).toMatch(/^All 5 of your breakouts could be seen from across a table/);
+    expect(all.headline).toBe("All 5 of your breakouts could show from across a table.");
+    expect(all.detail).toMatch(/^Sharp eyes looking right at them could see all 5 from across a table/);
   });
 
   test("the boundary: 10% or less across a table is relief, more is not", () => {
     expect(describeConcern(many("pore", 100, [100, 100, 90, 40, 10, 2, 0, 0])).tone).toBe("relief");
     const over = describeConcern(many("pore", 100, [100, 100, 90, 40, 11, 2, 0, 0]));
     expect(over.tone).toBe("visible");
-    expect(over.headline).toBe("About a tenth of your pores show from across a table.");
+    expect(over.headline).toBe("At most 11 of your 100 pores show from across a table.");
   });
 
   test("regions, and concerns with fewer than 5 targets, keep the single-distance wording", () => {
@@ -234,31 +233,25 @@ describe("describeConcern from the detectability profile", () => {
     expect(reachM(profileOf(10, [10, 10, 10, 10, 10, 10, 10, 10]), 0.1)).toBe(6);
     expect(reachM(profileOf(10, [0, 0, 0, 0, 0, 0, 0, 0]), 0.1)).toBe(0.1);
   });
-
-  test("shareWords is monotone and every phrase is true for its whole range", () => {
-    expect([1, 0.9, 0.8, 0.6, 0.5, 0.33, 0.25, 0.18, 0.1].map(shareWords)).toEqual([
-      "Nearly all", "Nearly all", "Most", "More than half", "About half", "About a third", "About a quarter", "About a fifth", "About a tenth",
-    ]);
-  });
 });
 
 describe("stepBackCounter", () => {
   const pores = many("pore", 656, [656, 656, 600, 300, 9, 2, 0, 0]);
 
   test("interpolates the profile for the slider", () => {
-    expect(stepBackCounter(pores, 1)).toBe("300 of 656 pores detectable from here");
-    expect(stepBackCounter(pores, 0.6)).toBe("600 of 656 pores detectable from here");
-    expect(stepBackCounter(pores, Math.sqrt(0.6))).toBe("450 of 656 pores detectable from here");
-    expect(stepBackCounter(pores, 0.1)).toBe("656 of 656 pores detectable from here");
-    expect(stepBackCounter(pores, 8)).toBe("0 of 656 pores detectable from here");
+    expect(stepBackCounter(pores, 1)).toBe("At most 300 of 656 pores detectable from here");
+    expect(stepBackCounter(pores, 0.6)).toBe("At most 600 of 656 pores detectable from here");
+    expect(stepBackCounter(pores, Math.sqrt(0.6))).toBe("At most 450 of 656 pores detectable from here");
+    expect(stepBackCounter(pores, 0.1)).toBe("At most 656 of 656 pores detectable from here");
+    expect(stepBackCounter(pores, 8)).toBe("At most 0 of 656 pores detectable from here");
     const counts = [0.25, 0.4, 0.7, 1, 1.2, 1.5, 2, 3, 5].map((d) => Number(stepBackCounter(pores, d).split(" ")[0]));
     expect([...counts].sort((a, b) => b - a)).toEqual(counts);
   });
 
   test("regions with a profile count zones; concerns without one get a yes or no", () => {
-    expect(stepBackCounter(many("dark_circle", 2, [2, 2, 2, 2, 2, 2, 2, 2]), 3)).toBe("2 of 2 under-eye shadows detectable from here");
-    expect(stepBackCounter(many("age_spot", 1, [1, 1, 1, 0, 0, 0, 0, 0]), 0.5)).toBe("1 of 1 dark spot detectable from here");
-    expect(stepBackCounter(cv("redness", 4), 2)).toBe("Your redness is detectable from here");
+    expect(stepBackCounter(many("dark_circle", 2, [2, 2, 2, 2, 2, 2, 2, 2]), 3)).toBe("At most 2 of 2 under-eye shadows detectable from here");
+    expect(stepBackCounter(many("age_spot", 1, [1, 1, 1, 0, 0, 0, 0, 0]), 0.5)).toBe("At most 1 of 1 dark spot detectable from here");
+    expect(stepBackCounter(cv("redness", 4), 2)).toBe("Your redness may be detectable from here");
     expect(stepBackCounter(cv("redness", 4), 5)).toBe("Your redness is no longer detectable from here");
     expect(stepBackCounter(cv("pore", 0, { targetCount: 0 }), 1)).toBe("We didn't find any pores to measure.");
     expect(stepBackCounter(cv("texture", 0), 1)).toBe("We don't give skin texture a distance.");
@@ -377,6 +370,11 @@ describe("generated copy is clean", () => {
               const counts = PROFILE_DISTANCES_M.map((d) => Math.round(total * Math.min(1, share * (1.5 / d) ** steepness)));
               const c = many(id, total, counts, { confidence });
               const out = describeConcern(c);
+              // Counts come from a bound, so a many-feature sentence never asserts more than "at most".
+              if (CONCERNS[id].visibility && CONCERNS[id].maskKind !== "region") {
+                expect(out.headline).toMatch(/^(At most |All \d+ of your .* could show |Nobody can see )/);
+                expect(stepBackCounter(c, 1)).toMatch(/^At most \d+ of \d+ /);
+              }
               headlines.push(out.headline);
               strings.push(out.headline, out.detail);
               for (const d of DISTANCES) strings.push(stepBackCounter(c, d));

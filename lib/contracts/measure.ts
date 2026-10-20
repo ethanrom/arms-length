@@ -80,6 +80,12 @@ export interface Feature {
   /** Where the size came from: the mask outline, a measurement in the photo, or a stated prior. */
   sizeSource: "mask" | "photo" | "prior";
   contrast: Contrast;
+  /**
+   * What the contrast is measured against. "surround": the feature vs nearby skin (spots, pores, acne).
+   * "counterfactual": the photo vs YouCam Skin Simulation of the same face without the concern, which removes normal
+   * anatomy and lighting such as eye-socket shading and fold shadows (dark circles, eye bags, wrinkles, redness).
+   */
+  contrastBasis?: "surround" | "counterfactual";
 }
 
 /** An area concern: dark circles, eye bags, redness zones. */
@@ -91,8 +97,9 @@ export interface RegionMeasure {
   widthMm: number;
   heightMm: number;
   contrast: Contrast;
-  /** What the region was compared against, e.g. "cheek_band". */
+  /** What the region was compared against, e.g. "cheek_band" or "simulation". */
   reference: string;
+  contrastBasis?: "surround" | "counterfactual";
 }
 
 export interface Measurements {

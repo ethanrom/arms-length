@@ -13,23 +13,11 @@
  */
 import { jinc } from "./bessel";
 import { fft1d, fft2d } from "./fft";
-import {
-  MODEL_GRID,
-  PATCH_GABOR_SD_CYCLES,
-  SOFT_DISK_EDGE_SD_FRACTION,
-  STANDARD_A,
-  STANDARD_FIELD_DEG,
-  type StandardParams,
-} from "./params";
-import { apertureWeights, binFrequency, csf, dftFilter, pool } from "./standard";
+import { MODEL_GRID, PATCH_GABOR_SD_CYCLES, SOFT_DISK_EDGE_SD_FRACTION, STANDARD_A, type StandardParams } from "./params";
+import { apertureWeights, binFrequency, chooseGrid, csf, dftFilter, pool, type Grid } from "./standard";
 
 export type BlobShape = "gaussian" | "disk" | "softDisk";
 export type ShapeId = BlobShape | "line";
-
-export interface Grid {
-  n: number;
-  ppd: number;
-}
 
 export interface ShapeOptions {
   params?: StandardParams;
@@ -37,25 +25,6 @@ export interface ShapeOptions {
   oblique?: boolean;
   /** Override the automatic grid. */
   grid?: Grid;
-}
-
-/** Aperture support radius (deg): A^beta is below 1e-5 beyond it for Standard A. Our choice of margin. */
-const APERTURE_SUPPORT_DEG = 2;
-
-/**
- * Pick the sampling grid for a feature of radial extent `radiusDeg`. The standard grid (120 px/deg, 256 px) is used
- * whenever the feature fits; otherwise pixels/degree are halved (research 1.7) until the field covers the feature
- * plus the aperture support, so wrap-around copies cannot reach the pooling window. `minPpd` raises the sampling
- * (and then the grid size) for high-frequency stimuli.
- */
-export function chooseGrid(radiusDeg: number, minPpd = 0): Grid {
-  const need = Math.max(STANDARD_FIELD_DEG, radiusDeg + APERTURE_SUPPORT_DEG);
-  let ppd: number = MODEL_GRID.ppd;
-  for (let k = 0; k < 3 && MODEL_GRID.n / ppd < need; k++) ppd /= 2;
-  ppd = Math.max(ppd, minPpd);
-  let n: number = MODEL_GRID.n;
-  while (n / ppd < need) n *= 2;
-  return { n, ppd };
 }
 
 /** Fourier transform of the unit-peak shape at frequency (fx, fy) in cpd, in deg^2 (continuous transform). */

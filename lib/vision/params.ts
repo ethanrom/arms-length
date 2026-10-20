@@ -68,7 +68,7 @@ export const DEFAULT_MARGIN_DB = 6;
 export const LUMINANCE_PRESETS = {
   /** Home, evening: 50-150 lx. */
   home: 12,
-  /** Indoor / office: about 400 lx. (The contract's DEFAULT_VIEWING uses 100, a documented difference.) */
+  /** Indoor / office: about 400 lx (equals the contract's DEFAULT_VIEWING). */
   indoor: 45,
   /** Overcast / window light: 1,000-5,000 lx. */
   overcast: 300,

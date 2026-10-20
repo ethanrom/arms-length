@@ -6,8 +6,11 @@
  * Conventions follow the paper and our numpy replication: 120 px/deg, 256 x 256, numpy fftfreq frequencies,
  * DC gain kept, pixel area 1/ppd^2.
  */
+import type { ContrastPatch, Detector, ViewingConditions } from "../contracts/vision";
+import { castleRgContrast, discSensitivity, luminanceGain } from "./castle";
 import { fft2d } from "./fft";
-import { OBLIQUE, STANDARD_A, type StandardParams } from "./params";
+import { angleDeg } from "./geometry";
+import { MODEL_GRID, OBLIQUE, STANDARD_A, STANDARD_B, STANDARD_FIELD_DEG, type StandardParams } from "./params";
 
 function sech(x: number): number {
   // cosh overflows near 710; the CSF terms are negligible long before.
@@ -142,3 +145,201 @@ export function modelResponse(c: ArrayLike<number>, n: number, ppd: number, opts
   const [cx, cy] = opts.centre ?? [n / 2, n / 2];
   return pool(r, n, ppd, P, cx, cy, false);
 }
+
+// ---------------------------------------------------------------------------------------------
+// Sampling grid
+// ---------------------------------------------------------------------------------------------
+
+export interface Grid {
+  n: number;
+  ppd: number;
+}
+
+/** Aperture support radius (deg): A^beta is below 1e-5 beyond it for Standard A. Our choice of margin. */
+const APERTURE_SUPPORT_DEG = 2;
+
+/**
+ * Pick the sampling grid for a feature of radial extent `radiusDeg`. The standard grid (120 px/deg, 256 px) is used
+ * whenever the feature fits; otherwise pixels/degree are halved (research 1.7) until the field covers the feature
+ * plus the aperture support, so wrap-around copies cannot reach the pooling window. `minPpd` raises the sampling
+ * (and then the grid size) for high-frequency stimuli.
+ */
+export function chooseGrid(radiusDeg: number, minPpd = 0): Grid {
+  const need = Math.max(STANDARD_FIELD_DEG, radiusDeg + APERTURE_SUPPORT_DEG);
+  let ppd: number = MODEL_GRID.ppd;
+  for (let k = 0; k < 3 && MODEL_GRID.n / ppd < need; k++) ppd /= 2;
+  ppd = Math.max(ppd, minPpd);
+  let n: number = MODEL_GRID.n;
+  while (n / ppd < need) n *= 2;
+  return { n, ppd };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Detector on a ContrastPatch
+// ---------------------------------------------------------------------------------------------
+
+/** Longest half-extent (deg) of the patch window kept around the fixation point. */
+const MAX_HALF_WINDOW_DEG = 2.5;
+
+interface AxisWeights {
+  start: Int32Array;
+  count: Int32Array;
+  weights: Float64Array[];
+}
+
+/**
+ * For each of `dstN` output pixels, the source pixels and weights that produce it. `ratio` = source pixels per output
+ * pixel; the output centre `dstCentre` (pixel-index coordinates) maps to the source centre (srcLen - 1) / 2.
+ */
+function axisWeights(srcLen: number, ratio: number, dstN: number, dstCentre: number): AxisWeights {
+  const start = new Int32Array(dstN);
+  const count = new Int32Array(dstN);
+  const weights: Float64Array[] = new Array(dstN);
+  const srcCentre = (srcLen - 1) / 2;
+  for (let i = 0; i < dstN; i++) {
+    const c = srcCentre + (i - dstCentre) * ratio;
+    const w: number[] = [];
+    let s: number;
+    if (ratio >= 1) {
+      // Box average over the output pixel's footprint [c - ratio/2, c + ratio/2]; source pixel j covers [j-0.5, j+0.5].
+      const lo = c - ratio / 2;
+      const hi = c + ratio / 2;
+      s = Math.max(0, Math.floor(lo + 0.5));
+      const j1 = Math.min(srcLen - 1, Math.floor(hi - 0.5 + 1e-9) + 1);
+      for (let j = s; j <= j1; j++) w.push(Math.max(0, Math.min(hi, j + 0.5) - Math.max(lo, j - 0.5)) / ratio);
+    } else {
+      // Bilinear sample at c; source pixels outside the patch are 0.
+      const j = Math.floor(c);
+      const t = c - j;
+      s = j;
+      if (j >= 0 && j < srcLen) w.push(1 - t);
+      else s = j + 1;
+      if (j + 1 >= 0 && j + 1 < srcLen) w.push(t);
+    }
+    start[i] = s;
+    count[i] = w.length;
+    weights[i] = Float64Array.from(w);
+  }
+  return { start, count, weights };
+}
+
+/** Resample a width x height image onto an n x n grid; `ratio` = source / grid pixel size, centres aligned. */
+function resample(src: ArrayLike<number>, width: number, height: number, ratio: number, n: number): Float64Array {
+  const centre = (n - 1) / 2;
+  const ax = axisWeights(width, ratio, n, centre);
+  const ay = axisWeights(height, ratio, n, centre);
+  const tmp = new Float64Array(height * n); // rows of the source, resampled along x
+  for (let y = 0; y < height; y++) {
+    for (let i = 0; i < n; i++) {
+      let s = 0;
+      const w = ax.weights[i];
+      for (let k = 0; k < ax.count[i]; k++) s += w[k] * src[y * width + ax.start[i] + k];
+      tmp[y * n + i] = s;
+    }
+  }
+  const out = new Float64Array(n * n);
+  for (let j = 0; j < n; j++) {
+    const w = ay.weights[j];
+    for (let k = 0; k < ay.count[j]; k++) {
+      const row = (ay.start[j] + k) * n;
+      for (let i = 0; i < n; i++) out[j * n + i] += w[k] * tmp[row + i];
+    }
+  }
+  return out;
+}
+
+/** Angular sd (deg) of |c| along its narrower principal axis: the s in f* = 1/(4 s) of the luminance factor. */
+function narrowSd(c: ArrayLike<number>, width: number, height: number, pxDeg: number): number {
+  let sum = 0;
+  let sx = 0;
+  let sy = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const v = Math.abs(c[y * width + x]);
+      sum += v;
+      sx += v * x;
+      sy += v * y;
+    }
+  }
+  if (sum === 0) return 0;
+  const mx = sx / sum;
+  const my = sy / sum;
+  let vx = 0;
+  let vy = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const v = Math.abs(c[y * width + x]);
+      vx += v * (x - mx) * (x - mx);
+      vy += v * (y - my) * (y - my);
+    }
+  }
+  return Math.sqrt(Math.min(vx, vy) / sum) * pxDeg;
+}
+
+/** Chromatic part of the response: equal-area disc of the strongest red-green pixels, castleCSF disc model. */
+function chromaticResponse(patch: ContrastPatch, pxDeg: number, luminance: number): number {
+  const rg = patch.rg;
+  if (!rg) return 0;
+  let peak = 0;
+  for (let i = 0; i < rg.length; i++) peak = Math.max(peak, Math.abs(rg[i]));
+  if (peak === 0) return 0;
+  let count = 0;
+  let sRg = 0;
+  let sLum = 0;
+  for (let i = 0; i < rg.length; i++) {
+    if (Math.abs(rg[i]) >= 0.5 * peak) {
+      count++;
+      sRg += rg[i];
+      sLum += patch.lum[i];
+    }
+  }
+  const radius = Math.sqrt((count * pxDeg * pxDeg) / Math.PI);
+  return castleRgContrast(sLum / count, sRg / count) * discSensitivity("rg", radius, luminance);
+}
+
+/**
+ * The standard model as a `Detector` on a ContrastPatch (research 1.2), for stimuli that are not one of the tabulated
+ * shapes (cropped contrast patches, ModelFest stimuli). This is the raw model for the average observer: it ignores
+ * `viewing.marginDb` (the margin belongs to the bound, see visibility.ts) and uses the luminance factor g(L, f*)
+ * unclamped (g = 1 at the ModelFest luminance of 30 cd/m^2).
+ *
+ * Geometry: one patch pixel subtends angleDeg(mmPerPx, d) / acuityScale degrees.
+ *  - A 256 x 256 patch at 120 px/deg (the ModelFest geometry) is used as is: no resampling, aperture centred on pixel
+ *    128 as in the ModelFest images, cyclic 2.13 deg field as in the paper.
+ *  - Otherwise the patch is cropped to +/-2.5 deg around its centre (the aperture is below 4e-4 there), box-averaged
+ *    (finer patches) or bilinearly interpolated (coarser) onto the grid from `chooseGrid`, with the patch centre on the
+ *    grid centre, which is also the fixation point. Outside the patch the contrast is 0.
+ * If the patch has an `rg` image, the red-green part is added in quadrature as in visibility.ts (castleCSF disc model).
+ */
+export function createStandardDetector(variant: "A" | "B" = "A"): Detector {
+  const params = variant === "B" ? STANDARD_B : STANDARD_A;
+  return {
+    response(patch: ContrastPatch, viewing: ViewingConditions, distanceM: number): number {
+      const a = viewing.acuityScale > 0 ? viewing.acuityScale : 1;
+      const pxDeg = angleDeg(patch.mmPerPx, distanceM) / a;
+
+      let R: number;
+      if (
+        patch.width === MODEL_GRID.n &&
+        patch.height === MODEL_GRID.n &&
+        Math.abs(pxDeg * MODEL_GRID.ppd - 1) < 1e-6
+      ) {
+        R = modelResponse(patch.lum, MODEL_GRID.n, MODEL_GRID.ppd, { params, oblique: true });
+      } else {
+        const halfExtent = Math.min((Math.max(patch.width, patch.height) * pxDeg) / 2, MAX_HALF_WINDOW_DEG);
+        const grid = chooseGrid(halfExtent);
+        const image = resample(patch.lum, patch.width, patch.height, 1 / (pxDeg * grid.ppd), grid.n);
+        const c = (grid.n - 1) / 2;
+        R = modelResponse(image, grid.n, grid.ppd, { params, oblique: true, centre: [c, c] });
+      }
+
+      const sd = narrowSd(patch.lum, patch.width, patch.height, pxDeg);
+      const g = sd > 0 ? luminanceGain(viewing.luminanceCdM2, 1 / (4 * sd)) : 1;
+      return Math.hypot(R * g, chromaticResponse(patch, pxDeg, viewing.luminanceCdM2));
+    },
+  };
+}
+
+export const standardDetector: Detector = createStandardDetector();
+
+export default standardDetector;

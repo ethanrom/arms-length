@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { standardDetector, synthesizePatch } from "./detector";
+import { synthesizePatch } from "./patches";
 import { STANDARD_A, STANDARD_B } from "./params";
 import { blobThreshold, gaborPatchThreshold, lineThreshold, lineThresholdInfinite } from "./shapes";
-import { csf, modelResponse } from "./standard";
+import { createStandardDetector, csf, modelResponse, standardDetector } from "./standard";
 import { blobThresholdLookup, lineThresholdLookup } from "./tables";
 
 const db = (x: number) => 20 * Math.log10(x);
@@ -40,10 +40,11 @@ describe("Watson & Ahumada standard model", () => {
     ["#26 Gaussian sd 30'", "gaussian", 0.5, -32.865],
     ["#40 disk 0.25 deg", "disk", 0.25, -33.007],
   ];
-  it.each(modelFest)("%s is within 0.1 dB of the research prediction", (_name, shape, size, expected) => {
-    expect(Math.abs(db(blobThreshold(shape, size)) - expected)).toBeLessThan(0.1);
-    // and the runtime lookup tables agree with the direct computation
-    expect(Math.abs(db(blobThresholdLookup(shape, size)) - expected)).toBeLessThan(0.1);
+  it("the five analytic ModelFest stimuli (#26-29, #40) are within 0.1 dB of the research predictions, direct and tabulated", () => {
+    for (const [name, shape, size, expected] of modelFest) {
+      expect(Math.abs(db(blobThreshold(shape, size)) - expected), name).toBeLessThan(0.1);
+      expect(Math.abs(db(blobThresholdLookup(shape, size)) - expected), name).toBeLessThan(0.1);
+    }
   });
 
   it("the image-domain pipeline (FFT of a sampled 256 x 256 image) agrees with the analytic one", () => {
@@ -58,7 +59,7 @@ describe("Watson & Ahumada standard model", () => {
     expect(Math.abs(db(1 / modelResponse(img, n, 120)) - -24.146)).toBeLessThan(0.1);
   });
 
-  it("tables reproduce direct computation off the grid points (0.05 dB blobs, 0.1 dB lines)", () => {
+  it("tables reproduce direct computation off the grid points (0.05 dB blobs, 0.1 dB lines) and are monotone", () => {
     const blobs: ["gaussian" | "disk" | "softDisk", number][] = [
       ["gaussian", 0.37 / 60],
       ["gaussian", 17 / 60],
@@ -80,9 +81,7 @@ describe("Watson & Ahumada standard model", () => {
     for (const [w, l] of lines) {
       expect(Math.abs(db(lineThresholdLookup(w, l)) - db(lineThreshold(w, l)))).toBeLessThan(0.1);
     }
-  });
-
-  it("thresholds never decrease as angular size decreases (blobs to 0.5 deg, disks to 1 deg)", () => {
+    // thresholds never decrease as angular size decreases (blobs to 0.5 deg, disks to 1 deg; research 9.5 item 4)
     for (const [shape, top] of [["gaussian", 0.5], ["disk", 1], ["softDisk", 1]] as const) {
       let previous = 0;
       for (let size = top; size > 0.01 / 60; size /= 1.07) {
@@ -93,7 +92,7 @@ describe("Watson & Ahumada standard model", () => {
     }
   });
 
-  it("finite lines converge to the infinite line; the long-line recipe predicts ModelFest #31 (-16.73 dB)", () => {
+  it("lines converge to the infinite line and reproduce ModelFest #31 (-16.73 dB); the patch CSF reproduces #11-14", () => {
     const w = 0.5 / 60;
     const inf = lineThresholdInfinite(w);
     expect(Math.abs(db(lineThreshold(w, 4)) - db(inf))).toBeLessThan(0.05);
@@ -103,9 +102,7 @@ describe("Watson & Ahumada standard model", () => {
     const pInf = sigma * Math.sqrt((2 * Math.PI) / beta);
     const pWin = Math.sqrt((2 * Math.PI) / (beta * (1 / 0.25 + 1 / (sigma * sigma))));
     expect(Math.abs(db(inf * Math.pow(pInf / pWin, 1 / beta)) - -16.73)).toBeLessThan(0.3);
-  });
-
-  it("patch CSF (1-octave Gabor) matches the Standard A predictions for ModelFest #11-14", () => {
+    // the patch CSF (1-octave Gabor) matches the Standard A predictions for ModelFest #11-14
     const expected: [number, number][] = [
       [2, -36.01],
       [4, -32.62],
@@ -115,17 +112,29 @@ describe("Watson & Ahumada standard model", () => {
     for (const [f0, dB] of expected) expect(Math.abs(db(gaborPatchThreshold(f0)) - dB)).toBeLessThan(0.1);
   });
 
-  it("Detector.response is 1 at the nominal and bound distances of a 3 mm, 12% disk and falls with distance", () => {
+  it("Detector.response is 1 at the nominal distance of a 3 mm, 12% disk, ignores marginDb and falls with distance", () => {
     const patch = synthesizePatch("disk", 3, 0.12, 0.05);
     const nominal = { luminanceCdM2: 30, acuityScale: 1, label: "custom" as const, marginDb: 0 };
-    const bound = { ...nominal, marginDb: 6 };
-    expect(standardDetector.response(patch, nominal, 3.234)).toBeCloseTo(1, 1);
-    expect(Math.abs(standardDetector.response(patch, bound, 4.845) - 1)).toBeLessThan(0.05);
+    expect(Math.abs(standardDetector.response(patch, nominal, 3.234) - 1)).toBeLessThan(0.03);
+    expect(standardDetector.response(patch, { ...nominal, marginDb: 6 }, 3.234)).toBe(
+      standardDetector.response(patch, nominal, 3.234),
+    );
     let previous = Infinity;
     for (const d of [0.5, 1, 2, 3, 4, 6, 10]) {
       const r = standardDetector.response(patch, nominal, d);
       expect(r).toBeLessThan(previous);
       previous = r;
     }
+    // a 256 x 256 patch at 120 px/deg (the ModelFest geometry) is used as is; variant B differs
+    const n = 256;
+    const s = 2.106 / 60;
+    const lum = new Float32Array(n * n);
+    for (let y = 0; y < n; y++)
+      for (let x = 0; x < n; x++) lum[y * n + x] = Math.exp(-(((x - 128) ** 2 + (y - 128) ** 2) / 120 ** 2) / (2 * s * s));
+    const mmPerPx = 1000 * Math.tan(Math.PI / 180 / 120); // as in eval/modelfest: a pixel subtends 1/120 deg at 1 m
+    const stimulus = { width: n, height: n, mmPerPx, lum };
+    const direct = modelResponse(lum, n, 120);
+    expect(standardDetector.response(stimulus, nominal, 1)).toBe(direct);
+    expect(createStandardDetector("B").response(stimulus, nominal, 1)).not.toBe(direct);
   });
 });

@@ -63,26 +63,25 @@ const discRows = [
 ];
 
 describe("castleCSF static foveal port", () => {
-  it.each(gaborRows)("Gabor row $name equals the reference port and is within 4 dB of the data", (row) => {
-    const log = Math.log10(coneSensitivity(row.f, row.area, row.bg, row.delta));
-    expect(Math.abs(log - row.python)).toBeLessThan(1e-4);
-    expect(Math.abs(20 * (log - row.measured))).toBeLessThan(4);
+  it("dataset rows equal the reference port to 1e-4 log10 and lie within 4 dB (Gabors) / 3.5 dB (discs, k_r = 2 pi) of the data", () => {
+    for (const row of gaborRows) {
+      const log = Math.log10(coneSensitivity(row.f, row.area, row.bg, row.delta));
+      expect(Math.abs(log - row.python), row.name).toBeLessThan(1e-4);
+      expect(Math.abs(20 * (log - row.measured)), row.name).toBeLessThan(4);
+    }
+    for (const row of discRows) {
+      const log = Math.log10(discConeSensitivity(row.radius, row.bg, row.delta));
+      expect(Math.abs(log - row.python), row.name).toBeLessThan(1e-4);
+      expect(Math.abs(20 * (log - row.measured)), row.name).toBeLessThan(3.5);
+    }
   });
 
-  it.each(discRows)("disc row $name equals the reference port (k_r = 2 pi) and is within 3.5 dB of the data", (row) => {
-    const log = Math.log10(discConeSensitivity(row.radius, row.bg, row.delta));
-    expect(Math.abs(log - row.python)).toBeLessThan(1e-4);
-    expect(Math.abs(20 * (log - row.measured))).toBeLessThan(3.5);
-  });
-
-  it("channel sensitivities at 100 cd/m2, area 1 deg2, 4 cpd match the reference port", () => {
+  it("channel sensitivities and the luminance factor match the reference port (research 9.2)", () => {
     const s = channelSensitivities(4, 1, 100);
     expect(s.ach).toBeCloseTo(134.278, 2);
     expect(s.rg).toBeCloseTo(148.895, 2);
     expect(s.yv).toBeCloseTo(14.759, 2);
-  });
-
-  it("luminance factor at 4 cpd follows research 9.2 (0.45, 0.73, 1.00, 1.22, 1.33, 1.38)", () => {
+    // g(L, 4 cpd): 0.45, 0.73, 1.00, 1.22, 1.33, 1.38 at 3, 10, 30, 100, 300, 1000 cd/m2
     const expected = [0.4476, 0.7318, 1, 1.2226, 1.3326, 1.376];
     [3, 10, 30, 100, 300, 1000].forEach((L, i) => expect(luminanceGain(L, 4)).toBeCloseTo(expected[i], 3));
   });

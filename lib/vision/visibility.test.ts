@@ -55,13 +55,15 @@ describe("visibility distance (research 9.4, Standard A at 30 cd/m2)", () => {
     ["2 mm freckle at 15%", spot("age_spot", 2, -0.15), 2.5, 3.7],
     ["5 mm papule at 15%", spot("acne", 5, -0.15), 6.2, 9.1],
   ];
-  it.each(illustrative)("%s", (_name, feature, nominal, bound) => {
-    const v = targetVisibility(feature, scale, viewing(6));
-    expect(near(v.distanceM, bound)).toBe(true);
-    expect(near(v.nominalM as number, nominal)).toBe(true);
+  it("reproduces the illustrative nominal / bound distances within 5%", () => {
+    for (const [name, feature, nominal, bound] of illustrative) {
+      const v = targetVisibility(feature, scale, viewing(6));
+      expect(near(v.distanceM, bound), `${name}: bound ${v.distanceM}`).toBe(true);
+      expect(near(v.nominalM as number, nominal), `${name}: nominal ${v.nominalM}`).toBe(true);
+    }
   });
 
-  it("distance increases with size, contrast and margin", () => {
+  it("distance increases with size, contrast and margin, scales linearly with size, and the bound is above the nominal", () => {
     const d = (diam: number, c: number, m: number) => targetVisibility(spot("age_spot", diam, -c), scale, viewing(m)).distanceM;
     for (const [a, b] of [[1, 2], [2, 4], [4, 8]]) expect(d(b, 0.1, 6)).toBeGreaterThan(d(a, 0.1, 6));
     for (const [a, b] of [[0.05, 0.1], [0.1, 0.2], [0.2, 0.4]]) expect(d(3, b, 6)).toBeGreaterThan(d(3, a, 6));
@@ -69,13 +71,9 @@ describe("visibility distance (research 9.4, Standard A at 30 cd/m2)", () => {
     // the bound is never below the nominal distance
     const v = targetVisibility(spot("age_spot", 3, -0.1), scale, viewing(6));
     expect(v.distanceM).toBeGreaterThan(v.nominalM as number);
-  });
-
-  it("at fixed contrast the distance scales linearly with physical size", () => {
+    // at fixed contrast the model only sees size / distance
     const spec = (mm: number) => specFromTarget(spot("age_spot", mm, -0.1), scale)!;
-    const a = rawDistances(spec(1), viewing(6)).bound;
-    const b = rawDistances(spec(2.5), viewing(6)).bound;
-    expect(b / a).toBeCloseTo(2.5, 5);
+    expect(rawDistances(spec(2.5), viewing(6)).bound / rawDistances(spec(1), viewing(6)).bound).toBeCloseTo(2.5, 5);
   });
 
   it("returns an interval from the scale uncertainty and respects the contract limits", () => {

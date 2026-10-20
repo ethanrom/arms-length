@@ -107,6 +107,45 @@ describe("measureAnalysis on planted features", () => {
     expect(flat.diameterMm!).toBeGreaterThanOrEqual(0.3 - 1e-9);
   });
 
+  test("a pore wider than 1.2 mm in the photo is kept but sized by the 0.5 mm prior, and says so", () => {
+    const W = 220;
+    const H = 120;
+    const dot = (cx: number) => (x: number, y: number) => Math.abs(x - cx) <= 4 && Math.abs(y - 60) <= 4;
+    // 4.5 px radius = 1.8 mm across at 0.2 mm/px: a spot-sized mark; the second is a 1.0 mm pore.
+    const photo = makePhoto(W, H, SKIN, (x, y) => (inDisk(x, y, 50, 60, 4.5) ? 0.6 : inDisk(x, y, 150, 60, 2.5) ? 0.6 : null), 0.01);
+    const mask = makeMask(W, H, 102, (x, y) => (dot(50)(x, y) || dot(150)(x, y) ? 255 : null));
+    const { analysis, masks } = setup(W, H, [{ concern: "pore", mask }]);
+    const [wide, small] = measureAnalysis(analysis, masks, photo, TEST_SCALE).features;
+    expect(wide.sizeSource).toBe("prior");
+    expect(wide.diameterMm).toBe(0.5);
+    expect(wide.contrast.lum).toBeLessThan(-0.2);
+    expect(small.sizeSource).toBe("photo");
+    expect(small.diameterMm!).toBeLessThan(1.2);
+  });
+
+  test("pore and acne markers inside an age spot are dropped, and the count is recorded", () => {
+    const W = 260;
+    const H = 120;
+    const spot = (x: number, y: number) => inDisk(x, y, 60, 60, 12);
+    const dot = (cx: number, cy: number) => (x: number, y: number) => Math.abs(x - cx) <= 4 && Math.abs(y - cy) <= 4;
+    const pores = [dot(60, 60), dot(150, 60), dot(210, 60)];
+    const photo = makePhoto(W, H, SKIN, (x, y) => (spot(x, y) ? 0.75 : null), 0.01);
+    const spotMask = makeMask(W, H, 51, (x, y) => (spot(x, y) ? (inDisk(x, y, 60, 60, 10.5) ? 0 : 200) : null));
+    const poreMask = makeMask(W, H, 102, (x, y) => (pores.some((d) => d(x, y)) ? 255 : null));
+    const acneMask = makeMask(W, H, 92, (x, y) => (inDisk(x, y, 60, 60, 8.5) && !inDisk(x, y, 60, 60, 6.5) ? 255 : null));
+    const { analysis, masks } = setup(W, H, [
+      { concern: "age_spot", mask: spotMask },
+      { concern: "pore", mask: poreMask },
+      { concern: "acne", mask: acneMask },
+    ]);
+    const m = measureAnalysis(analysis, masks, photo, TEST_SCALE);
+    expect(m.features.filter((f) => f.concern === "age_spot")).toHaveLength(1);
+    expect(m.features.filter((f) => f.concern === "pore").map((f) => f.centroid.x)).toEqual([150, 210]);
+    expect(m.features.filter((f) => f.concern === "acne")).toHaveLength(0);
+    expect(m.skipped).toContainEqual({ concern: "pore", reason: "1 markers inside age spots" });
+    expect(m.skipped).toContainEqual({ concern: "acne", reason: "1 markers inside age spots" });
+  });
+
   test("acne marker: red-green contrast is measured, matching the colour oracle", () => {
     const W = 120;
     const H = 120;

@@ -106,6 +106,15 @@ export const MARKER_PARAMS: Record<"pore" | "acne", MarkerParams> = {
 export const ACNE_PRIOR_FRACTION = 0.5;
 
 /**
+ * A photo-measured pore wider than this is not an enlarged pore but another mark (a papule, a spot) that sits at a pore
+ * location. Flament et al. (2015), Clin Cosmet Investig Dermatol 8:85-93, count facial pores from 250 um upward; enlarged
+ * pores are typically up to about 0.5 mm (an order-of-magnitude assumption, not a figure from that paper), so 1.2 mm is
+ * more than twice the upper end. Such a feature is kept, but its size becomes the 0.5 mm prior and sizeSource is "prior".
+ */
+export const PORE_MAX_PLAUSIBLE_MM = 1.2;
+export const PORE_IMPLAUSIBLE_PRIOR_MM = 0.5;
+
+/**
  * Wrinkle cross-sections: sampled along the skeleton every STEP px, profile out to HALF_SPAN px each
  * side of the line, flanks (baseline) from FLANK_INNER to HALF_SPAN of the crease. One lateral offset per wrinkle is chosen within
  * +-ALIGN_PX of the mask line (YouCam lines can sit a few px off the visible crease).

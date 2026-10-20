@@ -13,8 +13,9 @@ import {
 import { toLinearPlanes } from "./color";
 import { bandBelow, surroundStat, type Surround } from "./contrast";
 import {
-  detectContours, detectMarkers, detectPolylines, detectRegions, measureContours, measureMarkers, measurePolylines,
-  measureRegion, type FeatureDraft, type MeasureContext, type RegionDetection,
+  detectContours, detectMarkers, detectPolylines, detectRegions, dropMarkersInside, measureContours, measureMarkers,
+  measurePolylines, measureRegion, type ContourDetection, type FeatureDraft, type MarkerDetection, type MeasureContext,
+  type RegionDetection,
 } from "./features";
 import { connectedComponents, dilate, fillHoles, foregroundOf } from "./masks";
 import * as P from "./params";
@@ -112,6 +113,8 @@ export function measureAnalysis(
   const measurers: { concern: ConcernId; run: (ctx: MeasureContext) => FeatureDraft[] }[] = [];
   const footprints: Uint8Array[] = [];
   const centres: Point[] = [];
+  let spots: ContourDetection | null = null;
+  const markerRuns: { concern: "pore" | "acne"; det: MarkerDetection }[] = [];
 
   for (const spec of Object.values(CONCERNS)) {
     if (spec.maskKind === "roi" || spec.maskKind === "region") continue;
@@ -124,6 +127,7 @@ export function measureAnalysis(
       const det = detectContours(mask);
       footprints.push(det.footprint);
       det.comps.forEach((c) => centres.push(c.centroid));
+      if (spec.id === "age_spot") spots = det;
       measurers.push({ concern: spec.id, run: (ctx) => measureContours(spec.id, det.comps, ctx) });
       if (det.comps.length === 0) skip(spec.id, "mask has no features");
     } else if (spec.maskKind === "polyline") {
@@ -136,10 +140,16 @@ export function measureAnalysis(
       const kind = spec.id === "acne" ? "acne" : "pore";
       const det = detectMarkers(mask, kind);
       footprints.push(det.footprint);
-      det.markers.forEach((m) => centres.push({ x: m.x, y: m.y }));
+      markerRuns.push({ concern: kind, det });
       measurers.push({ concern: spec.id, run: (ctx) => measureMarkers(kind, det, ctx) });
       if (det.markers.length === 0) skip(spec.id, "mask has no markers");
     }
+  }
+  // A pore or breakout marker inside a measured age spot is that spot, not a second feature.
+  for (const { concern, det } of markerRuns) {
+    const dropped = spots ? dropMarkersInside(det, spots.comps, width, height) : 0;
+    if (dropped > 0) skip(concern, `${dropped} markers inside age spots`);
+    det.markers.forEach((m) => centres.push({ x: m.x, y: m.y }));
   }
 
   const regionDetections = new Map<ConcernId, RegionDetection>();

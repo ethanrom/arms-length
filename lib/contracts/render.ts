@@ -35,6 +35,8 @@ export interface CoverageStep {
   render: RenderResult;
   /** Re-measured visibility of the target concern after this render. */
   maxDistanceM: number;
+  /** Share of the concern's targets still detectable (bound) at the plan's targetDistanceM. The plan's metric. */
+  fractionAtTarget?: number;
 }
 
 /** Least makeup that brings a concern's visibility to <= targetDistanceM, verified on renders. */
@@ -43,8 +45,18 @@ export interface CoveragePlan {
   targetDistanceM: number;
   baselineDistanceM: number;
   steps: CoverageStep[];
+  /**
+   * met: the lowest coverage with fractionAtTarget <= 10%.
+   * not_met: makeup can't get there; `chosen` is the knee, the lowest coverage reaching >= 80% of the reduction that
+   * 100% coverage achieves ("most of the effect at 50%").
+   * no_lever: no makeup lever for this concern (see reason).
+   */
   chosen: CoverageStep | null;
   status: "met" | "not_met" | "no_lever";
+  /** Machine-readable reason, e.g. no_makeup_lever, lever_not_tested, not_a_visible_mark, already_met, no_targets. */
+  reason?: string;
+  /** fractionAtTarget with no makeup. */
+  baselineFraction?: number;
 }
 
 export interface WhatIf {

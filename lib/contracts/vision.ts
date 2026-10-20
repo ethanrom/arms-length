@@ -67,6 +67,9 @@ export interface ConcernVisibility {
    * on the Step-back slider. Robust to a few outliers, unlike maxDistanceM.
    */
   profile?: { distanceM: number; count: number; fraction: number }[];
+  /** Same as profile but for the average observer (marginDb 0): drives the visible-side headlines. */
+  nominalProfile?: { distanceM: number; count: number; fraction: number }[];
+  nominalMaxDistanceM?: number;
 }
 
 /** Fixed distances for ConcernVisibility.profile: mirror, selfie, arm's length, conversation, table, room, far. */

@@ -11,7 +11,7 @@ Contents: [In plain words](#in-plain-words) | [Pipeline](#the-pipeline-at-a-glan
 [5. Colour](#5-colour-the-castlecsf-channel) | [6. The bound](#6-the-bound) |
 [7. Summary](#7-from-features-to-a-summary) | [8. Step back](#8-the-step-back-picture) |
 [9. Soft areas](#9-large-soft-areas) | [10. Worth it?](#10-worth-it-the-difference-an-improvement-would-make) |
-[11. Least makeup](#11-least-makeup) | [12. Registration](#12-render-registration) |
+[11. The lightest touch](#11-the-lightest-touch) | [12. Registration](#12-render-registration) |
 [Parameters](#parameter-table) | [Limitations](#limitations) | [Sources](#sources)
 
 ## In plain words
@@ -43,13 +43,13 @@ distances, not grades. A mark that can be detected from 30 cm or from 3 m is sim
 skin texture around a mark hides it further. All of that only shortens the real distance. So the claim we can defend is
 the upper limit.
 
-**What the results look like.** A face has hundreds of pores and spots, so for those the answer is a count, not one
-distance: "from across a table, at most 150 of your 450 pores could be seen" (section 7). Large soft areas such as
-under-eye shadows get no useful distance, because any ideal observer sees a large area at a few percent of contrast from
-across a room, so we say that plainly and show YouCam's own score (section 9). The same model also answers two
-practical follow-ups: *Worth it?* (if YouCam's Skin Simulation improved a concern by half, from how far could anyone
-tell the difference? section 10) and *Least makeup* (the lowest foundation coverage that gets most of the effect,
-section 11).
+**What the results look like.** A face has hundreds of pores and spots, so for those the answer is a proportion, not one
+distance: "about a third of your dark spots can be seen across a table", said for a typical sharp-eyed person, with the
+exact counts kept for a receipt (section 7). Large soft areas such as under-eye shadows get no distance at all, because
+any ideal observer sees a large area at a few percent of contrast from far away, on every face, so we lead with that
+fact (section 9). The same model also answers two practical follow-ups: *Worth it?* (if the picture looked like YouCam's
+Skin Simulation at half strength, from how far could anyone tell the difference? section 10) and *The lightest touch*
+(the lowest foundation coverage that gets most of the effect on a virtual try-on, section 11).
 
 ## The pipeline at a glance
 
@@ -72,11 +72,11 @@ flowchart LR
 | 2. Iris ruler | Face landmarks | Millimetres per pixel, with an uncertainty | `lib/scale` |
 | 3. Contrast | Photo in linear light | Weber and red-green contrast | `lib/skin` |
 | 4-6. Visibility | Size in mm, contrast, lighting | Nominal and bound distance for each feature | `lib/vision` |
-| 7. Summary | All the distances | A profile ("at most N of M") for many-feature concerns, one distance for regions | `lib/vision/report.ts` |
+| 7. Summary | All the distances | A bound profile and a nominal profile (share of features detectable at fixed distances) for many-feature concerns, one distance for regions | `lib/vision/report.ts` |
 | 8. Step back | Photo, scale, distance | The photo as an ideal observer sees it from there | `lib/vision/renderer.ts` |
-| 9. Soft areas | Region measurements | The soft-area wording plus YouCam's own score, instead of a long distance | `lib/copy/describe.ts` |
+| 9. Soft areas | Region measurements | The soft-area wording, with no distance, instead of a long distance | `lib/copy/describe.ts` |
 | 10. Worth it? | Photo, half-strength Skin Simulation | Distance at which the change stays detectable | `lib/vision/worthIt.ts`, `lib/skin/counterfactual.ts` |
-| 11. Least makeup | Foundation renders at 50, 75, 100 | The lowest coverage that gets most of the effect | `lib/coverage/plan.ts` |
+| 11. The lightest touch | Foundation renders at 50, 75, 100 | The lowest coverage that gets most of the effect | `lib/coverage/plan.ts` |
 | 12. Registration | Photo, a render | The shift that aligns the render to the photo | `lib/coverage/register.ts` |
 
 No language model is involved anywhere. The same photo and masks give the same numbers, and every sentence comes from
@@ -325,7 +325,8 @@ smoothing) and the pixel scale is right. It does not rely on masking by skin tex
 
 **In plain words.** A face has hundreds of pores and spots, and "how far can the most visible one be seen?" is the wrong
 question to ask of them. So for concerns with many features (pores, dark spots, lines, breakouts) we count how many
-features an ideal observer could still see at each of several distances, and say "at most N of your M".
+features an ideal observer could still see at each of several distances, and say it in proportions, such as "most" or
+"about a third", with the exact counts kept for the receipt.
 
 **Why the maximum is fragile.** The farthest single feature is decided by one outlier. On the first real run on p2b, the
 top "pores" were 1.4 to 1.8 mm marks that YouCam had also tagged as something else, and the headline distance came from
@@ -337,9 +338,14 @@ them while the typical pore sat far closer. Today (after the fixes below) p2b's 
 (`PROFILE_DISTANCES_M`, from mirror distance to well across a room), we count the concern's features whose bound
 distance is at least that far, and give the share of all of them (`ConcernVisibility.profile`). Between the fixed
 distances the app interpolates on a log axis. Because the bound distance is a ceiling (section 6), each count is a
-ceiling too: **"at most N of your M pores"**. The real number a person could see is lower, and the copy never says
-"show" without "at most" or "could". A concern counts as a relief when at most 10% of it is detectable across a table
-(1.5 m), and a profile is used when a concern has at least 5 features and is not an area region.
+ceiling too: the real number a person could see is lower. So the report carries a second profile, the **nominal
+profile** (`nominalProfile`), counted the same way from each feature's nominal distance (average observer, margin 0). The
+copy keeps the two apart. Visible-side sentences ("a typical sharp-eyed person looking right at them could pick out about
+a third of your dark spots from across a table") read the nominal profile. Relief sentences ("even perfect eyes couldn't
+pick out your pores past 40 cm") read the bound, with the viewing assumptions in the same sentence. A headline gives a proportion
+in words ("most", "about a third", "a few") and never a count; the exact counts appear only in a receipt, with both
+observers side by side. A concern counts as a relief when at most 10% of it is detectable across a table (1.5 m) by the
+bound, and a profile is used when a concern has at least 5 features and is not an area region.
 
 **Rules applied before counting.**
 
@@ -400,7 +406,8 @@ Standard A thresholds but they are different detectors, so they agree closely bu
 **In plain words.** For under-eye shadows and puffiness a distance is not a meaningful number. These are areas 3 to 4 cm
 wide, and a large area is easy to see: even a few percent of contrast over that size is detectable from far away by an
 ideal observer, on anyone's face. A long distance would say the area is large, not that the shading is strong, and it
-would ask the person to read it as a grade. So for these two concerns we do not lead with the distance.
+would ask the person to read it as a grade. So for these two concerns, and for a broad flush of redness, the copy states
+no distance at all, in the headline or the detail.
 
 **The detail.**
 
@@ -412,20 +419,22 @@ would ask the person to read it as a grade. So for these two concerns we do not 
   Weber contrast and eye bags at -0.14 to -0.51, over regions 31 to 46 mm wide, on all four recorded faces, including
   the fine-skinned p5a. That is ordinary eye-socket shading and not a sign of anything on the skin, and every one of
   them lands at the 10 m cap. A distance that every face shares does not discriminate between faces.
-- **What we report instead.** The copy says it plainly ("a large, soft area; at that size even a little darkening can show
-  from across a room, on anyone's face", `lib/copy/describe.ts`) and shows YouCam's own 0 to 100 score for the concern,
-  which does tell faces apart (the recorded faces' dark-circle scores are 72, 69, 81 and 84). Their contrast basis is
-  still the surround (section 3), and the measurement is still in the report.
+- **What we report instead.** The copy leads with the universal fact ("Under-eye shadows are a large, soft area; on
+  everyone, they're among the last things to fade with distance", `lib/copy/describe.ts`) and gives no distance and no
+  grade. YouCam's own 0 to 100 score is not shown on the cards: it is a grade, it does not measure visibility, and the
+  distances are not built on it. The contrast basis is still the surround (section 3), and the measurement is still in
+  the report.
 - **Where the change matters.** The question that does tell soft areas apart is "how much would an improvement change?",
   which is *Worth it?* (next section).
 
 ## 10. "Worth it?": the difference an improvement would make
 
-**In plain words.** The usual number says what others can see of a concern as it is. *Worth it?* asks what an improvement
-would be worth: if YouCam's Skin Simulation made a concern better by half, from how far could anyone tell the photo from
-the improved version? Small features give a short distance (nobody would notice the change); a large soft area gives a long
-one. It is the same kind of claim as everything else here: a ceiling for an ideal observer looking straight at it, never
-a forecast of what anyone notices.
+**In plain words.** The usual number says what others can see of a concern as it is. *Worth it?* asks whether a change
+would show: if the picture looked like YouCam's Skin Simulation at half strength, from how far could anyone tell the photo
+from the simulated version? Small features give a short distance (a typical person would not see the change); a large
+soft area gives a long one. It is a simulation of a possible change in the picture, not a result for any product or
+routine, and the same kind of claim as everything else here: a ceiling for an ideal observer looking straight at it,
+never a forecast of what anyone notices.
 
 **The contrast.** Each target keeps its size and id; only its contrast changes, to the difference between the photo and the
 simulation, in linear light:
@@ -461,13 +470,14 @@ and group B (spots, pores and acne at 0.5).
 **What it shows.** The table in [EVAL.md](EVAL.md#7-what-would-an-improvement-change-worth-it) is generated by running
 `worthIt` on the recorded simulations. In short: a half-strength change to pores shows on at most 4% to 14% of a face's
 pores across a table and on none at 4 m; a change to under-eye shadows and puffiness is detectable at the 10 m cap on every
-recorded face. Pores: nobody notices. Under-eye: across a room.
+recorded face. Pores: a typical person would not see the change. Under-eye: a large soft area, so even a small change
+reaches the 10 m cap on any face.
 
 **Limits.** The simulation is YouCam's rendering and we cannot inspect it. We have one render per group per face, and have not
 tested whether the same request gives the same render twice. The result covers only what the simulation changed, and a
 bigger change always reaches farther.
 
-## 11. Least makeup
+## 11. The lightest touch
 
 **In plain words.** To find the least foundation that hides a concern, we render the face at a few coverage levels, measure
 each render exactly as we measured the photo, and pick the lowest level that gets most of the effect. The renders come from
@@ -496,7 +506,7 @@ YouCam's Makeup Virtual Try-On; the measurement and the choice are ours.
 - **Every number is checked on the render.** Each step is a recorded or live render, registered to the photo (section 12)
   and measured again on the same masks, so a plan is never a prediction from a formula.
 
-The per-face results from the recorded foundation grid are in [EVAL.md](EVAL.md#8-least-makeup-on-the-recorded-renders). On
+The per-face results from the recorded foundation grid are in [EVAL.md](EVAL.md#8-the-lightest-touch-on-the-recorded-renders). On
 the three recorded faces full coverage does not take spots, pores or breakouts to 10% across a table, so the answer is the
 knee; it takes the share of detectable pores from 53% to 22% on p2b.
 
@@ -762,13 +772,13 @@ Read these before relying on a number.
 12. **A summary is only as good as its counts.** The profile counts features YouCam found and the dedupe and size rules in
     section 7 are heuristics; the bound says "at most", not "this many".
 13. **Large soft areas have no useful distance.** Under-eye shadows and puffiness reach the 10 m cap on every recorded face,
-    because any ideal observer sees a large area at a few percent of contrast (section 9). We show the soft-area wording and
-    YouCam's own score instead, which means two faces with very different shading get the same distance-style answer.
+    because any ideal observer sees a large area at a few percent of contrast (section 9). We show the soft-area wording
+    and no distance instead, which means two faces with very different shading get the same sentence.
 14. **"Worth it?" rests on YouCam's Skin Simulation.** It is a rendering by a model we cannot inspect, at a strength of
     0.5 that we chose, and that is 55% to 64% of the full-strength change on the regions we checked, not exactly half. There
     is one render per group per face, and we have not tested whether the same request gives the same render twice. The
     distance is a ceiling for an ideal observer, not a forecast of what anyone notices (section 10).
-15. **"Least makeup" was studied on a small base.** The foundation lever was measured on one face (p2b: spot contrast -30%
+15. **"The lightest touch" was studied on a small base.** The foundation lever was measured on one face (p2b: spot contrast -30%
     at coverage 50 and -45% at 100) and the grid rendered on three, each with one shade matched to the cheek. A lighter
     concealer shade was not tested; wrinkles and redness have no verified lever; dark circles and eye bags have none at all.
     On the recorded faces full coverage does not reach "at most 10% detectable across a table" for spots, pores or

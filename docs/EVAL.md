@@ -12,8 +12,8 @@ page shows what backs that claim, in the order a sceptical reader would ask. How
 | What does it say for typical features? | Table of nominal and bound distances | [4](#4-illustrative-distances) |
 | Can I check one prediction myself? | The walk-back self-test | [5](#5-check-one-prediction-yourself) |
 | Is it better than asking an AI? | Claude Opus 5.5 is good at the general recipe (about 1.3x from our value when told size and contrast), but it gives a different number each time, breaks the size law and does not measure the face | [6](#6-why-not-just-ask-an-ai) |
-| What would an improvement be worth? | Per face and concern: pores, nobody notices; under-eye, across a room | [7](#7-what-would-an-improvement-change-worth-it) |
-| How much makeup is enough? | The knee of the foundation coverage curve, checked on renders | [8](#8-least-makeup-on-the-recorded-renders) |
+| What would an improvement be worth? | Per face and concern: a simulated change to pores is small for a typical viewer; a large soft area shows even a small change from far | [7](#7-what-would-an-improvement-change-worth-it) |
+| How much makeup is enough? | The knee of the foundation coverage curve, checked on renders | [8](#8-the-lightest-touch-on-the-recorded-renders) |
 
 **What is not validated yet:** there is no human study of distances for real skin features (ModelFest used calibrated
 test patterns on a display), the demo faces are synthetic, YouCam's repeatability on the same photo has not been
@@ -380,8 +380,8 @@ give exact doubling. But the angle is recalled afresh each time: for the 4 mm, 3
 
 - **Fairly put:** the AI knows the general recipe and, told the size and contrast, lands within about 1.3x. Our advantage is
   not a better formula. It is that we **measure the inputs per face** (size in millimetres, contrast in linear light, where
-  each mark is), are **deterministic**, and **scale physically lawfully**. Those are what let the app say "at most 150 of
-  your 450 pores" and open a chain of receipts for each number.
+  each mark is), are **deterministic**, and **scale physically lawfully**. Those are what let the app say "most of your
+  pores are out of sight across a table" and open a chain of receipts, with the exact counts, for each number.
 - **One model, one prompt wording, five asks per item.** A different prompt, or the median of many asks, would shrink the
   noise by roughly the square root of the number of asks. That costs N calls per number and still gives no per-feature
   counts. We did not try it.
@@ -409,43 +409,44 @@ Concerns YouCam found nothing for (redness on p2b and p5a) have no row.
 | p1a | Pores | 450 | 3.2 | 129 (29%) | 38 (8%) | 4 (1%) | 0 (0%) |
 | p1a | Dark spots | 64 | 9.8 | 47 (73%) | 38 (59%) | 22 (34%) | 8 (13%) |
 | p1a | Breakouts | 40 | 8.3 | 24 (60%) | 13 (33%) | 7 (18%) | 5 (13%) |
-| p1a | Lines | 93 | 10+ | 77 (83%) | 66 (71%) | 36 (39%) | 19 (20%) |
+| p1a | Fine lines | 93 | 10+ | 77 (83%) | 66 (71%) | 36 (39%) | 19 (20%) |
 | p1a | Under-eye shadows | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
 | p1a | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
 | p1a | Redness | 5 | 2.1 | 1 (20%) | 1 (20%) | 0 (0%) | 0 (0%) |
 | p2b | Pores | 649 | 2.6 | 230 (35%) | 91 (14%) | 1 (0%) | 0 (0%) |
 | p2b | Dark spots | 89 | 10+ | 60 (67%) | 55 (62%) | 31 (35%) | 14 (16%) |
 | p2b | Breakouts | 18 | 4.2 | 12 (67%) | 4 (22%) | 1 (6%) | 1 (6%) |
-| p2b | Lines | 188 | 10+ | 159 (85%) | 142 (76%) | 101 (54%) | 50 (27%) |
+| p2b | Fine lines | 188 | 10+ | 159 (85%) | 142 (76%) | 101 (54%) | 50 (27%) |
 | p2b | Under-eye shadows | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
 | p2b | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
 | p3a | Pores | 221 | 2.7 | 67 (30%) | 25 (11%) | 1 (0%) | 0 (0%) |
 | p3a | Dark spots | 194 | 6.9 | 136 (70%) | 92 (47%) | 33 (17%) | 8 (4%) |
 | p3a | Breakouts | 5 | 2.4 | 5 (100%) | 3 (60%) | 0 (0%) | 0 (0%) |
-| p3a | Lines | 207 | 10+ | 175 (85%) | 148 (71%) | 91 (44%) | 41 (20%) |
+| p3a | Fine lines | 207 | 10+ | 175 (85%) | 148 (71%) | 91 (44%) | 41 (20%) |
 | p3a | Under-eye shadows | 3 | 10+ | 3 (100%) | 3 (100%) | 3 (100%) | 3 (100%) |
 | p3a | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
 | p3a | Redness | 4 | 10+ | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) |
 | p5a | Pores | 250 | 2.6 | 42 (17%) | 11 (4%) | 1 (0%) | 0 (0%) |
 | p5a | Dark spots | 53 | 4.1 | 22 (42%) | 13 (25%) | 6 (11%) | 1 (2%) |
 | p5a | Breakouts | 3 | 2.1 | 3 (100%) | 1 (33%) | 0 (0%) | 0 (0%) |
-| p5a | Lines | 107 | 7.9 | 82 (77%) | 63 (59%) | 28 (26%) | 6 (6%) |
+| p5a | Fine lines | 107 | 7.9 | 82 (77%) | 63 (59%) | 28 (26%) | 6 (6%) |
 | p5a | Under-eye shadows | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
 | p5a | Under-eye puffiness | 2 | 10+ | 2 (100%) | 2 (100%) | 2 (100%) | 2 (100%) |
 
 <!-- generated:worthit:end -->
 
-- **Pores: nobody notices.** A half-strength change to pores is detectable beyond 4 m on none of the four faces, on at most
+- **Pores: a small change.** A half-strength change to pores is detectable beyond 4 m on none of the four faces, on at most
   4% to 14% of their pores across a table (1.5 m), and the farthest single pore reaches only 2.6 to 3.2 m.
 - **Dark spots, lines and breakouts are in between,** and depend on the face: at 4 m, at most 2% to 16% of dark spots, 6% to
   27% of lines and 0 to 13% of breakouts could show a change.
 - **Under-eye shadows and puffiness: across a room.** The change is detectable at the 10 m cap on every recorded face. This
   is the large-soft-area effect (MODEL.md, section 9): a small change over a large area reaches far. It says the area is
   large, not that anyone would notice.
-- **Why it matters.** It points effort at what other people could actually tell apart. Refining pores by half would not change
-  what a person across the table sees; softening under-eye shadows by half could.
+- **What it is for.** It separates a change in the picture that a viewer could tell apart from one they could not. A
+  simulated softening of pores would not change what a typical person across the table sees; a simulated lightening of
+  under-eye shadows could. It says nothing about what any product or routine would do.
 
-## 8. Least makeup on the recorded renders
+## 8. The lightest touch on the recorded renders
 
 The least-coverage search (MODEL.md, section 11) run on the recorded foundation grid at 1.5 m, replayed from the fixtures
 (no live calls). Each cell is the share of the concern's marks still detectable at 1.5 m, by our bound, after that render.

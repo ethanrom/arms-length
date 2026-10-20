@@ -1,13 +1,19 @@
 /**
- * "Worth it?" sentences: how far away the change a half-strength improvement would make stays detectable
- * (lib/vision/worthIt.ts). Deterministic templates, kind, and bound-based: "wouldn't show beyond X" for the near ones,
- * "could show from up to X" and "at most N" for the far ones. The credit goes with every sentence.
+ * "Worth it?" sentences, worded as a simulation (expert panel, 2026-10-21): how far away the difference a half-strength
+ * YouCam Skin Simulation would make stays detectable (lib/vision/worthIt.ts). The sentence describes the picture, never an
+ * action or a result: "If your pores looked noticeably softer (YouCam Skin Simulation, half strength), a typical person
+ * wouldn't see the difference beyond 40 cm." It never says "half as", "refine", "calm" or "brighten", and it makes no claim
+ * about any product or routine.
+ *
+ * Two observers: "wouldn't see it beyond X" uses the bound (it holds for even sharper eyes, so it is safe to say of a typical
+ * person); "could see it from X" uses the nominal distance, a typical sharp-eyed person looking right at it. Large soft areas
+ * state no distance. Deterministic templates; the credit goes with every sentence.
  */
 import { CONCERNS, type ConcernId } from "@/lib/contracts/concerns";
 import { MAX_DISTANCE_M, MIN_DISTANCE_M } from "@/lib/contracts/vision";
-import { concernNoun } from "./concerns";
+import { concernNoun, concernThem } from "./concerns";
 import { anchorFor, formatDistance } from "./distance";
-import { profileAt, type Profile } from "./profile";
+import { BOUND_TO_NOMINAL_RATIO, profileAt, shareWord, type Profile } from "./profile";
 
 /** The simulation behind every "Worth it?" number, credited next to it. */
 export const WORTH_IT_CREDIT = "(YouCam Skin Simulation, half strength)";
@@ -17,8 +23,12 @@ export interface WorthItInput {
   targetCount: number;
   /** Bound: how far the farthest single change stays detectable. */
   differenceMaxDistanceM: number;
-  /** Share of the concern's changes detectable at fixed distances; used for many-feature concerns. */
+  /** Share of the concern's changes detectable (bound) at fixed distances; used for many-feature concerns. */
   differenceProfile?: Profile;
+  /** Average observer: the farthest single change. Estimated from the bound when absent. */
+  differenceNominalMaxDistanceM?: number;
+  /** Average observer: share of the changes detectable at fixed distances. Estimated from the bound when absent. */
+  differenceNominalProfile?: Profile;
 }
 
 export interface WorthItDescription {
@@ -27,16 +37,16 @@ export interface WorthItDescription {
   detail: string;
 }
 
-/** What the half-strength simulation does to each concern, said as an improvement and without judging the starting point. */
-const IMPROVEMENT: Record<ConcernId, string> = {
-  pore: "Refining your pores by half",
-  age_spot: "Softening your dark spots by half",
-  acne: "Calming your breakouts by half",
-  wrinkle: "Softening your lines by half",
-  dark_circle: "Brightening your under-eye shadows by half",
-  eye_bag: "Smoothing your under-eye puffiness by half",
-  redness: "Evening out your redness by half",
-  texture: "Smoothing your skin texture by half",
+/** What the simulation does to the picture of each concern, said as the picture and without judging the starting point. */
+const IF_IT_LOOKED: Record<ConcernId, string> = {
+  pore: "If your pores looked noticeably softer",
+  age_spot: "If your dark spots looked noticeably lighter",
+  acne: "If your breakouts looked noticeably fainter",
+  wrinkle: "If your fine lines looked noticeably softer",
+  dark_circle: "If your under-eye shadows looked noticeably lighter",
+  eye_bag: "If your under-eye puffiness looked noticeably smoother",
+  redness: "If your redness looked noticeably fainter",
+  texture: "If your skin texture looked noticeably smoother",
 };
 
 /** Up to this far a change counts as near: it "wouldn't show beyond X". Across a table, like the rest of the copy. */
@@ -44,58 +54,88 @@ const NEAR_MAX_M = 1.5;
 /** Up to this far it is the mirror and selfie view, which is mostly your own. */
 const MIRROR_MAX_M = 0.35;
 const TABLE_M = 1.5;
+/** From here a broad flush of redness counts as a soft area, as in describeConcern. */
+const ROOM_M = 4;
 const MIN_PROFILE_TARGETS = 5;
+const MAX_HEADLINE_CHARS = 60;
 
 const join = (parts: string[]) => parts.filter(Boolean).join(" ");
+const fit = (...candidates: string[]) => candidates.find((c) => c.length <= MAX_HEADLINE_CHARS) ?? candidates[candidates.length - 1];
+
+function nominalMax(w: WorthItInput): number {
+  return w.differenceNominalMaxDistanceM ?? w.differenceMaxDistanceM / BOUND_TO_NOMINAL_RATIO;
+}
+
+/** Share of the changes a typical sharp-eyed person could see across a table. */
+function nominalShareAtTable(w: WorthItInput): number {
+  if (w.differenceNominalProfile) return profileAt(w.differenceNominalProfile, TABLE_M).fraction;
+  if (w.differenceProfile) return profileAt(w.differenceProfile, TABLE_M * BOUND_TO_NOMINAL_RATIO).fraction;
+  return 0;
+}
+
+function isSoft(w: WorthItInput): boolean {
+  return w.concern === "dark_circle" || w.concern === "eye_bag" || (w.concern === "redness" && nominalMax(w) >= ROOM_M);
+}
 
 export function describeWorthIt(w: WorthItInput): WorthItDescription {
   const noun = concernNoun(w.concern);
+  const them = concernThem(w.concern);
   if (!CONCERNS[w.concern].visibility || w.targetCount === 0) {
     return {
       headline: "There's no change to compare for this one.",
-      detail: join([`We didn't find any ${noun} to measure, so there's nothing to simulate.`, WORTH_IT_CREDIT]),
+      detail: `We didn't find any ${noun} to measure, so there's nothing to simulate.`,
     };
   }
-  const phrase = IMPROVEMENT[w.concern];
+  const picture = `${IF_IT_LOOKED[w.concern]} ${WORTH_IT_CREDIT}`;
   const d = w.differenceMaxDistanceM;
 
   if (d < MIN_DISTANCE_M) {
     return {
-      headline: "A half-strength change wouldn't show, even up close.",
-      detail: join([`${phrase} wouldn't show, even from ${formatDistance(MIN_DISTANCE_M)}.`, WORTH_IT_CREDIT]),
+      headline: "A typical person wouldn't see the change, even up close.",
+      detail: `${picture}, a typical person wouldn't see the difference, even from ${formatDistance(MIN_DISTANCE_M)}.`,
     };
   }
   if (d <= NEAR_MAX_M) {
     return {
-      headline: `A half-strength change wouldn't show beyond ${formatDistance(d)}.`,
+      headline: `A typical person wouldn't see the change beyond ${formatDistance(d)}.`,
       detail: join([
-        `${phrase} wouldn't show beyond ${formatDistance(d)}.`,
-        d <= MIRROR_MAX_M ? "That's a change for the mirror, not for other people." : "",
-        WORTH_IT_CREDIT,
+        `${picture}, a typical person wouldn't see the difference beyond ${formatDistance(d)}.`,
+        d <= MIRROR_MAX_M ? "That's a difference for the mirror, more than for anyone else." : "",
       ]),
     };
   }
 
-  const many = w.differenceProfile !== undefined && w.targetCount >= MIN_PROFILE_TARGETS && CONCERNS[w.concern].maskKind !== "region";
-  if (many) {
-    const count = Math.round(profileAt(w.differenceProfile!, TABLE_M).count);
+  if (isSoft(w)) {
     return {
-      headline: `The change shows on at most ${count} of ${w.targetCount} ${noun}.`,
-      detail: join([
-        `${phrase} could show on at most ${count} of your ${w.targetCount} ${noun} from ${anchorFor(TABLE_M)}, even for sharp eyes looking right at them.`,
-        WORTH_IT_CREDIT,
-      ]),
+      headline: "A large, soft area shows even a small change.",
+      detail: `Because it's a large area, even a small change can be seen from a distance. ${picture}, a typical person could tell the difference on any face.`,
     };
   }
 
-  const capped = d >= MAX_DISTANCE_M;
-  const upTo = capped ? "10 m or more" : formatDistance(d);
+  const many =
+    (w.differenceProfile !== undefined || w.differenceNominalProfile !== undefined) &&
+    w.targetCount >= MIN_PROFILE_TARGETS &&
+    CONCERNS[w.concern].maskKind !== "region";
+  if (many) {
+    const word = shareWord(nominalShareAtTable(w));
+    const table = anchorFor(TABLE_M);
+    if (word === "none") {
+      return {
+        headline: `A typical person wouldn't see the change ${table}.`,
+        detail: `${picture}, a typical person wouldn't pick out the difference on your ${noun} from ${table}.`,
+      };
+    }
+    return {
+      headline: fit(`The change could show on ${word} of your ${noun}.`, `The change could show on ${word} of them.`),
+      detail: `${picture}, a typical sharp-eyed person looking right at ${them} could see the difference on ${word} of your ${noun} from ${table}.`,
+    };
+  }
+
+  const nominal = nominalMax(w);
+  const capped = nominal >= MAX_DISTANCE_M;
+  const from = capped ? "across a room or farther" : `about ${formatDistance(nominal)}`;
   return {
-    headline: `A half-strength change could show from up to ${upTo}.`,
-    detail: join([
-      `${phrase} could show from up to ${upTo}, ${capped ? "across a room and beyond" : anchorFor(d)}, for sharp eyes looking right at it.`,
-      w.concern === "dark_circle" || w.concern === "eye_bag" ? "It's a large, soft area, so even a small change reaches far." : "",
-      WORTH_IT_CREDIT,
-    ]),
+    headline: `The change could show from ${from}.`,
+    detail: `${picture}, a typical sharp-eyed person looking right at ${them} could see the difference from ${from}${capped ? "" : `, ${anchorFor(nominal)}`}.`,
   };
 }

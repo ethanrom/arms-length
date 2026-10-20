@@ -10,6 +10,10 @@
  *   profile          at each PROFILE_DISTANCES_M entry, how many targets have a bound distance at or beyond it. This is the
  *                    summary for many-feature concerns: unlike the max it does not hinge on one outlier. Regions are
  *                    included (for a handful of zones it is a step function).
+ *   nominalProfile   the same count from each target's nominal distance (average observer, margin 0). Visible-side
+ *                    claims ("a typical sharp-eyed person could pick out ...") read this one; relief claims ("even perfect
+ *                    eyes couldn't ...") read the bound `profile`. Nominal is never above the bound.
+ *   nominalMaxDistanceM  the farthest nominal distance, the nominal twin of maxDistanceM.
  * Concerns are returned most visible first (ties broken by concern id) so the output is deterministic.
  *
  * Confidence rule, applied to the headline (max) target:
@@ -34,6 +38,18 @@ import {
 import { specFromTarget, visibilityOfSpec } from "./visibility";
 
 type Confidence = ConcernVisibility["confidence"];
+
+/**
+ * Nominal companions of ConcernVisibility, optional until the frozen contract adds them (proposed names, same shapes as
+ * `profile` and `maxDistanceM`). Missing on reports built before nominal distances existed; the copy then estimates them
+ * from the bound.
+ */
+export interface NominalFields {
+  nominalProfile?: NonNullable<ConcernVisibility["profile"]>;
+  nominalMaxDistanceM?: number;
+}
+export type ConcernVisibilityExt = ConcernVisibility & NominalFields;
+export type VisibilityReportExt = Omit<VisibilityReport, "concerns"> & { concerns: ConcernVisibilityExt[] };
 
 const BASE_CONFIDENCE: Record<ConcernId, Confidence> = {
   age_spot: "high",
@@ -78,7 +94,7 @@ export function detectabilityProfile(distances: readonly number[]): NonNullable<
   });
 }
 
-export function buildVisibilityReport(measurements: Measurements, viewing: ViewingConditions = DEFAULT_VIEWING): VisibilityReport {
+export function buildVisibilityReport(measurements: Measurements, viewing: ViewingConditions = DEFAULT_VIEWING): VisibilityReportExt {
   const { scale } = measurements;
   const source = new Map<string, Feature | RegionMeasure>();
   const targets: TargetVisibility[] = [];
@@ -97,12 +113,16 @@ export function buildVisibilityReport(measurements: Measurements, viewing: Viewi
     else byConcern.set(t.concern, [t]);
   }
 
-  const concerns: ConcernVisibility[] = [];
+  const concerns: ConcernVisibilityExt[] = [];
   for (const [concern, list] of byConcern) {
     // Most visible first; equal distances keep the input order (sort is stable).
     const ranked = [...list].sort((a, b) => b.distanceM - a.distanceM);
     const head = ranked[0];
     const distances = list.map((t) => t.distanceM).sort((a, b) => a - b);
+    const nominals = list.map((t) => t.nominalM);
+    const nominal = nominals.every((x): x is number => x !== undefined)
+      ? { nominalProfile: detectabilityProfile(nominals), nominalMaxDistanceM: Math.max(...nominals) }
+      : {};
     concerns.push({
       concern,
       targetCount: list.length,
@@ -111,6 +131,7 @@ export function buildVisibilityReport(measurements: Measurements, viewing: Viewi
       intervalM: head.intervalM,
       topTargets: ranked.slice(0, MAX_TOP_TARGETS).map((t) => t.targetId),
       profile: detectabilityProfile(distances),
+      ...nominal,
       confidence: concernConfidence(concern, source.get(head.targetId) as Feature | RegionMeasure, scale.source),
     });
   }

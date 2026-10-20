@@ -1,12 +1,14 @@
 # How Arm's Length uses the YouCam API
 
 This page lists every YouCam endpoint we call, what we send, what we use from the answer, what it costs, and what we
-learned while building on it. The numbers come from real calls made on 2026-10-20 (61 units, all logged).
-Where we only tested one face or one setting, we say so.
+learned while building on it. The numbers come from real calls, all logged: 159 units so far (the first 61, on two
+faces, are behind sections 3 and 4; the other 98 recorded two more faces, a makeup grid and the Skin Simulation
+renders of section 7). Where we only tested one face or one setting, we say so.
 
 Contents: [1. The idea](#1-how-arms-length-uses-youcam) | [2. Endpoints](#2-every-endpoint-we-use) |
 [3. The masks](#3-what-the-masks-actually-contain) | [4. Integration notes](#4-integration-notes-we-learned-the-hard-way) |
-[5. Unit budget and safety](#5-unit-budget-and-safety) | [6. Replay and fixtures](#6-replay-and-fixtures)
+[5. Unit budget and safety](#5-unit-budget-and-safety) | [6. Replay and fixtures](#6-replay-and-fixtures) |
+[7. Skin Simulation: two uses](#7-skin-simulation-two-uses) | [8. The drop-in layer](#8-the-drop-in-layer-post-apivisibility)
 
 ## 1. How Arm's Length uses YouCam
 
@@ -15,7 +17,9 @@ YouCam HD Skin Analysis finds the features: spots, pores, wrinkles, acne, dark c
 Our layer then measures each one in millimetres (the iris is the ruler) and in contrast, and applies published
 vision science to turn that into a distance. Makeup Virtual Try-On (foundation) is the "least makeup" lever:
 we render a few coverage levels and re-measure each one. Skin Simulation is the "what if": the same photo with a
-concern turned down, measured the same way. No language model is involved. Same photo in, same numbers out.
+concern turned down by half, and the difference between the two measured the same way ("Worth it?", section 7). Our
+layer also works on any YouCam Skin Analysis result you already have, through one drop-in route (section 8). No
+language model is involved. Same photo in, same numbers out.
 
 ```mermaid
 flowchart LR
@@ -24,9 +28,9 @@ flowchart LR
   sa --> meas["Our layer<br/>mm (iris ruler) + contrast"]
   meas --> vis["Vision science<br/>visibility distance per concern"]
   up --> vto["Makeup VTO<br/>foundation coverage, 1 unit"]
-  up --> sim["Skin Simulation<br/>what-if, 4 units"]
-  vto -->|"render, re-measured on the same masks"| meas
-  sim -->|"render, re-measured on the same masks"| meas
+  up --> sim["Skin Simulation<br/>half-strength improvement, 4 units"]
+  vto -->|"render, registered and re-measured on the same masks"| meas
+  sim -->|"difference from the photo, same masks"| meas
   vis --> ui["Step-back view and<br/>ranked distances"]
 ```
 
@@ -37,7 +41,7 @@ What each part contributes:
 | Where each feature is (masks, aligned to the photo within about 1 px) | Size in mm (iris ruler), contrast against nearby skin in linear light |
 | Scores per concern (`raw_score`, `ui_score`) | A distance per concern: the farthest an ideal observer could still see it |
 | Foundation renders at chosen coverage | The lowest coverage that pushes a concern below a chosen distance, checked on the render |
-| Skin Simulation renders | "If these faded by half, they would vanish beyond X" |
+| Skin Simulation renders | "Worth it?": the farthest distance at which the change from a half-strength improvement stays detectable |
 
 The model itself is described in `docs/MODEL.md`. This page covers the YouCam side only.
 
@@ -52,8 +56,8 @@ All code is in `lib/youcam/`.
 | 1 | `POST /s2s/v2.0/file` | `files: [{content_type, file_name, file_size}]` | `file_id`, and the presigned request (`method`, `url`, `headers`) | 0 | `client.ts` `upload` |
 | 2 | `PUT <presigned URL>` | The photo bytes and the headers from step 1, minus `Content-Length`. No `Authorization` header | HTTP status only | 0 | `client.ts` `upload` |
 | 3 | `POST /s2s/v2.1/task/skin-analysis`, then `GET /s2s/v2.1/task/skin-analysis/{task_id}` | `src_file_id`; `dst_actions`: `hd_acne`, `hd_age_spot`, `hd_pore`, `hd_wrinkle`, `hd_dark_circle`, `hd_redness`, `hd_eye_bag`, `hd_texture`; `format: "json"`. No `miniserver_args` (defaults). Budget fallback: the same eight without the `hd_` prefix (`dark_circle_v2` for dark circles) | `results.output[]`: per item `type`, `region`, `raw_score`, `ui_score`, `mask_urls[0]` (17 masks for 8 HD concerns); plus `all` (overall score), `skin_age` and `resize_image` (the analysed frame that the masks align to) | **16** HD (5-8 concerns) or **12** SD | `client.ts` `skinAnalysis`, `normalize.ts` |
-| 4 | `POST /s2s/v2.0/task/makeup-vto`, then `GET /s2s/v2.0/task/makeup-vto/{task_id}` | `src_file_id`, `version: "1.0"`, `effects`. We always put `{category: "skin_smooth", skinSmoothStrength: 0, skinSmoothColorIntensity: 0}` first, then `{category: "foundation", palettes: [{color, colorIntensity: 50, glowIntensity: 0, coverageIntensity: 0-100}]}` | `results.url`: one PNG, which we re-measure with the analysis masks (shifted by one row, see section 4) | **1** | `client.ts` `makeup`, `render.ts` |
-| 5 | `POST /s2s/v2.0/task/skin-simulation`, then `GET /s2s/v2.0/task/skin-simulation/{task_id}` | `src_file_id` and a strength from 0 to 1 per concern (we recorded `spots` and `redness` at 0.5). Zero strengths are not sent | `results.url`: one PNG, the same size as the input and pixel-aligned | **4** (1-4 concerns), 6 (5-10) | `client.ts` `simulate` |
+| 4 | `POST /s2s/v2.0/task/makeup-vto`, then `GET /s2s/v2.0/task/makeup-vto/{task_id}` | `src_file_id`, `version: "1.0"`, `effects`. We always put `{category: "skin_smooth", skinSmoothStrength: 0, skinSmoothColorIntensity: 0}` first, then `{category: "foundation", palettes: [{color, colorIntensity: 50, glowIntensity: 0, coverageIntensity: 0-100}]}` | `results.url`: one PNG, which we register to the photo (the shift differs per photo, see section 4, note 3) and re-measure with the analysis masks | **1** | `client.ts` `makeup`, `render.ts` |
+| 5 | `POST /s2s/v2.0/task/skin-simulation`, then `GET /s2s/v2.0/task/skin-simulation/{task_id}` | `src_file_id` and a strength from 0 to 1 per concern. Recorded: `dark_circle`, `eye_bags`, `wrinkle`, `redness` (one call) and `spots`, `pores`, `acne` (one call) at 0.5; the same four at 1.0 once per face. Zero strengths are not sent | `results.url`: one PNG, the same size as the input and pixel-aligned | **4** (1-4 concerns), 6 (5-10) | `client.ts` `simulate` |
 | 6 | `GET /s2s/v1.0/client/credit` | Nothing. The Bearer key works here; the V1 client id and secret are not needed | `results[]` tokens: `amount_dec` (or `amount`) and `expiry`. We sum the unexpired ones to get the balance | 0 | `client.ts` `credit`, `budget.ts` |
 | 7 | `GET /s2s/v1.0/client/credit/history?page_size=30` | `Content-Type: application/json` (required) | `results.history[]`: `action`, `timestamp`, `target_id`. We use it to check our own ledger against YouCam's | 0 | `scripts/spikes/free-history.ts` |
 | 8 | `GET /s2s/v2.0/credit/feature-cost?page_size=20&starting_token=<next_token>` | Paging only | `result.skus[]` and `result.next_token`. 102 SKUs; the price table in `costs.ts` comes from here | 0 | `scripts/spikes/free-reads.ts`, `costs.ts` |
@@ -81,6 +85,7 @@ Our own routes sit on top of these, so the browser never talks to YouCam:
 | `POST /api/youcam/makeup` | One foundation render for a given `fileRef` | `app/api/youcam/makeup/route.ts` |
 | `POST /api/youcam/simulate` | One Skin Simulation render | `app/api/youcam/simulate/route.ts` |
 | `GET /api/youcam/status` | Tells the UI whether live mode is open for this access code, and why not | `app/api/youcam/status/route.ts` |
+| `POST /api/visibility` | The drop-in layer: a YouCam Skin Analysis result you already have plus its photo in, a visibility report out. Calls no YouCam endpoint, spends no units (section 8) | `app/api/visibility/route.ts` |
 
 ## 3. What the masks actually contain
 
@@ -144,13 +149,25 @@ Tips for other developers. Each one cost us a few units or an afternoon.
    (18 digits in the credit response). A bigint-safe JSON parser that stores big values as strings also turns any number literal longer
    than 15 characters into a string, so `raw_score` arrives as `"52.43487358093262"` in some items and `100` in others.
    The API itself sends numbers. Coerce scores with `Number()` after parsing (`normalize.ts`).
-3. **Makeup VTO output is shifted down by one row.** For a 1080x1341 input the render is 1080x1340. It is a black first row
-   followed by input rows 0 to 1338, so `out(x, y+1) = in(x, y)`. It is a pure translation: we measured 0.99 px vertical and
-   0.00 px horizontal, with no scale drift. It stays the same with `skin_smooth` at 0 and no makeup. We
-   do not know why (our guess is a crop to an even height). Ignoring it costs little for big regions and matters for 1-3 px
-   features. `render.ts` returns `offset: {dx: 0, dy: 1}` for renders that match the frame, and `{0, 0}` when the size
-   differs by more than 2 px (VTO accepts long sides up to 1920 px, so a larger photo comes back rescaled and needs
-   scaling instead). Never sample row 0. Skin Simulation output is pixel-aligned with no offset.
+3. **Makeup VTO output is shifted, and the shift differs per photo. Register every render.** On the first face (p2b,
+   1080x1341) the render is 1080x1340: a black first row followed by input rows 0 to 1338, so `out(x, y+1) = in(x, y)`, a
+   pure translation (0.99 px vertical, 0.00 px horizontal, no scale drift), unchanged with `skin_smooth` at 0 and no makeup.
+   We first took that for a rule. Recording more faces showed it is not:
+
+   | Face | Input | Render | Shift (`dx`, `dy`) | Padding |
+   |---|---|---|---|---|
+   | p2b | 1080x1341 | 1080x1340 | (0, +1) | Black first row |
+   | p3a | 1080x1575 | 1078x1576 | (-3, 0) | Black last row and last column |
+   | p1a | 1080x1610 | 1080x1610 | (0, 0) | None |
+
+   Within one face every render has the same geometry (patch-wise spread 0.03 to 0.15 px, correlation at least 0.86), but the
+   output size alone does not give the shift, so a size rule is wrong for p3a and p1a. So the offset is measured per render:
+   `lib/coverage/register.ts` finds it by cross-correlation against the photo (whole pixels, within 6 px), and
+   `render.ts`'s guess from the sizes (`{0, 1}` for a makeup render in the same frame, `{0, 0}` for a simulation, `{0, 0}`
+   when the size differs by more than 2 px, because VTO accepts long sides up to 1920 px and a larger photo comes back
+   rescaled) is only the fallback for a photo with too little texture to register. Never sample the black padding.
+   Skin Simulation output was pixel-aligned on all four faces (shift within 0.06 px, 0.15 px on p3a), and goes through the
+   same registration.
 4. **Send `skin_smooth` at 0 to get an honest render.** Without a `skin_smooth` effect, the docs say a default strength of
    50 is applied. We saw smoothing plus a global brightening of about +23% in linear luminance, background included.
    With `{category: "skin_smooth", skinSmoothStrength: 0, skinSmoothColorIntensity: 0}` first in `effects`:
@@ -169,7 +186,7 @@ Tips for other developers. Each one cost us a few units or an afternoon.
    - Dark circles did not respond to any makeup parameter we tried. The best cases were a 6% drop in contrast with foundation
      (an on/off step that did not grow with coverage) and 9% with concealer (the shade darkened the skin below the eye, so
      the circle did not get lighter). Dark-circle what-ifs therefore go through the Skin Simulation `dark_circle` strength,
-     which is documented but not yet tested by us.
+     which we have since recorded on four faces at 0.5 and 1.0 (section 7).
    - A lighter concealer shade is the one input we did not test.
 6. **`feature-cost` is paginated.** `page_size` is at most 20, and the next page needs `starting_token` set to the previous
    `next_token`. The first page shows only image and hair tools; the skin prices are on later pages (102 SKUs in all).
@@ -195,21 +212,21 @@ The project has **1,000 free units in total**. They cover building, the demo vid
 on 2026-11-20. The units expire on 2027-01-18. The rules ask that the app stays testable and free through judging, so
 the plan keeps most of the units for that.
 
-**Spend so far** (project ledger, 2026-10-20; the balance was confirmed with `GET /s2s/v1.0/client/credit`):
+**Spend so far** (project ledger; the balance was cross-checked with `GET /s2s/v1.0/client/credit` after every batch):
 
-| Bucket | Planned | Spent | What it bought |
-|---|---|---|---|
-| Phase 0 spike | 55 | 53 | 2 HD analyses (32), 1 SD analysis (12), 5 makeup renders (5), 1 simulation (4) |
-| Reserve | 335 | 8 | 8 makeup renders to find which makeup parameters change anything (section 4, note 5) |
-| Demo personas | 90 | 0 so far | Recording more demo faces (analysis, foundation coverage grid, what-ifs) |
-| Integration checks | 40 | 0 | Two full live sessions |
-| Deployed smoke tests | 40 | 0 | Two live sessions on the deployed site |
-| Demo video | 40 | 0 | One live session on a phone and one on desktop |
-| Judges' live sessions | 400 | 0 | About 20 sessions of about 20 units |
-| **Total** | **1,000** | **61** | **Balance 939** |
+| Bucket | Planned | Spent | Left | What it bought |
+|---|---|---|---|---|
+| Phase 0 spike | 55 | 53 | 2 | 2 HD analyses (32), 1 SD analysis (12), 5 makeup renders (5), 1 simulation (4) |
+| Demo personas | 90 | 90 | 0 | 2 more HD analyses (p1a, p5a; 32), 10 foundation grid renders (10), 4 counterfactual simulations (16), 6 half-strength simulations (24), 2 other simulations (8) |
+| Integration checks | 40 | 0 | 40 | Two full live sessions |
+| Deployed smoke tests | 40 | 0 | 40 | Two live sessions on the deployed site |
+| Demo video | 40 | 0 | 40 | One live session on a phone and one on desktop |
+| Judges' live sessions | 400 | 0 | 400 | About 14 sessions of about 28 units |
+| Reserve | 335 | 16 | 319 | 8 makeup renders to find which makeup parameters change anything (section 4, note 5), and 2 half-strength simulations for p5a (8) |
+| **Total** | **1,000** | **159** | **841** | |
 
-Demo-face recording was still in progress when this was written, so the "Demo personas" row is not final. The totals are
-updated here before submission.
+A live session now costs about 28 units: the analysis (16), two half-strength simulations (8) and up to 4 coverage renders
+(4). Demo faces cost nothing.
 
 Every paid call goes through one guard (`lib/youcam/budget.ts`, used by `lib/youcam/service.ts`):
 
@@ -236,12 +253,18 @@ Every paid call goes through one guard (`lib/youcam/budget.ts`, used by `lib/you
 
 The demo runs with **no keys and no network**. Everything below is real YouCam output, recorded once, replayed on request.
 
-**What is recorded** (`fixtures/youcam/`, about 15.5 MB, see its `README.md`):
+**What is recorded** (`fixtures/youcam/`, about 64 MiB, see its `README.md`):
 
 | Face | Photo | Recorded |
 |---|---|---|
-| p2b | Synthetic face, deep brown skin, 1080x1341 | HD analysis (JSON and 17 masks), SD analysis (8 masks), 5 makeup renders (concealer coverage 20, 50, 90; foundation coverage 30, 80), each with its request |
-| p3a | Synthetic face, 1080x1575 | HD analysis (JSON and 17 masks), 1 Skin Simulation render (spots 0.5, redness 0.5) with its request |
+| p1a | Synthetic face, light olive skin with breakouts, 1080x1610 | HD analysis (JSON and 17 masks), foundation coverage 25, 50, 75, 100, simulations: acne and redness 0.5; counterfactual (four concerns at 1.0); half-strength groups A and B |
+| p2b | Synthetic face, deep brown skin, 1080x1341 | HD analysis, SD analysis (8 masks), foundation coverage 25, 50, 75, 100, 5 early makeup renders with default smoothing (concealer coverage 20, 50, 90; foundation 30, 80), simulations: dark circle 0.5; counterfactual; half-strength groups A and B |
+| p3a | Synthetic face, fair skin, 1080x1575 | HD analysis, foundation coverage 25, 50, 75, 100, simulations: spots and redness 0.5; counterfactual; half-strength groups A and B |
+| p5a | Synthetic face, fine skin with very subtle freckling, 1080x1350 | HD analysis (the photo was cropped and upscaled 1.475x to reach HD's size), counterfactual and half-strength groups A and B (no makeup renders) |
+
+Every render is recorded with its request, and `renders/offsets.json` holds its measured alignment to the photo.
+Half-strength group A is `dark_circle`, `eye_bags`, `wrinkle` and `redness` at 0.5; group B is `spots`, `pores` and `acne`
+at 0.5.
 
 - The photos are **synthetic faces made with an AI image tool**. Nobody real is shown, so there is nothing to consent to or license.
 - The JSON and images are the unedited API output. Removed on purpose: task ids, file ids, signed URLs, storage prefixes, keys.
@@ -253,10 +276,17 @@ The demo runs with **no keys and no network**. Everything below is real YouCam o
 1. A request that names a demo face (`persona`) skips the live path entirely. `analysis.hd.json` goes through the same
    `normalizeAnalysis` function as a live response, and the masks are read from disk as data URLs. The response says
    `source: "replay"` and `unitsCharged: 0`.
-2. A makeup or simulation request on a demo face gets the **closest recorded render**: same category first, then the
-   nearest parameter value (foundation by `coverageIntensity`). If nothing was recorded for that change, the user sees a plain
-   message instead of a made-up image.
-3. Renders get the same alignment offset as live ones (for example `dy: 1` for makeup), so the measurement code cannot tell the difference.
+2. A **makeup** request on a demo face gets the closest recorded render, with two rules. Only renders whose request had
+   `skin_smooth` at 0 are served: the five early renders with default smoothing (which blur and brighten the whole picture,
+   section 4, note 4) are never returned. Among those, the category matches first (foundation or concealer), then the
+   nearest `coverageIntensity`.
+3. A **simulation** request matches **by concern**: a recording is served only if it changed every concern asked for
+   (strength above 0 for each). A request for spots never gets the acne render, and a request for the four counterfactual
+   strengths gets the counterfactual one. Among the matches, the smallest total strength difference wins (a recording that
+   changes extra concerns ranks lower).
+4. If nothing was recorded for that change, the user sees a plain message instead of a made-up image.
+5. Each render carries the offset **measured** against the photo (`renders/offsets.json`, for example `dy: 1` on p2b and `dx: -3`
+   on p3a), and the measurement code registers it again exactly as it does for a live render, so it cannot tell the difference.
 
 **Tests never call YouCam.** Unit tests in `lib/youcam/` use a fake `fetch` and these fixtures: request shapes, the retry rules, the
 guard, the one-row shift and the replay choice are all checked offline. To run the app on recorded data:
@@ -265,3 +295,80 @@ guard, the one-row shift and the replay choice are all checked offline. To run t
 cp .env.example .env     # leave YOUCAM_API_KEY empty; YOUCAM_MODE=replay is the default
 npm run dev              # demo faces work with no further setup
 ```
+
+## 7. Skin Simulation: two uses
+
+Skin Simulation renders the same face with chosen concerns turned down, pixel-aligned with the input. We use it as an
+instrument, in two ways. The second one ships.
+
+**1. The counterfactual (tried, then replaced).** One call per face with `dark_circle`, `eye_bags`, `wrinkle` and
+`redness` at 1.0 (four concerns, 4 units). A feature's contrast was measured as `(photo - simulation) / simulation` in linear
+light instead of against its surround, because the surround of an under-eye shadow or a redness zone is confounded by
+eye-socket shading and cheek lighting. It did remove the confound, and it asked a good question ("from how far could someone
+tell this face from the same face without it?"). But strength 1.0 beautifies beyond natural: on p3a and p5a, which YouCam
+scores 90 and 92 on dark circles (raw score), it still lightens the under-eye regions by 14% to 25%. A reference that
+removes that much is not "what is there", so surround contrast went back to being the default. The four renders stay
+recorded (`sim_counterfactual.png`) and the machinery is what the second use runs on.
+
+**2. The half-strength improvement ("Worth it?").** Two calls per face at strength 0.5 (group A: `dark_circle`, `eye_bags`,
+`wrinkle`, `redness`; group B: `spots`, `pores`, `acne`; 4 units each). Each target is measured again as the difference
+between the photo and the simulation and run through the same visibility model, which gives the farthest distance at which
+the *change* would still be detectable. Pores: nobody notices; under-eye: across a room. 0.5 is our choice, not a
+calibrated "realistic improvement": on the regions we checked it removes 55% to 64% of what 1.0 removes. How it is computed
+is in [MODEL.md](MODEL.md#10-worth-it-the-difference-an-improvement-would-make) and the table for every face is in
+[EVAL.md](EVAL.md#7-what-would-an-improvement-change-worth-it).
+
+Notes for other developers:
+
+- **Pick the render that changed the concern.** A concern the simulation left alone comes out with a difference near 0. The
+  replay (section 6) enforces this by serving a recording only if it changed every concern asked for.
+- **Price tiers.** One to four concerns cost 4 units and five to ten cost 6. Our seven concerns are two 4-unit calls (8
+  units); one seven-concern call is priced at 6. We did not test whether it renders the same as the two separate calls.
+- **We have not tested repeatability.** One render per request and face; the same request twice might not give the same image.
+- A single-concern **what-if** (one strength, the share of marks detectable at 1.5 m before and after) uses the same endpoint
+  (`lib/coverage/whatif.ts`).
+
+## 8. The drop-in layer: `POST /api/visibility`
+
+If you already run YouCam Skin Analysis, you can use the visibility layer alone. Send the analysis result and the photo, and
+get back, for each concern, the distance beyond which an ideal 20/20 observer can no longer see it. The route calls no
+YouCam endpoint and spends no units; it only reads masks (from the request, or from the result URLs YouCam already gave you).
+`GET /api/visibility` returns this description as JSON. Code: `app/api/visibility/`.
+
+**Request** (`application/json`, at most 4,000,000 bytes, under the hosting platform's 4.5 MB limit):
+
+| Field | Required | What |
+|---|---|---|
+| `output` | yes | The `data.results.output` array of a finished Skin Analysis task (HD or SD, `format: "json"`), as returned |
+| `image` | yes | The analysed photo as a JPEG or PNG data URL. It may be the original if YouCam resized it (long side over 2560 px): it is matched to the masks' frame |
+| `masks` | no | Mask PNG data URLs keyed by the mask URL in `output`. Without it, mask URLs on YouCam's result storage (https, S3 on amazonaws.com) are downloaded; they expire after 2 hours. Only masks without a region, or with region `whole`, are needed. URLs on any other host are refused |
+| `viewing` | no | `luminanceCdM2`, `acuityScale`, `label`, `marginDb`. Default: indoor 45 cd/m^2, 20/20, 6 dB |
+| `scale` | no | `{ mmPerPx, relSd, source, irisPx? }` for the analysed frame, if you measured it (iris, card). Otherwise it is estimated from the masks |
+
+```jsonc
+{ "output": [ /* data.results.output, as returned */ ], "image": "data:image/jpeg;base64,...", "masks": { "<mask url>": "data:image/png;base64,..." } }
+```
+
+**Response**: a `VisibilityReport`: `viewing`, `concerns[]` (per concern: `maxDistanceM`, `medianDistanceM`, `intervalM`,
+`confidence`, `profile`, `topTargets`, `targetCount`) and `targets[]`. The headers `x-scale-source`, `x-scale-method`,
+`x-scale-mm-per-px` and `x-scale-rel-sd` say which scale was used. Errors are `{ error: { code, message } }` with a plain
+sentence. Limits: 20 requests per 10 minutes per address, 3 running at once, 60 s per request.
+
+**Scale from the masks.** Iris detection is browser-only, so without a `scale` the server estimates one from YouCam's own
+masks (`lib/scale/fromMasks.ts`). It is always `source: "assumed"`, so every concern is reported at low confidence:
+
+1. **Eye regions** (`eye-regions`). The left and right under-eye regions of the dark-circle and eye-bag masks each give a
+   centre. Their separation, divided by a ratio calibrated on the fixture faces (0.983 for dark circles and 1.079 for eye bags,
+   in units of the pupil-to-pupil distance), gives the interpupillary distance in pixels, and `mm/px = 63 mm / IPD px` (adult
+   population mean 63 mm, SD 3.5 mm; Gordon et al. 2012 and Dodgson 2004). Stated uncertainty: about 6.3%.
+2. **Face extent** (`face-extent`), when there is no usable eye pair: the 2nd to 98th percentile width of the other masks' marks
+   is about 105 mm on the fixtures. Uncertainty 12%.
+3. **Frame prior** (`frame-prior`), when there are no marks either: the face is assumed to fill 56% of the frame width.
+   Uncertainty 25%.
+
+**How good is it?** Against the iris ruler, the eye-regions estimate is within **0.1% to 4.5%** on the three recorded sets of
+the calibration script (p2b HD, p3a HD, and p2b SD, which was held out), and on the two faces that did not take part in the
+calibration it is +2.1% (p5a) and +4.8% (p1a). With two calibration faces the 6.3% is a judgement rather than a measured
+spread. For a tighter answer, send your own `scale` (an iris ruler gives about 4%).
+
+To try it on a recorded face (no units, no keys): start the app, then `npx tsx scripts/dropin/example.ts http://localhost:3000 p2b`.

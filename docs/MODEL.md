@@ -10,6 +10,8 @@ Contents: [In plain words](#in-plain-words) | [Pipeline](#the-pipeline-at-a-glan
 [3. Contrast](#3-contrast-in-linear-light) | [4. Standard A](#4-the-standard-a-detector) |
 [5. Colour](#5-colour-the-castlecsf-channel) | [6. The bound](#6-the-bound) |
 [7. Summary](#7-from-features-to-a-summary) | [8. Step back](#8-the-step-back-picture) |
+[9. Soft areas](#9-large-soft-areas) | [10. Worth it?](#10-worth-it-the-difference-an-improvement-would-make) |
+[11. Least makeup](#11-least-makeup) | [12. Registration](#12-render-registration) |
 [Parameters](#parameter-table) | [Limitations](#limitations) | [Sources](#sources)
 
 ## In plain words
@@ -41,6 +43,14 @@ distances, not grades. A mark that can be detected from 30 cm or from 3 m is sim
 skin texture around a mark hides it further. All of that only shortens the real distance. So the claim we can defend is
 the upper limit.
 
+**What the results look like.** A face has hundreds of pores and spots, so for those the answer is a count, not one
+distance: "from across a table, at most 150 of your 450 pores could be seen" (section 7). Large soft areas such as
+under-eye shadows get no useful distance, because any ideal observer sees a large area at a few percent of contrast from
+across a room, so we say that plainly and show YouCam's own score (section 9). The same model also answers two
+practical follow-ups: *Worth it?* (if YouCam's Skin Simulation improved a concern by half, from how far could anyone
+tell the difference? section 10) and *Least makeup* (the lowest foundation coverage that gets most of the effect,
+section 11).
+
 ## The pipeline at a glance
 
 ```mermaid
@@ -62,8 +72,12 @@ flowchart LR
 | 2. Iris ruler | Face landmarks | Millimetres per pixel, with an uncertainty | `lib/scale` |
 | 3. Contrast | Photo in linear light | Weber and red-green contrast | `lib/skin` |
 | 4-6. Visibility | Size in mm, contrast, lighting | Nominal and bound distance for each feature | `lib/vision` |
-| 7. Summary | All the distances | A profile or one distance per concern | `lib/vision/report.ts` |
+| 7. Summary | All the distances | A profile ("at most N of M") for many-feature concerns, one distance for regions | `lib/vision/report.ts` |
 | 8. Step back | Photo, scale, distance | The photo as an ideal observer sees it from there | `lib/vision/renderer.ts` |
+| 9. Soft areas | Region measurements | The soft-area wording plus YouCam's own score, instead of a long distance | `lib/copy/describe.ts` |
+| 10. Worth it? | Photo, half-strength Skin Simulation | Distance at which the change stays detectable | `lib/vision/worthIt.ts`, `lib/skin/counterfactual.ts` |
+| 11. Least makeup | Foundation renders at 50, 75, 100 | The lowest coverage that gets most of the effect | `lib/coverage/plan.ts` |
+| 12. Registration | Photo, a render | The shift that aligns the render to the photo | `lib/coverage/register.ts` |
 
 No language model is involved anywhere. The same photo and masks give the same numbers, and every sentence comes from
 templates (`lib/copy`).
@@ -85,7 +99,7 @@ by at least 8 (of 255). Masks are the same size as the photo and line up with it
 | Pores | Dots of one fixed size (7 px): a location | Location only; touching dots split by area | Full width at half maximum of the photo's radial profile, else a prior of 0.3 mm | 3 x 3 pixel box at the location against a ring | Gaussian blob of that width |
 | Acne | Rings of one fixed size (17 px): a location | Location only | As pores (luminance or red-green profile); prior: half the ring | Luminance and red-green | Uniform disk |
 | Dark circles, eye bags | Soft, graded region | Extent where the mask exceeds 15% of its maximum | Equal-area diameter of the region | Alpha-weighted mean against a band of cheek just below | Soft-edged disk |
-| Redness | Zones with graded cut-outs; empty when YouCam finds none | As regions | As regions | Luminance and red-green, against skin outside all zones | Soft-edged disk, with colour |
+| Redness | Zones with graded cut-outs; empty when YouCam finds none | As regions | As regions | Red-green against skin outside all zones. Luminance is measured but not used (section 5) | Soft-edged disk, with colour |
 | Texture | A sampling window | Used only as the skin area for reference colours | None | None | Not scored |
 
 The regional masks YouCam also returns (forehead, nose, cheek for pores; forehead, crow's feet and so on for wrinkles)
@@ -154,6 +168,14 @@ sensitive channel for small features, roughly ten times below red-green for a 1 
 
 A measured luminance contrast is what the photo shows. If the phone or a filter has already smoothed the skin, the
 contrast we see is lower than the contrast a person standing there would see (Limitations, item 1).
+
+**Two contrast bases.** Every target carries a `contrastBasis`. The default is `"surround"`: the feature against the skin
+around it, which is what another person sees. The second is `"counterfactual"`, used only by *Worth it?* (section 10): the
+photo against a YouCam Skin Simulation of the same face with the concern improved, `(photo - simulation) / simulation` in
+linear light. Sizes, ids and the detector are the same; only the reference changes. We first tried the counterfactual as
+the default for dark circles, eye bags, lines and redness, and dropped it: at full strength it removes more than any
+natural variation (section 10), and the simulation is a rendering by a model we cannot inspect, so it is the wrong
+reference for "what do others see".
 
 ## 4. The Standard A detector
 
@@ -254,9 +276,14 @@ R_RG    = C_RG . S_RG,disc(r, L)          R_YV = 0 (not measured)
 R_total = sqrt(R_lum^2 + R_RG^2 + R_YV^2)
 ```
 
-- **When it applies.** Only to concerns marked chromatic: **acne and redness**. For the others the term is 0. Colour can
-  only add visibility, never remove it. In a typical skin example most of a redness difference is a *luminance* change (a
-  darkening) and only a small part is red-green, so the term matters most for isoluminant or large zones.
+- **When it applies.** Only to concerns marked chromatic: **acne and redness**. For the others the term is 0. For acne,
+  colour adds to the luminance term and can only add visibility, never remove it.
+- **Redness is judged on colour alone.** Its luminance contrast is set to 0 before the detector, on either contrast basis
+  (`specFromTarget` in `lib/vision/visibility.ts`). Why: a redness zone sits on a cheek, and the cheek's brightness is
+  mostly the lighting. On the recorded faces the luminance of redness zones differs from the skin outside them by up to
+  31% either way (+31% on p1a, -31% on p3a), while the red-green contrast is only 0.002 to 0.037 in size. Letting the
+  brightness decide would measure the lamp, not the redness. The cost: a zone that is also truly darker is judged on its
+  colour only (Limitations, item 8).
 
 ## 6. The bound
 
@@ -296,22 +323,45 @@ smoothing) and the pixel scale is right. It does not rely on masking by skin tex
 
 ## 7. From features to a summary
 
-A face has hundreds of pores and spots. Reporting the farthest single feature would let a few outliers decide the
-headline, for example a mark that YouCam tagged as both a pore and a spot. So for concerns with many features (pores,
-spots, lines, acne) the summary is a **detectability profile**: at each of the fixed distances **0.25, 0.3, 0.6, 1, 1.5,
-2.5, 4 and 6 m** (`PROFILE_DISTANCES_M`, from mirror distance to well across a room), the count and the share of the concern's features whose bound distance is at least that far
-(`ConcernVisibility.profile`). The copy reads "at most N of your M pores" because the numbers are bounds.
+**In plain words.** A face has hundreds of pores and spots, and "how far can the most visible one be seen?" is the wrong
+question to ask of them. So for concerns with many features (pores, dark spots, lines, breakouts) we count how many
+features an ideal observer could still see at each of several distances, and say "at most N of your M".
 
-- **No double counting.** A pore or acne marker that sits inside a measured age spot is dropped, so one mark is counted once.
-- **Implausible pore sizes.** A pore whose measured size is above 1.2 mm is not a pore opening; its size falls back to a
-  0.5 mm prior.
-- **Regions** (dark circles, eye bags, redness) are single large shapes and keep a single distance each.
-- **Still reported:** the farthest feature (`maxDistanceM`), the median over the concern, the interval of the farthest,
-  and the five most visible features' ids.
-- **Confidence.** A base level by concern: high for age spots, wrinkles and dark circles (sharp outlines, lines and
-  regions); medium for pores, eye bags and redness (location-only markers or soft edges); low for acne and texture. It is
-  capped by where the headline feature's size came from: from the mask keeps the base, from the photo caps at medium, a
-  prior makes it low. An "assumed" scale makes every concern low.
+**Why the maximum is fragile.** The farthest single feature is decided by one outlier. On the first real run on p2b, the
+top "pores" were 1.4 to 1.8 mm marks that YouCam had also tagged as something else, and the headline distance came from
+them while the typical pore sat far closer. Today (after the fixes below) p2b's pores have a farthest bound of 4.2 m, a median of
+1.55 m, and 5 of 649 reach 4 m. Quoting 4.2 m would say nothing about the other 644. The maximum is still reported
+(`maxDistanceM`), but it is not the headline.
+
+**The detectability profile.** At each of the fixed distances **0.25, 0.3, 0.6, 1, 1.5, 2.5, 4 and 6 m**
+(`PROFILE_DISTANCES_M`, from mirror distance to well across a room), we count the concern's features whose bound
+distance is at least that far, and give the share of all of them (`ConcernVisibility.profile`). Between the fixed
+distances the app interpolates on a log axis. Because the bound distance is a ceiling (section 6), each count is a
+ceiling too: **"at most N of your M pores"**. The real number a person could see is lower, and the copy never says
+"show" without "at most" or "could". A concern counts as a relief when at most 10% of it is detectable across a table
+(1.5 m), and a profile is used when a concern has at least 5 features and is not an area region.
+
+**Rules applied before counting.**
+
+- **No double counting (marker dedupe).** A pore or acne marker that sits inside a measured age spot is that spot, not a
+  second feature, and is dropped. On the recorded faces this removes 22 pores and 17 breakout markers on p1a, 7 and 1 on
+  p2b, 19 and 2 on p3a, and 5 pores on p5a.
+- **Implausible pore sizes (the pore size prior).** A pore whose measured width is above 1.2 mm is not a pore opening but
+  another mark at a pore location, so its size falls back to a 0.5 mm prior and is flagged `sizeSource: "prior"`. The
+  numbers are assumptions: Flament et al. (2015) count facial pores from 0.25 mm upward, and we take about 0.5 mm as the
+  upper end of an enlarged pore (our order-of-magnitude reading, not a figure from that paper). Unflagged, these marks
+  would be the longest-carrying "pores". The synthetic demo faces were prompted to have visible pores, and their pores
+  measure about 0.5 mm wide, twice that cutoff, so their pore counts are probably high compared with real skin.
+- **Regions** (dark circles, eye bags, redness) are single large shapes and keep a single distance each. For dark circles
+  and eye bags that distance is not a useful measure (section 9).
+
+**Still reported:** the farthest feature, the median over the concern, the scale-uncertainty interval of the farthest,
+and the five most visible features' ids.
+
+**Confidence.** A base level by concern: high for age spots, wrinkles and dark circles (sharp outlines, lines and
+regions); medium for pores, eye bags and redness (location-only markers or soft edges); low for acne and texture. It is
+capped by where the headline feature's size came from: from the mask keeps the base, from the photo caps at medium, a
+prior makes it low. An "assumed" scale makes every concern low.
 
 ## 8. The Step-back picture
 
@@ -344,6 +394,139 @@ original's finest detail was removed), and equality was not rejected. So the met
 slightly generous: a real viewer can see a little more than the simulation kept, which is the direction our margin is
 meant to cover. The picture uses Peli's validated rule, the numbers use the pooled model; both are calibrated from the same
 Standard A thresholds but they are different detectors, so they agree closely but not pixel for pixel.
+
+## 9. Large soft areas
+
+**In plain words.** For under-eye shadows and puffiness a distance is not a meaningful number. These are areas 3 to 4 cm
+wide, and a large area is easy to see: even a few percent of contrast over that size is detectable from far away by an
+ideal observer, on anyone's face. A long distance would say the area is large, not that the shading is strong, and it
+would ask the person to read it as a grade. So for these two concerns we do not lead with the distance.
+
+**The detail.**
+
+- **The physics.** The detector sums over area (section 4), so threshold contrast falls as a feature grows. A 35 mm
+  soft-edged disk at only 3% contrast has a bound of 22.9 m (11.5 m for the average observer) at ModelFest's 30 cd/m^2;
+  the app caps reports at 10 m. The last row of the table in [EVAL.md](EVAL.md#4-illustrative-distances) is generated
+  from the code.
+- **What the recorded faces measure.** Against the cheek band below them, dark circles come out at -0.26 to -0.55
+  Weber contrast and eye bags at -0.14 to -0.51, over regions 31 to 46 mm wide, on all four recorded faces, including
+  the fine-skinned p5a. That is ordinary eye-socket shading and not a sign of anything on the skin, and every one of
+  them lands at the 10 m cap. A distance that every face shares does not discriminate between faces.
+- **What we report instead.** The copy says it plainly ("a large, soft area; at that size even a little darkening can show
+  from across a room, on anyone's face", `lib/copy/describe.ts`) and shows YouCam's own 0 to 100 score for the concern,
+  which does tell faces apart (the recorded faces' dark-circle scores are 72, 69, 81 and 84). Their contrast basis is
+  still the surround (section 3), and the measurement is still in the report.
+- **Where the change matters.** The question that does tell soft areas apart is "how much would an improvement change?",
+  which is *Worth it?* (next section).
+
+## 10. "Worth it?": the difference an improvement would make
+
+**In plain words.** The usual number says what others can see of a concern as it is. *Worth it?* asks what an improvement
+would be worth: if YouCam's Skin Simulation made a concern better by half, from how far could anyone tell the photo from
+the improved version? Small features give a short distance (nobody would notice the change); a large soft area gives a long
+one. It is the same kind of claim as everything else here: a ceiling for an ideal observer looking straight at it, never
+a forecast of what anyone notices.
+
+**The contrast.** Each target keeps its size and id; only its contrast changes, to the difference between the photo and the
+simulation, in linear light:
+
+```text
+C = (Y_photo - Y_sim) / Y_sim          red-green: dL/L - dM/M, photo against simulation, as in section 3
+```
+
+How `Y_photo` and `Y_sim` are taken depends on the target, always at the same place in both images
+(`lib/skin/measure.ts`, `lib/skin/features.ts`):
+
+| Target | Where the two images are compared |
+|---|---|
+| Age spots | Mean over the spot's filled outline |
+| Pores, acne | A 3 x 3 pixel box at the marker |
+| Wrinkles | Along the line's cross-sections, with the same one-offset search within 3 px as in section 1; the offset where the difference is most negative; at least 4 cross-sections |
+| Regions (dark circles, eye bags, redness) | Alpha-weighted mean over the region |
+
+Then the usual chain runs unchanged: shape, angular size, the detector, the same viewing light and the same 6 dB margin,
+and the same summary (maximum, median, profile). Redness stays chromatic-only. A concern the simulation did not change
+comes out near 0 contrast and near 0 m, so the render has to be one that changed the concern asked about
+(`lib/vision/worthIt.ts`). The simulation is brought into the photo's frame first, by registration (section 12).
+
+**Why half strength, not full.** Skin Simulation takes a strength from 0 to 1 per concern. We first tried 1.0 and found
+that it beautifies beyond natural. At strength 1.0 the under-eye regions of the two faces YouCam scores 90 and 92 on dark
+circles (raw score, p3a and p5a) still come out 14% to 25% lighter, region by region (18% to 24% in our first
+measurement), so even a face with little to improve loses roughly a fifth of its under-eye darkness. That is not a "realistic
+improvement". We use **0.5** instead. It is a choice, not a calibration: the same regions come out 8% to 16% lighter at
+0.5, which is 55% to 64% of the full change, so 0.5 is not exactly half, and nothing ties the strength scale to a physical
+quantity. We record two simulations per face, 4 units each: group A (dark circles, eye bags, wrinkles and redness at 0.5)
+and group B (spots, pores and acne at 0.5).
+
+**What it shows.** The table in [EVAL.md](EVAL.md#7-what-would-an-improvement-change-worth-it) is generated by running
+`worthIt` on the recorded simulations. In short: a half-strength change to pores shows on at most 4% to 14% of a face's
+pores across a table and on none at 4 m; a change to under-eye shadows and puffiness is detectable at the 10 m cap on every
+recorded face. Pores: nobody notices. Under-eye: across a room.
+
+**Limits.** The simulation is YouCam's rendering and we cannot inspect it. We have one render per group per face, and have not
+tested whether the same request gives the same render twice. The result covers only what the simulation changed, and a
+bigger change always reaches farther.
+
+## 11. Least makeup
+
+**In plain words.** To find the least foundation that hides a concern, we render the face at a few coverage levels, measure
+each render exactly as we measured the photo, and pick the lowest level that gets most of the effect. The renders come from
+YouCam's Makeup Virtual Try-On; the measurement and the choice are ours.
+
+**The detail** (`lib/coverage/plan.ts`).
+
+- **The lever.** Foundation `coverageIntensity`, always with a `skin_smooth` effect at 0 first. With smoothing left at its
+  default the service blurs and brightens everything (about +23% in linear luminance, background included); with it at 0 a
+  render without makeup is bit-identical to the input, so the "no makeup" baseline costs nothing, and every makeup effect is
+  local ([YOUCAM.md](YOUCAM.md#4-integration-notes-we-learned-the-hard-way), notes 4 and 5).
+- **The metric.** The share of the concern's targets whose bound distance reaches **1.5 m** (across a table), the same
+  profile measure as section 7. The maximum is no use: the strongest single mark (a dark mole sat at the 10 m cap on every
+  recorded face) stays visible at any coverage, so a rule "the maximum falls below d" is never met.
+- **The search.** The grid is 25, 50, 75, 100, with at most 4 renders. The response is monotone in the recorded data, so we
+  render 50 first. If 50 already leaves at most 10% of the targets detectable (`MET_FRACTION`), we try 25, and the answer is the
+  lowest level that meets it. Otherwise we try 75, then 100, and take the first that meets it.
+- **The knee.** When nothing reaches 10%, the answer is the lowest coverage that achieves at least **80%** of the reduction
+  that 100% coverage achieves (`KNEE_SHARE`), i.e. where most of the effect is. If 100% reduces nothing, there is no answer
+  and the status is `no_effect`. The 25 render is made only when 50 already reaches the knee.
+- **What has no lever.** Concealer did not respond in our tests (its `coverageLevel` 20, 50 and 90 renders differ by 0.03 of
+  255 on average, and `colorUnderEyeIntensity` moved dark-circle contrast by 0.4% in total). **Dark circles and eye bags have
+  no makeup lever** in what we tried (the best case was a 6% drop with foundation that did not grow with coverage); their
+  what-if goes through Skin Simulation. Wrinkles and redness were not tested, so they are reported as having no verified
+  lever, not searched. Texture is not a visible mark.
+- **Every number is checked on the render.** Each step is a recorded or live render, registered to the photo (section 12)
+  and measured again on the same masks, so a plan is never a prediction from a formula.
+
+The per-face results from the recorded foundation grid are in [EVAL.md](EVAL.md#8-least-makeup-on-the-recorded-renders). On
+the three recorded faces full coverage does not take spots, pores or breakouts to 10% across a table, so the answer is the
+knee; it takes the share of detectable pores from 53% to 22% on p2b.
+
+## 12. Render registration
+
+**In plain words.** A render from YouCam is not always the same size or position as the photo we sent. To compare the two at
+the same pixels, we measure how far each render is shifted and undo it.
+
+**The detail** (`lib/coverage/register.ts`). The shift is **per render, measured**, not a constant:
+
+| Face | Render size for the input | Shift | Padding |
+|---|---|---|---|
+| p2b | 1080 x 1340 for 1080 x 1341 | +1 row (`dy` 1) | Black first row |
+| p3a | 1078 x 1576 for 1080 x 1575 | `dx` -3 | Black last row and column |
+| p1a | 1080 x 1610 for 1080 x 1610 | None | None |
+
+Convention: `render(x + dx, y + dy) = input(x, y)`. A rule based on the output size would have been right for p2b and wrong for the
+other two, which is why we measure.
+
+- **Method.** Normalised cross-correlation of blurred luminance (box blur, radius 2), over the most textured 64 px blocks
+  of the input (4 to 40 of them, those with a luminance sd of at least 6), for every whole-pixel shift within +-6 px. NCC
+  ignores the gain and offset that smoothing or tone changes add, and a pure translation is all the service applies.
+- **Padding.** Up to 4 px of black border at the render's edge counts as padding and is left out of the valid region, so
+  it is never sampled.
+- **Trust.** A registration whose mean NCC is below 0.6 is not trusted (the recorded renders score 0.87 to 0.99), and the
+  offset the service client reported is used instead. Simulations are pixel-aligned (within 0.06 px on three faces, 0.15 px
+  on p3a) but go through the same registration, so a shift would be caught.
+- **Precision.** Whole pixels only; the patch-wise measurements on the recorded renders have a spread of 0.03 to 0.15 px, so
+  the integer is right to well under a pixel. At 0.17 mm per pixel that is 0.03 mm, which matters for 1 to 3 px features
+  such as pores and lines, and not for regions.
 
 ## Parameter table
 
@@ -497,6 +680,8 @@ These are heuristics chosen from the recorded masks and photos (docs/YOUCAM.md, 
 | `MIN_REFERENCE_PIXELS` | 2000 | pixels | Heuristic: smallest skin reference sample |
 | `MARKER_PARAMS.priorDiameterMm` | pore 0.3, acne 0 | mm | Assumption: a pore opening is a few tenths of a millimetre; used only when the photo gives no measurable size, and flagged as a prior. Acne uses a fraction of the ring, below |
 | `ACNE_PRIOR_FRACTION` | 0.5 | of ring diameter | Assumption: the lesion fills about half of the 17 px ring YouCam draws |
+| `PORE_MAX_PLAUSIBLE_MM` | 1.2 | mm | Assumption: a photo-measured pore wider than this is another mark (a papule, a spot) at a pore location. Flament et al. 2015 count pores from 0.25 mm; enlarged pores are typically up to about 0.5 mm (our order-of-magnitude reading), so this is more than twice that |
+| `PORE_IMPLAUSIBLE_PRIOR_MM` | 0.5 | mm | Assumption: the size such a marker gets instead (the upper end of an enlarged pore), flagged as a prior |
 | `MARKER_PARAMS.priorMinPx` | pore 2, acne 3 | pixels | Photo-measured marker sizes are blur-limited; never smaller than this |
 | `MARKER_PARAMS.flatSigma` | pore 2, acne 2 | standard errors | Heuristic: a marker's contrast must exceed this many noise standard errors to count as a measurement |
 | `MARKER_PARAMS.splitAreaFactor` | pore 1.6, acne 1.6 | x median area | Heuristic: larger components are split into several markers (merged neighbours) |
@@ -511,6 +696,23 @@ These are heuristics chosen from the recorded masks and photos (docs/YOUCAM.md, 
 
 <!-- generated:params-measurement:end -->
 
+<!-- generated:params-products:start -->
+
+### Least makeup and render registration
+
+Choices of ours (sections 11 and 12). None of them feeds the vision model's constants; they decide which renders are measured and which one is reported.
+
+| Parameter | Value | Unit | Source |
+| --- | --- | --- | --- |
+| `COVERAGE_GRID` | 25, 50, 75, 100 | % coverageIntensity | Ours: the foundation levels rendered. The search relies on the monotone response measured in the spike (docs/YOUCAM.md, section 4, note 5) |
+| `DEFAULT_TARGET_DISTANCE_M` | 1.5 | m | Ours: across a table, one of the profile distances (PROFILE_DISTANCES_M) |
+| `MET_FRACTION` | 0.1 | of the concern's targets | Ours: a concern counts as hidden when at most this share is still detectable at the target distance (the share the copy calls a relief) |
+| `KNEE_SHARE` | 0.8 | of the reduction at 100% | Ours: when the target is not met, the lowest coverage that achieves this share of the reduction full coverage achieves |
+| `MAX_SHIFT_PX` | 6 | pixels | Ours: registration tries every whole-pixel shift within this. The recorded shifts are 0 to 3 |
+| `MIN_TRUSTED_NCC` | 0.6 | correlation | Ours: a registration whose mean normalised cross-correlation is below this is not trusted, and the service's own offset is used instead. The recorded renders score 0.87 to 0.99 |
+
+<!-- generated:params-products:end -->
+
 ## Limitations
 
 Read these before relying on a number.
@@ -524,12 +726,16 @@ Read these before relying on a number.
    no motion and no attention. Each of those would make a feature harder to see, so leaving them out only helps the bound.
 3. **Pores and acne are point markers.** YouCam gives a fixed-size dot or ring, so their size is measured in the photo
    (blur-limited, an upper bound) or comes from a prior. At about 0.2 mm per pixel a real pore is about one pixel, at the
-   edge of what the photo resolves. Pore distances are the least certain of all, and their confidence is capped.
+   edge of what the photo resolves. Pore distances are the least certain of all, and their confidence is capped. The
+   0.5 mm prior for implausibly wide pores and its 1.2 mm cutoff are our assumptions (section 7). The synthetic demo faces
+   were prompted to show visible pores and measure about 0.5 mm wide, so their pore counts are likely higher than on
+   real skin.
 4. **YouCam's wrinkle mask can mark beard stubble.** Fine, line-like texture can be drawn as wrinkles. We measure what the
    mask marks; the photo test drops lines with no clear dip, but it cannot tell a hair from a crease.
-5. **Redness on deep skin has low measured red-green contrast.** Melanin absorbs much of the signal that makes a flush stand
-   out, so the measured contrast is small. In our recorded deep-skin demo face YouCam's redness mask is empty, and the
-   app reports "nothing found" rather than a distance.
+5. **Redness is read from colour alone, and is often absent.** The red-green contrast of a zone is small (0.002 to 0.037 on
+   the recorded faces), and on deep skin melanin absorbs much of the signal that makes a flush stand out. On two of the
+   four recorded faces (p2b, deep brown skin, and p5a, fine skin) YouCam's redness mask is empty, and the app reports
+   "nothing found" rather than a distance.
 6. **The luminance factor is a heuristic.** It moves 30 cd/m^2 thresholds to the viewing luminance using castleCSF's
    achromatic curve, which was not fitted to small isolated features at those levels. The bound uses `max(1, g)` so it
    never shrinks in a dim room. The presets (home 12, indoor 45, video call 80, overcast 300, daylight 1000 cd/m^2) are
@@ -538,10 +744,13 @@ Read these before relying on a number.
    published. ModelFest observers looked at calibrated test patterns, not at skin, and there is no human study of
    skin-feature distances yet. The walk-back self-test lets anyone check one prediction, but it is a demonstration, not a
    lab study.
-8. **Colour is added only for acne and redness.** Ignoring colour elsewhere can make a distance too short, the unsafe
-   direction, though most of a typical skin difference is a luminance change. Where colour is used, the luminance part
-   (ModelFest-calibrated) and the colour part (castleCSF) come from different calibrations, and castleCSF's disc
-   thresholds sit 3 to 8 dB lower than Standard A at 20-200 cd/m^2. Combining them is our construction.
+8. **Colour is added only for acne and redness, and redness ignores luminance.** Ignoring colour elsewhere can make a
+   distance too short, the unsafe direction, though most of a typical skin difference is a luminance change. For redness
+   the opposite choice is made on purpose: luminance is dropped because it mostly records the lighting of the cheek
+   (section 5), but a zone that is also really darker is then judged on its colour only, which can also make its distance
+   too short. Where colour is used, the luminance part (ModelFest-calibrated) and the colour part (castleCSF) come from
+   different calibrations, and castleCSF's disc thresholds sit 3 to 8 dB lower than Standard A at 20-200 cd/m^2.
+   Combining them is our construction.
 9. **The ruler has limits.** The iris gives millimetres per pixel at the iris plane, a few millimetres behind much of the
    skin, which at selfie distance is a few percent we do not model. A head turned more than the capture check allows
    (10 degrees) or a very small iris in the frame adds error. The uncertainty shown covers population spread and landmark
@@ -552,7 +761,22 @@ Read these before relying on a number.
     drawn at every distance. It uses a different detector from the numbers (section 8).
 12. **A summary is only as good as its counts.** The profile counts features YouCam found and the dedupe and size rules in
     section 7 are heuristics; the bound says "at most", not "this many".
-13. **Before commercial use.** Watson & Ahumada declare an interest in standard-observer metrics. We use the published
+13. **Large soft areas have no useful distance.** Under-eye shadows and puffiness reach the 10 m cap on every recorded face,
+    because any ideal observer sees a large area at a few percent of contrast (section 9). We show the soft-area wording and
+    YouCam's own score instead, which means two faces with very different shading get the same distance-style answer.
+14. **"Worth it?" rests on YouCam's Skin Simulation.** It is a rendering by a model we cannot inspect, at a strength of
+    0.5 that we chose, and that is 55% to 64% of the full-strength change on the regions we checked, not exactly half. There
+    is one render per group per face, and we have not tested whether the same request gives the same render twice. The
+    distance is a ceiling for an ideal observer, not a forecast of what anyone notices (section 10).
+15. **"Least makeup" was studied on a small base.** The foundation lever was measured on one face (p2b: spot contrast -30%
+    at coverage 50 and -45% at 100) and the grid rendered on three, each with one shade matched to the cheek. A lighter
+    concealer shade was not tested; wrinkles and redness have no verified lever; dark circles and eye bags have none at all.
+    On the recorded faces full coverage does not reach "at most 10% detectable across a table" for spots, pores or
+    breakouts, so the answer is the knee, not a guarantee of hiding.
+16. **Render registration is whole-pixel.** It needs a photo with texture (mean correlation of at least 0.6) and falls
+    back to the service's reported offset otherwise, which is wrong for some faces (the output size alone does not give
+    the shift).
+17. **Before commercial use.** Watson & Ahumada declare an interest in standard-observer metrics. We use the published
     equations and constants and have not checked whether any patent applies. ModelFest states no licence, so we ship only a
     table of observer means, not the stimulus images.
 
@@ -573,6 +797,8 @@ Read these before relying on a number.
 - Rüfer, F., Schröder, A. & Erb, C. (2005). White-to-white corneal diameter: normal values in healthy humans obtained with
   the Orbscan II topography system. *Cornea* 24(3):259-261.
 - Hall, E.T. (1966). *The Hidden Dimension*. Doubleday. Personal and social distance zones.
+- Flament, F. et al. (2015). Facial skin pores: a multiethnic study. *Clin Cosmet Investig Dermatol*
+  8:85-93. Pores are counted from 0.25 mm upward; the basis of the pore size prior.
 - Stockman, A. & Sharpe, L.T. (2000). The spectral sensitivities of the middle- and long-wavelength-sensitive cones
   derived from measurements in observers of known genotype. *Vision Research* 40:1711-1737; CIE 170-1:2006. The cone
   fundamentals behind castleCSF's cone space.

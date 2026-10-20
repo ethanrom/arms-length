@@ -120,6 +120,7 @@ const CASES: Case[] = [
   { label: "Spot", size: "4 mm disk", contrast: "10%", spec: { shape: "disk", sizeMm: 4, lum: -0.1 } },
   { label: "Freckle", size: "2 mm disk", contrast: "15%", spec: { shape: "disk", sizeMm: 2, lum: -0.15 } },
   { label: "Papule", size: "5 mm disk", contrast: "15%", spec: { shape: "disk", sizeMm: 5, lum: 0.15 } },
+  { label: "Under-eye shadow (a large soft area)", size: "35 mm soft-edged disk", contrast: "3%", spec: { shape: "softDisk", sizeMm: 35, lum: -0.03 } },
 ];
 
 /** Distances to a readable form: cm below 1 m is avoided on purpose; the model's precision is about 2 digits. */
@@ -165,13 +166,138 @@ export function distancesTable(): string {
   );
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// The head-to-head with Claude Opus 5.5 (eval/llm-baseline/results/summary.json)
+// ---------------------------------------------------------------------------------------------------------------
+
+interface LlmRuns {
+  n: number;
+  median: number | null;
+  min: number | null;
+  max: number | null;
+  cv: number | null;
+  nulls?: number;
+  runs?: number;
+}
+
+interface LlmFaceCell {
+  persona: string;
+  concern: string;
+  llm: LlmRuns;
+  ours: { targetCount: number; maxDistanceM: number; countAt1_5m: number; fractionAt1_5m: number } | null;
+}
+
+interface LlmPatch {
+  diameterMm: number;
+  weberPct: number;
+  truth: { nominalM: number; boundM: number };
+  llm: LlmRuns;
+  medianOverNominal: number;
+  answersInsideRange: number;
+}
+
+interface LlmScaling {
+  weberPct: number;
+  llm2over1: number;
+  llm4over2: number;
+  llm2over1Range: [number, number];
+  llm4over2Range: [number, number];
+  ours2over1: number;
+  ours4over2: number;
+}
+
+interface LlmSummary {
+  testA: { cells: LlmFaceCell[] };
+  testB: { patches: LlmPatch[]; scaling: LlmScaling[] };
+}
+
+export function loadLlmSummary(): LlmSummary {
+  return JSON.parse(readFileSync(`${ROOT}eval/llm-baseline/results/summary.json`, "utf8")) as LlmSummary;
+}
+
+/** Up to 2 significant digits for distances: "0.8", "4.5", "12". */
+const sig = (x: number): string => String(Number(x.toPrecision(2)));
+
+/**
+ * Faces: the concerns whose numbers do not depend on the contrast basis. Fine lines and redness are left out on purpose:
+ * the committed run measured them against a Skin Simulation (the basis since withdrawn, MODEL.md section 3).
+ */
+const LLM_FACE_CONCERNS: { key: string; label: string }[] = [
+  { key: "pores", label: "Pores" },
+  { key: "dark_spots", label: "Dark spots" },
+  { key: "breakouts", label: "Breakouts" },
+  { key: "under_eye_shadows", label: "Under-eye shadows" },
+];
+
+export function llmFacesTable(summary: LlmSummary = loadLlmSummary()): string {
+  const rows: string[][] = [];
+  for (const { key, label } of LLM_FACE_CONCERNS) {
+    for (const cell of summary.testA.cells.filter((c) => c.concern === key)) {
+      const l = cell.llm;
+      const claude =
+        l.median === null
+          ? `null in ${l.nulls} of ${l.runs} runs`
+          : `${sig(l.median)} (${sig(l.min!)} to ${sig(l.max!)})${l.nulls ? `, null in ${l.nulls} of ${l.runs}` : ""}`;
+      const o = cell.ours;
+      rows.push([
+        cell.persona,
+        label,
+        claude,
+        l.cv === null ? "-" : `${Math.round(100 * l.cv)}%`,
+        o ? (o.maxDistanceM >= MAX_DISTANCE_M ? `${MAX_DISTANCE_M}+` : sig(o.maxDistanceM)) : "none found",
+        o ? `${o.countAt1_5m} of ${o.targetCount}` : "-",
+      ]);
+    }
+  }
+  return table(
+    ["Face", "Concern", "Claude: median (min to max), m", "Run-to-run CV", "Ours: farthest, bound (m)", "Ours: in view at 1.5 m"],
+    rows,
+  );
+}
+
+export function llmPatchesTable(summary: LlmSummary = loadLlmSummary()): string {
+  const rows = summary.testB.patches.map((p) => {
+    const l = p.llm;
+    return [
+      `${p.diameterMm} mm, ${p.weberPct}%`,
+      `${sig(p.truth.nominalM)} to ${sig(p.truth.boundM)}`,
+      `${sig(l.median!)} (${sig(l.min!)} to ${sig(l.max!)})`,
+      `${Math.round(100 * l.cv!)}%`,
+      `${p.medianOverNominal.toFixed(2)}x`,
+      `${p.answersInsideRange} of ${l.n}`,
+    ];
+  });
+  return table(
+    ["Spot", "Our model: average observer to bound (m)", "Claude: median (min to max), m", "CV", "Median over average-observer value", "Answers inside our range"],
+    rows,
+  );
+}
+
+export function llmScalingTable(summary: LlmSummary = loadLlmSummary()): string {
+  const rows: string[][] = [];
+  for (const s of summary.testB.scaling) {
+    const pairs: [string, number, [number, number], number][] = [
+      ["1 to 2 mm", s.llm2over1, s.llm2over1Range, s.ours2over1],
+      ["2 to 4 mm", s.llm4over2, s.llm4over2Range, s.ours4over2],
+    ];
+    for (const [step, ratio, range, ours] of pairs) {
+      rows.push([`${s.weberPct}%`, step, ours.toFixed(1), ratio.toFixed(2), `${range[0].toFixed(2)} to ${range[1].toFixed(2)}`]);
+    }
+  }
+  return table(["Contrast", "Doubling", "Our model", "Claude: ratio of medians", "Claude: lowest to highest over 25 answer pairs"], rows);
+}
+
 /** Every generated block of docs/EVAL.md by name. */
 export function allEvalBlocks(): Record<string, string> {
   const report = loadReport();
+  const llm = loadLlmSummary();
   return {
     "modelfest-families": familyTable(report),
     "modelfest-skin": skinShapesTable(report),
     "distances": distancesTable(),
+    "llm-faces": llmFacesTable(llm),
+    "llm-patches": llmPatchesTable(llm),
+    "llm-scaling": llmScalingTable(llm),
   };
 }
 

@@ -34,7 +34,7 @@ for (const persona of ["p2b", "p3a"]) {
     // The slider only becomes available once the distance renders are ready.
     const slider = page.getByRole("slider", { name: /Step back/ });
     await expect(slider).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole("heading", { name: "What others see", level: 2 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "What others see", exact: true, level: 2 })).toBeVisible();
     await expectNoAxeViolations(page);
   });
 }
@@ -71,9 +71,10 @@ test("a concern card expands and its receipt opens as a sheet", async ({ page })
   await expect(dialog).toBeHidden();
 });
 
-test("an unknown persona is a 404", async ({ page }) => {
-  const res = await page.goto("/try/not-a-face");
-  expect(res?.status()).toBe(404);
+test("an unknown persona shows the not-found page", async ({ page }) => {
+  await page.goto("/try/not-a-face");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/out of focus/i);
+  await expectNoAxeViolations(page);
 });
 
 test.describe("with motion", () => {

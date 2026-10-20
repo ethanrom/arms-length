@@ -57,7 +57,7 @@ export function mockReceipts(measurements: Measurements, report: VisibilityRepor
     const thresholdPct = Math.round(contrastPct * Math.pow(distanceM / c.maxDistanceM, 1.5) * 10) / 10;
     const visible = distanceM <= c.maxDistanceM;
     const direction = chromatic ? "redder" : contrast.lum < 0 ? "darker" : "lighter";
-    const unit = feature?.shape === "line" ? "wide, as a line" : "wide";
+    const unit = "wide";
 
     const copy: ReceiptCopy = {
       found: "YouCam found it here.",

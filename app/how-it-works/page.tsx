@@ -77,7 +77,7 @@ const LIMITS = [
   "Light changes what shows. We assume indoor face brightness; strong sun and raking light reveal more.",
   "A photo and a screen are not your face. They render contrast by their own rules.",
   "The demo faces are synthetic (AI-generated). Their analyses are recorded replays.",
-  "Arm's Length says nothing about skin health and is not medical advice.",
+  "Arm's Length is about visibility, not health: it says nothing about how your skin is doing and gives no advice.",
 ];
 
 function Chapter({ id, n, title, children }: { id: string; n: string; title: ReactNode; children: ReactNode }) {

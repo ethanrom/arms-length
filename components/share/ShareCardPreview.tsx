@@ -15,7 +15,7 @@ interface ShareCardPreviewProps {
 /** Fits the 1200 x 630 card to its container and offers a text copy. Image download arrives with the OG route. */
 export function ShareCardPreview({ data, imageSrc, imagePosition, text }: ShareCardPreviewProps) {
   const box = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(600);
+  const [width, setWidth] = useState(360);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -43,8 +43,8 @@ export function ShareCardPreview({ data, imageSrc, imagePosition, text }: ShareC
   };
 
   return (
-    <div>
-      <div ref={box} className="w-full border border-rule" style={{ height: (width * 630) / 1200 }}>
+    <div className="min-w-0">
+      <div ref={box} className="w-full overflow-hidden border border-rule" style={{ height: (width * 630) / 1200 }}>
         <div role="img" aria-label={`Share card. ${summary.replace(/\n/g, " ")}`}>
           <ShareCard data={data} imageSrc={imageSrc} imagePosition={imagePosition} width={width} />
         </div>

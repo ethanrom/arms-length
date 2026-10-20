@@ -157,7 +157,7 @@ export function ResultsExperience({ data }: { data: ResultsData }) {
         title="Share what others see"
         lede="Three lines and a face. The card is the same markup that will become the preview image when it is shared."
       >
-        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-16">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-16">
           <ShareCardPreview data={data.share} imageSrc={persona.image} />
           <div className="max-w-sm">
             <p className="eyebrow">Keep going</p>

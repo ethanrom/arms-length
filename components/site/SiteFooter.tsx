@@ -49,7 +49,7 @@ export function SiteFooter() {
             Demo faces are synthetic (AI-generated). Nobody real is shown.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Skin analysis by YouCam. Vision model by us. Not a medical tool.
+            Skin analysis by YouCam. Vision model by us. About visibility, not health.
           </p>
         </div>
       </div>

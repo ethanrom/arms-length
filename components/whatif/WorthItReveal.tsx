@@ -11,13 +11,15 @@ interface WorthItRevealProps {
   alt: string;
   frame: { width: number; height: number };
   anchors: DistanceAnchor[];
+  /** DISCLAIMERS.simulation, from lib/copy. */
+  disclaimer: string;
 }
 
 /**
  * "Worth it?": for each concern, how far away someone could still tell the difference a half-strength improvement
  * makes (lib/vision/worthIt.ts), with the YouCam Skin Simulation it came from as a before/after.
  */
-export function WorthItReveal({ worthIt, src, alt, frame, anchors }: WorthItRevealProps) {
+export function WorthItReveal({ worthIt, src, alt, frame, anchors, disclaimer }: WorthItRevealProps) {
   const [picked, setPicked] = useState<string | null>(null);
   const [pos, setPos] = useState(50);
   const groupId = useId();
@@ -53,7 +55,7 @@ export function WorthItReveal({ worthIt, src, alt, frame, anchors }: WorthItReve
         <div role="radiogroup" aria-label="Concern to compare" className="mt-1 sm:mt-0">
           {items.map((item) => {
             const active = item.concern === selected.concern;
-            const d = item.whatIf.differenceMaxDistanceM ?? 0;
+            const d = item.typicalM;
             return (
               <label key={item.concern} className="relative block cursor-pointer border-t border-rule first:border-t-0 sm:first:border-t">
                 <input type="radio" name={groupId} className="peer sr-only" checked={active} onChange={() => setPicked(item.concern)} />
@@ -66,15 +68,18 @@ export function WorthItReveal({ worthIt, src, alt, frame, anchors }: WorthItReve
                   <span className="serif mt-3 block text-[clamp(1.25rem,1.05rem+0.8vw,1.625rem)] leading-[1.2]" style={{ fontWeight: 380 }}>
                     {item.headline}
                   </span>
-                  <span className="mt-1 block">
-                    <DistanceBar
-                      maxM={d}
-                      intervalM={[d, d]}
-                      relief={d <= 1.5}
-                      tickM={tickM}
-                      description={`${item.title}: a half-strength change stays detectable up to ${d >= 10 ? "10 metres or more" : `${Math.round(d * 10) / 10} metres`}.`}
-                    />
-                  </span>
+                  {/* A large soft area states no distance. */}
+                  {!item.soft && (
+                    <span className="mt-1 block">
+                      <DistanceBar
+                        maxM={d}
+                        intervalM={[d, d]}
+                        relief={d <= 1.5}
+                        tickM={tickM}
+                        description={`${item.title}: a typical sharp-eyed person could tell the difference up to ${Math.round(d * 10) / 10} metres.`}
+                      />
+                    </span>
+                  )}
                   {active && <span className="mt-2 block max-w-[34rem] text-[0.9375rem] leading-relaxed text-muted">{item.detail}</span>}
                 </span>
               </label>
@@ -117,7 +122,7 @@ export function WorthItReveal({ worthIt, src, alt, frame, anchors }: WorthItReve
           </div>
         </div>
         <figcaption className="mt-3 text-[0.8125rem] leading-relaxed text-muted">
-          Drag to compare. The improved face is a YouCam Skin Simulation at half strength, aligned to the photo. It is not a promise about any product or routine.
+          Drag to compare. {disclaimer}
         </figcaption>
       </figure>
     </div>

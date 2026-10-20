@@ -41,11 +41,13 @@ for (const persona of PERSONAS) {
     await expect(slider).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("heading", { name: "What others see", exact: true, level: 2 })).toBeVisible();
 
-    // Real numbers: counts of marks and a distance in the sentences, no "illustrative" disclaimer.
-    const cards = page.locator("button[aria-expanded]").filter({ hasText: /\d/ });
-    await expect(cards.first()).toContainText(/\d+ m|\d+ cm|\d+ of \d+/);
+    // Real numbers in words and distances; no "illustrative" disclaimer, no N/100 score line, the estimate line is up.
+    const cards = page.locator("button[aria-expanded]").filter({ hasText: /\d+ (m|cm)/ });
+    await expect(cards.first()).toContainText(/\d+(\.\d)? (m|cm)/);
     await expect(page.getByText(/illustrative/i)).toHaveCount(0);
-    await expect(page.getByText(/YouCam rates yours \d+\/100/).first()).toBeVisible();
+    await expect(page.getByText(/YouCam rates yours/)).toHaveCount(0);
+    await expect(page.getByText(/An estimate from one photo, not a guarantee/)).toBeVisible();
+    await expect(page.getByText(/Synthetic \(AI-generated\) face/).first()).toBeVisible();
     await expectNoAxeViolations(page);
   });
 }
@@ -60,12 +62,12 @@ test("the Step back slider changes the live counter and speaks its value", async
   await slider.press("Home");
   await expect(slider).toHaveAttribute("aria-valuetext", /25 centimetres, mirror/i);
   const near = await pores.textContent();
-  expect(near).toMatch(/^At most \d+ of 649 pores detectable from here$/);
+  expect(near).toMatch(/your pores are out of sight (from here|yet)$/);
 
   await slider.press("End");
   await expect(slider).toHaveAttribute("aria-valuetext", /6 metres/);
-  await expect(pores).toHaveText("At most 0 of 649 pores detectable from here");
-  expect(near).not.toBe("At most 0 of 649 pores detectable from here");
+  await expect(pores).toHaveText("All of your pores are out of sight from here");
+  expect(near).not.toBe("All of your pores are out of sight from here");
 
   await slider.press("PageUp");
   await expect(slider).toHaveAttribute("aria-valuetext", /metres/);
@@ -87,11 +89,15 @@ test("a concern card expands and its receipt opens as a sheet that follows the m
   await expect(dialog.getByText("YouCam found it here.")).toBeVisible();
   await expect(dialog.getByText(/with the iris as the ruler/)).toBeVisible();
   await expect(dialog.getByText(/arcmin/).first()).toBeVisible();
-  await expect(dialog.getByText(/so sharp eyes looking right at it could see it from 1\.5 m/)).toBeVisible();
+  // Both observers are shown, with their thresholds and the exact counts.
+  await expect(dialog.getByText("Needed by a typical sharp-eyed person")).toBeVisible();
+  await expect(dialog.getByText("Needed by even perfect eyes")).toBeVisible();
+  await expect(dialog.getByText(/for a typical sharp-eyed person looking right at them;/).first()).toBeVisible();
+  await expect(dialog.getByText(/It has [\d.]+%/)).toBeVisible();
 
   // Past the bound (p2b's most visible pore stops at about 4.2 m) the verdict flips.
   await dialog.getByText("6 m", { exact: true }).click();
-  await expect(dialog.getByText(/nobody could see it from 6 m, even with perfect eyes/)).toBeVisible();
+  await expect(dialog.getByText(/even perfect eyes couldn't pick it out from 6 m/)).toBeVisible();
   await expectNoAxeViolations(page);
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
@@ -108,7 +114,7 @@ test("Worth it? lists each concern with the half-strength credit, and Make it di
 
   const cover = page.locator("#make-it-disappear");
   await expect(cover.getByRole("radio")).toHaveCount(3);
-  await expect(cover.getByText(/Honest answer|Verified on a render/)).toBeVisible();
+  await expect(cover.getByText(/Honest answer|Checked on a virtual try-on/).first()).toBeVisible();
 });
 
 test("keyboard only: skip link, a persona card, a concern card and the receipt sheet", async ({ page }) => {

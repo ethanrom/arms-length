@@ -167,6 +167,12 @@ function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, rec
   );
 }
 
+/** The scale-uncertainty whisker, carried from the bound over to the distance the bar is drawn at. */
+function scaledInterval([lo, hi]: [number, number], at: number, of: number): [number, number] {
+  const k = of > 0 ? at / of : 1;
+  return [lo * k, hi * k];
+}
+
 interface CardProps {
   view: ConcernView;
   open: boolean;
@@ -220,17 +226,21 @@ function ConcernCard({ view, open, onToggle, tickM, receipt, scale, viewing, src
           </button>
         </h4>
 
-        <div className="mt-4">
-          {view.profile ? (
-            <SurvivalCurve profile={view.profile} total={view.total} medianM={view.keyDistanceM} relief={relief} tickM={tickM} />
-          ) : (
-            <DistanceBar maxM={visibility.maxDistanceM} intervalM={visibility.intervalM} relief={relief} tickM={tickM} />
-          )}
-        </div>
+        {/* A large soft area states no distance, so it gets neither a bar nor a curve. */}
+        {!view.soft && (
+          <div className="mt-4">
+            {view.profile ? (
+              <SurvivalCurve profile={view.profile} nominalProfile={view.nominalProfile} medianM={view.keyDistanceM} relief={relief} tickM={tickM} />
+            ) : (
+              <DistanceBar maxM={view.keyDistanceM} intervalM={scaledInterval(visibility.intervalM, view.keyDistanceM, visibility.maxDistanceM)} relief={relief} tickM={tickM} />
+            )}
+          </div>
+        )}
         {receipt && view.targets.some((t) => t.id === receipt.targetId) && (
           <div className="mt-1">
             <ReceiptTrigger
               entry={receipt}
+              visibility={visibility}
               target={view.targets.find((t) => t.id === receipt.targetId)!}
               scale={scale}
               viewing={viewing}

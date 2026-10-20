@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { describeConcern, describeWorthIt, orderReliefFirst, stepBackCounter, summaryLine, youcamScoreOf } from "@/lib/copy";
+import { describeConcern, describeWorthIt, orderReliefFirst, stepBackCounter, summaryLine } from "@/lib/copy";
 import { lintText } from "@/lib/copy/lint";
-import { buildSentences } from "./sentences";
+import { buildSentences, worthItInput } from "./sentences";
 import { DEMO_IDS, loadBundle } from "./demo";
 import { buildResultsData } from "./viewModel";
 import type { ReadingBundle } from "./types";
@@ -29,7 +29,7 @@ describe("demo bundles", () => {
   });
 
   test.each(bundles)("%s: the stored sentences are what lib/copy says about the stored numbers", (_id, bundle) => {
-    const fresh = buildSentences(bundle.report, bundle.analysis, bundle.worthIt);
+    const fresh = buildSentences(bundle.report, bundle.worthIt);
     expect(bundle.sentences).toEqual(fresh);
   });
 
@@ -49,24 +49,48 @@ describe("buildResultsData", () => {
     expect(data.concerns.map((c) => c.concern)).toEqual(expected);
     for (const c of data.concerns) {
       const cv = p2b.report.concerns.find((x) => x.concern === c.concern)!;
-      const described = describeConcern(cv, { youcamScore: youcamScoreOf(p2b.analysis.results, c.concern) });
+      const described = describeConcern(cv);
       expect(c.headline).toBe(described.headline);
       expect(c.detail).toBe(described.detail);
       expect(c.tone).toBe(described.tone);
     }
   });
 
-  test("regions carry the soft-area framing and YouCam's score line", () => {
-    const dark = buildResultsData(p2b).concerns.find((c) => c.concern === "dark_circle")!;
-    expect(dark.detail).toMatch(/large, soft area/i);
-    expect(dark.detail).toMatch(/YouCam rates yours \d+\/100/);
+  test("soft areas state no distance, and the UI's flag agrees with the sentence lib/copy wrote", () => {
+    for (const [, bundle] of bundles) {
+      for (const c of buildResultsData(bundle).concerns) {
+        expect(c.soft, `${bundle.id} ${c.concern}: ${c.headline}`).toBe(/carr(y|ies) far, on every face/.test(c.headline));
+        if (c.soft) {
+          expect(c.detail).toMatch(/large, soft area|broad area/i);
+          expect(c.keyLine).toBe("A large, soft area");
+          expect(c.detail + c.headline).not.toMatch(/\d+ ?(m|cm)\b/);
+        }
+      }
+    }
+    // The YouCam N/100 score line is gone from every card.
+    for (const c of buildResultsData(p2b).concerns) expect(c.detail).not.toMatch(/YouCam rates|higher is healthier|\/100/);
+  });
+
+  test("the main surface carries words, not counts: those live in the receipts", () => {
+    for (const [, bundle] of bundles) {
+      const data = buildResultsData(bundle);
+      const surface = [
+        ...data.concerns.flatMap((c) => [c.headline, c.detail, c.keyLine, c.explainer, c.confidence]),
+        ...data.share.lines.map((l) => l.sentence),
+        ...(data.worthIt?.items.flatMap((i) => [i.headline, i.detail]) ?? []),
+        ...(data.coverage?.options.flatMap((o) => [o.headline, o.detail]) ?? []),
+        data.summary,
+      ];
+      for (const text of surface) expect(text, text).not.toMatch(/\b\d+ of (your )?\d+\b|\(\d+%\)/);
+    }
   });
 
   test("the share summary and the Step back counter come from lib/copy", () => {
     const data = buildResultsData(p2b);
     expect(data.summary).toBe(summaryLine(p2b.report));
     const pores = p2b.report.concerns.find((c) => c.concern === "pore")!;
-    expect(stepBackCounter(pores, 1)).toMatch(/^At most \d+ of 649 pores detectable from here$/);
+    expect(stepBackCounter(pores, 0.25)).not.toMatch(/^All /);
+    expect(stepBackCounter(pores, 6)).toBe("All of your pores are out of sight from here");
     expect(data.share.lines.length).toBe(3);
   });
 
@@ -78,17 +102,11 @@ describe("buildResultsData", () => {
       expect(item.detail).toContain("YouCam Skin Simulation, half strength");
       expect(item.afterImage).toMatch(/^\/demo\/p2b\/sim-[ab]\.jpg$/);
       const w = p2b.worthIt.find((x) => x.concern === item.concern)!;
-      expect(item.headline).toBe(
-        describeWorthIt({
-          concern: item.concern,
-          targetCount: w.targetCount,
-          differenceMaxDistanceM: w.whatIf.differenceMaxDistanceM ?? 0,
-          differenceProfile: w.whatIf.differenceProfile,
-        }).headline,
-      );
+      expect(item.headline).toBe(describeWorthIt(worthItInput(w)).headline);
     }
-    const far = view.items.map((i) => i.whatIf.differenceMaxDistanceM ?? 0);
+    const far = view.items.map((i) => i.typicalM);
     expect(far).toEqual([...far].sort((a, b) => b - a));
+    expect(view.items.find((i) => i.concern === "dark_circle")!.soft).toBe(true);
   });
 
   test("coverage covers dark spots, pores and breakouts on a recorded face, with honest sentences", () => {
@@ -98,8 +116,11 @@ describe("buildResultsData", () => {
     for (const o of view.options) {
       expect(o.state).toBe("ready");
       expect(o.plan).toBeTruthy();
-      expect(o.headline).toMatch(/at most \d+ of/i);
-      if (o.plan!.chosen) expect(o.afterImage).toMatch(/^\/demo\/p2b\/coverage-/);
+      expect(o.headline.length).toBeLessThanOrEqual(60);
+      if (o.plan!.chosen) {
+        expect(o.afterImage).toMatch(/^\/demo\/p2b\/coverage-/);
+        expect(o.leverLabel).toMatch(/^foundation coverage \d+%$/);
+      }
     }
   });
 
@@ -131,6 +152,9 @@ describe("buildResultsData", () => {
   test("an enlarged photo, a standard-detail analysis and replay mode each say so", () => {
     const upscaled = buildResultsData({ ...p2b, source: "live", capture: { upscaled: true, upscale: 1.9, engine: "hd" } });
     expect(upscaled.notices.join(" ")).toMatch(/enlarged/);
+    expect(upscaled.notices.join(" ")).toMatch(/deleted from YouCam when you leave this page/);
+    expect(upscaled.notices.join(" ")).toMatch(/We don't store your photo/);
+    expect(upscaled.notices.join(" ")).toMatch(/Skin Simulation early/);
     const sd = buildResultsData({ ...p2b, source: "live", capture: { upscaled: false, engine: "sd" } });
     expect(sd.notices.join(" ")).toMatch(/pores and breakouts get no distance/);
     expect(buildResultsData({ ...p2b, source: "replay" }).notices.join(" ")).toMatch(/Replay mode/);

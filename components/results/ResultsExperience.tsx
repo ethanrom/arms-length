@@ -28,7 +28,7 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
   const chapters = [
     { id: "step-back", label: "Step back" },
     { id: "what-others-see", label: "What others see" },
-    ...(data.coverage ? [{ id: "make-it-disappear", label: "Make it disappear" }] : []),
+    ...(data.coverage ? [{ id: "make-it-disappear", label: data.coverage.title }] : []),
     ...(data.worthIt ? [{ id: "worth-it", label: "Worth it?" }] : []),
     { id: "share", label: "Share" },
   ];
@@ -70,6 +70,10 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
         </div>
         <p className="serif mt-6 max-w-3xl text-[clamp(1.25rem,1rem+1vw,1.75rem)] leading-snug" style={{ fontWeight: 380 }}>
           {data.summary}
+        </p>
+        <p className="mt-3 max-w-3xl text-[0.8125rem] leading-relaxed text-muted">
+          {data.disclaimers.estimate}
+          {data.disclaimers.synthetic ? ` ${data.disclaimers.synthetic}` : ""}
         </p>
         {data.notices.length > 0 && (
           <ul className="mt-4 max-w-3xl space-y-1 border-l-2 border-ink pl-4 text-[0.875rem] leading-relaxed text-ink-soft" aria-label="Notes about this reading">
@@ -135,10 +139,10 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
         <Section
           id="make-it-disappear"
           index="03"
-          eyebrow="Checked on a try-on"
+          eyebrow="Checked on a virtual try-on"
           title={
             <>
-              Make it <em className="font-normal italic">disappear</em> from across a table
+              The lightest <em className="font-normal italic">touch</em>
             </>
           }
           lede={data.coverage.lede}
@@ -166,7 +170,7 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
             </>
           }
         >
-          <WorthItReveal worthIt={data.worthIt} src={persona.image} alt={alt} frame={frame} anchors={anchors} />
+          <WorthItReveal worthIt={data.worthIt} src={persona.image} alt={alt} frame={frame} anchors={anchors} disclaimer={data.disclaimers.simulation} />
         </Section>
       )}
 

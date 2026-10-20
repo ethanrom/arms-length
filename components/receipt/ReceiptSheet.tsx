@@ -6,7 +6,8 @@ import { formatDistance } from "@/app/_lib/axis";
 import { cropAround } from "@/components/concerns/AnnotatedFace";
 import type { Target } from "@/components/results/derive";
 import type { ReceiptEntry } from "@/components/results/types";
-import type { ScaleEstimate, ViewingConditions } from "@/lib/contracts";
+import type { ConcernVisibility, ScaleEstimate, ViewingConditions } from "@/lib/contracts";
+import { receiptCounts } from "@/lib/copy";
 import { buildReceipt, receiptSentences, type ReceiptNumbers } from "@/lib/integration/receipt";
 import { IRIS_DIAMETER_MM } from "@/lib/scale/iris";
 
@@ -14,6 +15,8 @@ const IRIS_MM = IRIS_DIAMETER_MM;
 
 interface ReceiptTriggerProps {
   entry: ReceiptEntry;
+  /** The concern's report line, for the exact counts (receipts are the one place counts appear). */
+  visibility: ConcernVisibility;
   /** The measured target the receipt is about (from `ResultsData.measurements`). */
   target: Target;
   scale: ScaleEstimate;
@@ -32,7 +35,7 @@ const pct = (v: number) => (v < 10 ? v.toFixed(1) : String(Math.round(v)));
  * A "How we know" button and the sheet it opens: the four-step chain behind one distance, with real numbers from
  * lib/integration/receipt.ts. The distance can be changed; the verdict is the model's bound at that distance.
  */
-export function ReceiptTrigger({ entry, target, scale, viewing, title, src, alt, frame, className }: ReceiptTriggerProps) {
+export function ReceiptTrigger({ entry, visibility, target, scale, viewing, title, src, alt, frame, className }: ReceiptTriggerProps) {
   const [open, setOpen] = useState(false);
   const [distanceM, setDistanceM] = useState(entry.defaultDistanceM);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -46,6 +49,7 @@ export function ReceiptTrigger({ entry, target, scale, viewing, title, src, alt,
 
   const numbers = useMemo(() => buildReceipt(target, scale, viewing, distanceM), [target, scale, viewing, distanceM]);
   const sentences = useMemo(() => (numbers ? receiptSentences(numbers) : null), [numbers]);
+  const counts = useMemo(() => receiptCounts(visibility), [visibility]);
 
   return (
     <>
@@ -123,7 +127,20 @@ export function ReceiptTrigger({ entry, target, scale, viewing, title, src, alt,
                 </p>
                 <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted">{sentences.model}</p>
               </Step>
+              {counts && (
+                <Step n="05" sentence={`How many of your ${counts.total} marks, at a few distances.`}>
+                  <ul className="space-y-2 text-[0.9375rem] leading-relaxed text-ink-soft">
+                    {counts.rows.map((row) => (
+                      <li key={row.distanceM}>{row.sentence}</li>
+                    ))}
+                  </ul>
+                  {counts.nominalEstimated && (
+                    <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted">The typical-person counts are estimated from the perfect-eyes counts for this reading.</p>
+                  )}
+                </Step>
+              )}
             </ol>
+            {counts?.safety && <p className="mt-6 border-l-2 border-ink pl-4 text-[0.875rem] leading-relaxed text-ink-soft">{counts.safety}</p>}
           </div>
         )}
       </dialog>
@@ -218,17 +235,18 @@ function RulerBars({ numbers }: { numbers: ReceiptNumbers }) {
 }
 
 function Compare({ numbers }: { numbers: ReceiptNumbers }) {
-  const { angleArcmin, contrastPct, thresholdPct, distanceM } = numbers;
-  const domain = Math.max(contrastPct, thresholdPct) * 1.1 || 1;
+  const { angleArcmin, contrastPct, thresholdPct, typicalThresholdPct, distanceM } = numbers;
+  const domain = Math.max(contrastPct, thresholdPct, typicalThresholdPct) * 1.1 || 1;
   const w = (v: number) => `${(v / domain) * 100}%`;
   const rows = [
-    { label: "Needed at this size", value: thresholdPct, solid: false },
+    { label: "Needed by a typical sharp-eyed person", value: typicalThresholdPct, solid: false },
+    { label: "Needed by even perfect eyes", value: thresholdPct, solid: false },
     { label: "It has", value: contrastPct, solid: true },
   ];
   return (
     <div>
       <Readout value={angleArcmin < 10 ? angleArcmin.toFixed(1) : String(Math.round(angleArcmin))} unit="arcmin" caption={`at ${formatDistance(distanceM)}`} />
-      <div className="mt-5 space-y-3" role="img" aria-label={`Contrast needed ${pct(thresholdPct)} percent; contrast it has ${pct(contrastPct)} percent.`}>
+      <div className="mt-5 space-y-3" role="img" aria-label={`Contrast needed by a typical person ${pct(typicalThresholdPct)} percent, by perfect eyes ${pct(thresholdPct)} percent; contrast it has ${pct(contrastPct)} percent.`}>
         {rows.map((r) => (
           <div key={r.label}>
             <div className="flex justify-between font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-muted">

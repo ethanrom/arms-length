@@ -68,8 +68,12 @@ export interface ConcernCopy {
   headline: string;
   /** One line under it, with the numbers (YouCam's own score is the last sentence). */
   detail: string;
-  /** The chip on the card: "Half gone by 1.5 m", "Up to 10 m+". */
+  /** The chip on the card: "Half out of sight by 1.5 m", "A large, soft area". */
   keyLine: string;
+  /** A large soft area: no distance, bar or curve is drawn for it (lib/copy decides the same way). */
+  soft: boolean;
+  /** The mark-safety line (dark spots, breakouts); `detail` already ends with it. */
+  safety?: string;
   /** What the concern is, then what the number means, in plain words (the "i"). */
   explainer: string;
   /** Confidence statement with the reason. */
@@ -112,9 +116,13 @@ export interface WorthItItem {
   concern: ConcernId;
   title: string;
   whatIf: WhatIf;
-  /** "A half-strength change could show from up to 10 m or more." */
+  /** "The change could show on about half of your dark spots." */
   headline: string;
   detail: string;
+  /** A large soft area shows even a small change, on any face: no distance is drawn. */
+  soft: boolean;
+  /** Where a typical sharp-eyed person stops seeing the difference, metres (for the bar). */
+  typicalM: number;
   /** Shown as the improved face: the group's half-strength simulation, aligned to the photo. */
   afterImage: string;
 }
@@ -182,6 +190,8 @@ export interface ResultsData {
   provenance: string;
   /** Things worth knowing about this reading (an enlarged photo, a smaller analysis, replay mode). */
   notices: string[];
+  /** Fixed lines from lib/copy (DISCLAIMERS), shown where the claim is made. */
+  disclaimers: { estimate: string; synthetic: string | null; simulation: string; tryOn: string; notHealth: string };
   /** Honest status lines for the analysing state. */
   statusLines: string[];
   /** Small print under the Step back hero: says which renderer drew it. */

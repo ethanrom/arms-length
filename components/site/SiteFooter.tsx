@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DISCLAIMERS } from "@/lib/copy/disclaimers";
 import { LandoltMark } from "./Wordmark";
 
 export function SiteFooter() {
@@ -49,7 +50,7 @@ export function SiteFooter() {
             Demo faces are synthetic (AI-generated). Nobody real is shown.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Skin analysis by YouCam. Vision model by us. About visibility, not health.
+            Skin analysis by YouCam. Vision model by us. {DISCLAIMERS.notHealth}
           </p>
         </div>
       </div>

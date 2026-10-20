@@ -51,6 +51,21 @@ describe("buildReceipt", () => {
     expect(r.contrastPct).toBeCloseTo(20, 9);
     // has >= needed exactly when it is visible
     expect(r.contrastPct >= r.thresholdPct).toBe(r.visible);
+    // A typical observer needs at least as much contrast as perfect eyes do.
+    expect(r.typicalThresholdPct).toBeGreaterThan(r.thresholdPct);
+    expect(r.contrastPct >= r.typicalThresholdPct).toBe(r.typicalVisible);
+  });
+
+  test("the two observers part ways between the nominal and the bound distance", () => {
+    const target = disk(3, -0.2);
+    const seen = targetVisibility(target, scale, DEFAULT_VIEWING);
+    const between = (seen.nominalM! + seen.distanceM) / 2;
+    const mid = buildReceipt(target, scale, DEFAULT_VIEWING, between)!;
+    expect(mid.typicalVisible).toBe(false);
+    expect(mid.visible).toBe(true);
+    expect(receiptSentences(mid).verdict).toMatch(/enough for perfect eyes, but a typical person would probably not/);
+    expect(receiptSentences(buildReceipt(target, scale, DEFAULT_VIEWING, seen.nominalM! * 0.9)!).verdict).toMatch(/typical sharp-eyed person looking right at it could see it/);
+    expect(receiptSentences(buildReceipt(target, scale, DEFAULT_VIEWING, seen.distanceM * 1.1)!).verdict).toMatch(/even perfect eyes couldn't pick it out/);
   });
 
   test("a redness-style target is judged on its colour contrast", () => {
@@ -81,7 +96,7 @@ describe("buildReceipt", () => {
     expect(s.angle).toMatch(/arcmin/);
     for (const text of Object.values(s)) expect(lintText(text)).toEqual([]);
     const far = receiptSentences(buildReceipt(disk(0.4, -0.05), scale, DEFAULT_VIEWING, 6)!);
-    expect(far.verdict).toMatch(/nobody could see it/);
+    expect(far.verdict).toMatch(/even perfect eyes couldn't pick it out/);
   });
 });
 
@@ -94,7 +109,9 @@ describe("receipts on a recorded face", () => {
     for (const target of targets.filter((_, i) => i % 7 === 0)) {
       const bound = targetVisibility(target, bundle.scale, bundle.viewing).distanceM;
       for (const d of [0.4, 1, 1.5, 2.5, 4, 6]) {
-        expect(buildReceipt(target, bundle.scale, bundle.viewing, d)!.visible, `${target.id} at ${d} m`).toBe(d <= bound);
+        const r = buildReceipt(target, bundle.scale, bundle.viewing, d)!;
+        expect(r.visible, `${target.id} at ${d} m`).toBe(d <= bound);
+        expect(r.typicalVisible, `${target.id} typical at ${d} m`).toBe(d <= r.typicalM);
       }
     }
   });

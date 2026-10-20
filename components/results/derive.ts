@@ -1,7 +1,7 @@
 import type { Box, ConcernVisibility, Feature, Point, RegionMeasure } from "@/lib/contracts";
 import { hasProfile, keyDistanceOf } from "@/lib/integration/copy";
 import type { ProfilePoint } from "@/app/_lib/axis";
-import { profileAt } from "@/lib/copy";
+import { stepBackShare } from "@/lib/copy";
 import type { ConcernCopy, ResultsData } from "./types";
 
 export type Target = Feature | RegionMeasure;
@@ -15,8 +15,12 @@ export interface ConcernView {
   relief: boolean;
   /** The distance that labels the concern on the slider: where half its marks vanish, or the single area's limit. */
   keyDistanceM: number;
-  /** Share of marks detectable at fixed distances, for concerns with many features (pores, spots, lines, acne). */
+  /** Share of marks the bound lets through at fixed distances, for concerns with many features (pores, spots, lines, acne). */
   profile: ProfilePoint[] | null;
+  /** The same for a typical sharp-eyed person (never above the bound). */
+  nominalProfile: ProfilePoint[] | null;
+  /** A large soft area: no distance, bar or curve is drawn for it. */
+  soft: boolean;
   /** How many marks the concern has (the denominator of the profile). */
   total: number;
   targets: Target[];
@@ -57,6 +61,8 @@ export function deriveConcernViews(data: ResultsData): ConcernView[] {
       keyDistanceM: keyDistanceOf(visibility),
       // Many-feature concerns get a curve; a few areas (under-eye, redness) get a single bar. The rule is lib/copy's.
       profile: hasProfile(visibility) ? (visibility.profile ?? null) : null,
+      nominalProfile: hasProfile(visibility) ? (visibility.nominalProfile ?? null) : null,
+      soft: copy.soft,
       total: visibility.targetCount,
       targets,
       topIds: new Set(visibility.topTargets),
@@ -68,20 +74,15 @@ export function deriveConcernViews(data: ResultsData): ConcernView[] {
 }
 
 export interface ConcernStatus {
-  /** Most of it can still be seen (all of it, for a single area). */
+  /** Most of it can still be picked out (all of it, for a single area). */
   state: "most" | "some" | "none";
-  /** Marks detectable now, for many-feature concerns. */
-  count: number | null;
-  total: number;
+  /** The share a typical sharp-eyed person could no longer pick out from here, 0 to 1: the bar next to the words. */
+  outOfSight: number;
 }
 
-/** What an ideal observer can still pick out of this concern at a distance. */
+/** What a typical sharp-eyed person can still pick out of this concern at a distance (lib/copy's reading, so bar and words agree). */
 export function statusAt(view: ConcernView, distanceM: number): ConcernStatus {
-  if (!view.profile) {
-    return { state: distanceM <= view.visibility.maxDistanceM ? "most" : "none", count: null, total: view.total };
-  }
-  // The same interpolation as the Step back counter sentence (lib/copy), so the bar and the words agree.
-  const { fraction, count: exact } = profileAt(view.profile, distanceM);
-  const count = Math.round(exact);
-  return { state: count === 0 ? "none" : fraction >= 0.5 ? "most" : "some", count, total: view.total };
+  const outOfSight = stepBackShare(view.visibility, distanceM);
+  const still = 1 - outOfSight;
+  return { state: still <= 1e-9 ? "none" : still >= 0.5 ? "most" : "some", outOfSight };
 }

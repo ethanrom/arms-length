@@ -100,6 +100,9 @@ export function computeWorthIt(
       differenceMaxDistanceM: d.differenceMaxDistanceM,
       differenceMedianDistanceM: d.differenceMedianDistanceM,
       differenceProfile: d.differenceProfile,
+      ...(d.differenceNominalProfile
+        ? { differenceNominalProfile: d.differenceNominalProfile, differenceNominalMaxDistanceM: d.differenceNominalMaxDistanceM }
+        : {}),
     };
     return { concern: d.concern, group, whatIf, targetCount: d.targetCount };
   });

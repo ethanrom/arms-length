@@ -6,10 +6,11 @@
  *   3. its contrast in %, measured in the photo (or against YouCam's simulation without it)
  *   4. the visual angle it covers at distance d, and the contrast the model needs at that angle
  *
- * The verdict is the one-sided bound of lib/vision: "visible" means a sharp-eyed observer looking right at it could
- * pick it out from d (detector response with the 6 dB margin, the same ratio `targetVisibility` scans), "not visible"
- * means nobody could, even with perfect eyes. The threshold shown is the contrast that would put the ratio at exactly 1,
- * so `has >= needed` and the verdict always agree; for a luminance-driven spot it is the shape-table threshold
+ * Two observers, as everywhere else (lib/copy/describe.ts): a typical sharp-eyed person looking right at it (the
+ * nominal detector, margin 0) and even perfect eyes (the one-sided bound, 6 dB margin and the luminance gain floored at
+ * 1; the ratio `targetVisibility` scans). `visible` is the bound's verdict, `typicalVisible` the nominal one; the
+ * latter implies the former. Each threshold shown is the contrast that would put that ratio at exactly 1, so `has >=
+ * needed` and the verdict always agree; for a luminance-driven spot the bound's threshold is the shape-table threshold
  * divided by the luminance gain and the margin.
  */
 import { CONCERNS, type ConcernId, type Feature, type RegionMeasure, type ScaleEstimate, type ViewingConditions } from "@/lib/contracts";
@@ -33,13 +34,20 @@ export interface ReceiptNumbers {
   driver: "luminance" | "colour";
   basis: "surround" | "counterfactual";
   angleArcmin: number;
-  /** Contrast (same channel as `contrastPct`) at which the ratio would be exactly 1, percent, capped at 100. */
+  /** Contrast (same channel as `contrastPct`) at which the bound's ratio would be exactly 1, percent, capped at 100: even perfect eyes. */
   thresholdPct: number;
-  /** Detector ratio at d with the margin; >= 1 is detectable. */
+  /** The same for a typical sharp-eyed person (margin 0, no luminance-gain floor). Never below `thresholdPct`. */
+  typicalThresholdPct: number;
+  /** Detector ratio at d with the margin (the bound); >= 1 is detectable by even perfect eyes. */
   ratio: number;
+  /** Even perfect eyes could pick it out from d. False means they could not. */
   visible: boolean;
+  /** A typical sharp-eyed person looking right at it could pick it out from d. */
+  typicalVisible: boolean;
   /** `targetVisibility(...).distanceM` for the same target: the farthest d at which `visible` holds. */
   boundM: number;
+  /** `targetVisibility(...).nominalM`: the farthest d at which `typicalVisible` holds. */
+  typicalM: number;
 }
 
 const ARCMIN_PER_DEG = 60;
@@ -64,6 +72,9 @@ export function buildReceipt(
   const direction: ReceiptNumbers["direction"] =
     driver === "colour" ? (signed >= 0 ? "redder" : "greener") : signed <= 0 ? "darker" : "lighter";
   const needed = total > 0 ? has / total : 1;
+  const typical = visibilityRatio(spec, viewing, distanceM, { marginDb: 0, bound: false });
+  const typicalNeeded = typical > 0 ? has / typical : 1;
+  const seen = targetVisibility(target, scale, viewing);
 
   const isFeature = "shape" in target;
   const kind: ReceiptNumbers["kind"] = !isFeature ? "area" : target.shape === "line" ? "line" : "spot";
@@ -83,9 +94,12 @@ export function buildReceipt(
     basis: target.contrastBasis ?? "surround",
     angleArcmin: angleDeg(sizeMm, distanceM) * ARCMIN_PER_DEG,
     thresholdPct: Math.min(100, needed * 100),
+    typicalThresholdPct: Math.min(100, typicalNeeded * 100),
     ratio: total,
     visible: total >= 1,
-    boundM: targetVisibility(target, scale, viewing).distanceM,
+    typicalVisible: typical >= 1,
+    boundM: seen.distanceM,
+    typicalM: seen.nominalM ?? 0,
   };
 }
 
@@ -122,14 +136,18 @@ export function receiptSentences(r: ReceiptNumbers): ReceiptSentences {
       : area
         ? `This ${AREA_WORD[r.concern] ?? "area"} is about ${mm(r.sizeMm)} mm across, with the iris as the ruler.`
         : `It's about ${mm(r.sizeMm)} mm across, with the iris as the ruler.`;
-  const verdict = r.visible
-    ? `It has ${pct(r.contrastPct)}%, so sharp eyes looking right at it could see it from ${formatDistance(r.distanceM)}.`
-    : `It has ${pct(r.contrastPct)}%, which is under what's needed, so nobody could see it from ${formatDistance(r.distanceM)}, even with perfect eyes.`;
+  const from = formatDistance(r.distanceM);
+  const has = `${pct(r.contrastPct)}%`;
+  const verdict = r.typicalVisible
+    ? `It has ${has}, so a typical sharp-eyed person looking right at it could see it from ${from}.`
+    : r.visible
+      ? `It has ${has}: enough for perfect eyes, but a typical person would probably not pick it out from ${from}.`
+      : `It has ${has}, which is under both, so even perfect eyes couldn't pick it out from ${from}.`;
   return {
     found: area ? "YouCam found this area here." : "YouCam found it here.",
     size,
     contrast: `It's ${pct(r.contrastPct)}% ${r.direction} than ${against}.`,
-    angle: `At ${formatDistance(r.distanceM)} it covers ${arcmin(r.angleArcmin)} arcmin. At that size, even sharp eyes need about ${pct(r.thresholdPct)}% contrast to see it.`,
+    angle: `At ${from} it covers ${arcmin(r.angleArcmin)} arcmin. At that size a typical sharp-eyed person needs about ${pct(r.typicalThresholdPct)}% contrast to see it, and even perfect eyes need about ${pct(r.thresholdPct)}%.`,
     verdict,
     model: "Step 4 comes from a published model of human contrast sensitivity, checked against lab measurements, not from a guess.",
   };

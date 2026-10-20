@@ -32,13 +32,13 @@ export function MakeItDisappear({ coverage, views, src, frame, scale, viewing, o
   const crop = cropAround(view?.bounds ?? { x: 0, y: 0, w: frame.width, h: frame.height }, frame, 0.7, 1);
   const lever = plan?.chosen?.lever;
   const noLeverNeeded = plan?.status === "met" && !plan.chosen;
-  const eyebrow = !plan ? (option.state === "running" ? "Working on it" : "On request") : plan.status === "met" ? "Verified on a render" : "Honest answer";
+  const eyebrow = !plan ? (option.state === "running" ? "Working on it" : "On request") : plan.status === "met" ? "Checked on a virtual try-on" : "Honest answer";
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
       <div>
         <fieldset>
-          <legend className="eyebrow">Hide from {formatDistance(target)}: choose a concern</legend>
+          <legend className="eyebrow">Out of sight from {formatDistance(target)}: choose a concern</legend>
           <div className="mt-3 inline-flex flex-wrap border border-ink" role="radiogroup" aria-label="Concern">
             {options.map((o, i) => (
               <label key={o.concern} className="relative cursor-pointer">
@@ -78,7 +78,7 @@ export function MakeItDisappear({ coverage, views, src, frame, scale, viewing, o
               disabled={option.state === "running"}
               aria-disabled={option.state === "running"}
             >
-              {option.state === "running" ? "Rendering try-ons…" : option.state === "error" ? "Try again" : "Make it disappear"}
+              {option.state === "running" ? "Rendering try-ons…" : option.state === "error" ? "Try again" : "Find the lightest touch"}
               {option.state !== "running" && (
                 <span className="arrow" aria-hidden="true">
                   &rarr;

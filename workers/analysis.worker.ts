@@ -75,7 +75,7 @@ async function init(req: Extract<WorkerRequest, { kind: "init" }>): Promise<Work
       analysis,
       measurements: reading.measurements,
       report: reading.report,
-      sentences: buildSentences(reading.report, analysis, []),
+      sentences: buildSentences(reading.report, []),
       outlines: reading.outlines,
       stageGrey: backdropGrey(photo),
       overlays,
@@ -88,7 +88,7 @@ async function worthIt(req: Extract<WorkerRequest, { kind: "worthIt" }>): Promis
   const { inputs, reading } = session;
   const sim = await decode(req.sim);
   const entries = computeWorthIt(inputs, reading, req.group, sim, "", req.source);
-  const sentences = buildSentences(reading.report, inputs.analysis, entries).worthIt;
+  const sentences = buildSentences(reading.report, entries).worthIt;
   const image = await encode(alignCounterfactual(inputs.photo, sim), "image/jpeg");
   return { id: req.id, kind: "worthIt", entries, image, sentences };
 }

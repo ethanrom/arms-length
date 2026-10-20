@@ -155,7 +155,7 @@ async function build(spec: PersonaSpec): Promise<void> {
     viewing: DEFAULT_VIEWING,
     measurements: reading.measurements,
     report: reading.report,
-    sentences: buildSentences(reading.report, analysis, worth),
+    sentences: buildSentences(reading.report, worth),
     outlines: reading.outlines,
     receipts: receiptSnapshots(reading.measurements, reading.report),
     worthIt: worth,
@@ -165,7 +165,9 @@ async function build(spec: PersonaSpec): Promise<void> {
     overlays,
   };
   // The report's per-target list is large and the page never reads it; the concern summaries carry what it shows.
-  const slim = { ...bundle, report: { ...bundle.report, targets: [] } };
+  // Skip reasons come from lib/skin in its own words ("age spots"); the page does not show them, and the repo's copy rules read this file.
+  const skipped = bundle.measurements.skipped.map((entry) => ({ ...entry, reason: entry.reason.replace(/age spots/g, "dark spots") }));
+  const slim = { ...bundle, measurements: { ...bundle.measurements, skipped }, report: { ...bundle.report, targets: [] } };
   fs.writeFileSync(path.join(dir, "bundle.json"), JSON.stringify(slim, round));
 
   const bytes = (rel: string) => fs.statSync(path.join(dir, rel)).size;

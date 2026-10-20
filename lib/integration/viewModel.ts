@@ -16,30 +16,33 @@ import type {
   WorthItView,
 } from "@/components/results/types";
 import {
+  anchorFor,
   concernExplainer,
+  COVERAGE_TITLE,
   describeConcern,
   describeWorthIt,
+  DISCLAIMERS,
   formatDistance,
   orderReliefFirst,
   RELIEF_MAX_M,
   RELIEF_SHARE,
+  ROOM_M,
   summaryLine,
   TABLE_M,
   toneOf,
   WORTH_IT_CREDIT,
-  anchorFor,
-  youcamScoreOf,
 } from "@/lib/copy";
 import {
+  confidenceLine,
+  coverageSentences,
   COVERAGE_LEDE,
-  describeCoverage,
   fadeLabelOf,
   HERO_LABEL,
+  isSoftArea,
   keyDistanceOf,
   keyLine,
   NOT_ABOUT_VISIBILITY,
   numberMeaning,
-  confidenceLine,
   RENDERER_NOTE,
   shareSentence,
   TAGLINE,
@@ -47,8 +50,9 @@ import {
   titleOf,
   WORTH_IT_LEDE,
 } from "./copy";
-import { PRIVACY_LINE } from "./privacy";
+import { PRIVACY_LINE, SIMULATION_RETENTION_NOTE } from "./privacy";
 import { DEFAULT_RECEIPT_M, RECEIPT_DISTANCES_M } from "./receiptSnapshots";
+import { worthItInput } from "./sentences";
 import { COVERAGE_CONCERNS, COVERAGE_TARGET_M, type ReadingBundle } from "./types";
 
 export interface ViewOptions {
@@ -79,7 +83,7 @@ function provenanceOf(bundle: ReadingBundle): string {
 
 function noticesOf(bundle: ReadingBundle): string[] {
   const out: string[] = [];
-  if (bundle.source === "live") out.push(PRIVACY_LINE);
+  if (bundle.source === "live") out.push(PRIVACY_LINE, SIMULATION_RETENTION_NOTE);
   if (bundle.source === "replay") out.push("Replay mode: this is a recorded analysis of a synthetic face, not your photo.");
   if (bundle.capture?.upscaled) {
     out.push("Your photo was enlarged to reach the high-detail analysis, so pores and fine lines are less certain. A phone photo gives the most detail.");
@@ -91,7 +95,7 @@ function noticesOf(bundle: ReadingBundle): string[] {
 }
 
 function reliefNoteOf(): string {
-  return `A single area counts as out of sight once it is gone by ${formatDistance(RELIEF_MAX_M)}; a concern with many marks, once at most ${Math.round(RELIEF_SHARE * 100)}% of them could be seen ${anchorFor(TABLE_M)}.`;
+  return `A concern with many marks counts as out of sight once even perfect eyes could pick out at most ${Math.round(RELIEF_SHARE * 100)}% of them ${anchorFor(TABLE_M)}; a single area, once it is gone by ${formatDistance(RELIEF_MAX_M)}.`;
 }
 
 const unmeasuredStub = (concern: ConcernId): ConcernVisibility => ({
@@ -105,12 +109,11 @@ const unmeasuredStub = (concern: ConcernId): ConcernVisibility => ({
 });
 
 export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {}): ResultsData {
-  const { report, measurements, analysis } = bundle;
+  const { report, measurements } = bundle;
   const ordered = orderReliefFirst(report.concerns).filter((c) => c.targetCount > 0 && CONCERNS[c.concern].visibility);
 
   const concerns: ConcernCopy[] = ordered.map((cv) => {
-    const described =
-      bundle.sentences.concerns[cv.concern] ?? describeConcern(cv, { youcamScore: youcamScoreOf(analysis.results, cv.concern) });
+    const described = bundle.sentences.concerns[cv.concern] ?? describeConcern(cv);
     const tone = toneOf(cv);
     return {
       concern: cv.concern,
@@ -120,6 +123,8 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
       headline: described.headline,
       detail: described.detail,
       keyLine: keyLine(cv, tone),
+      soft: isSoftArea(cv),
+      ...(described.safety ? { safety: described.safety } : {}),
       explainer: `${concernExplainer(cv.concern)} ${numberMeaning(cv)}`,
       confidence: confidenceLine(cv, measurements),
     };
@@ -131,7 +136,7 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
   const unmeasured: OutOfScopeNote[] = [];
   for (const id of MASK_ORDER) {
     if (measured.has(id) || !CONCERNS[id].visibility) continue;
-    const present = analysis.results.some((r) => r.concern === id);
+    const present = bundle.analysis.results.some((r) => r.concern === id);
     if (!present && !(sdOnly && (id === "pore" || id === "acne"))) continue;
     unmeasured.push({
       label: titleOf(id),
@@ -171,7 +176,7 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
       : [];
   });
 
-  // Coverage: one option per concern with a makeup lever and something to cover.
+  // The lightest touch: one option per concern with a makeup lever and something to cover.
   const total = (concern: ConcernId) => report.concerns.find((c) => c.concern === concern)?.targetCount ?? 0;
   // A demo face shows what was recorded; a live session offers every concern with a lever, run on request.
   const onDemand = bundle.source !== "demo";
@@ -182,8 +187,7 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
     const entry = bundle.coverageEntries.find((e) => e.plan.concern === concern);
     const title = titleOf(concern);
     if (entry) {
-      const s = describeCoverage(entry.plan, total(concern));
-      return { concern, title, plan: entry.plan, ...s, afterImage: entry.afterImage, state: "ready" as const };
+      return { concern, title, plan: entry.plan, ...coverageSentences(entry.plan), afterImage: entry.afterImage, state: "ready" as const };
     }
     const live = options.coverage?.[concern];
     const noun = title.toLowerCase();
@@ -197,7 +201,7 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
           ? `Trying foundation on your ${noun}.`
           : state === "error"
             ? "That try-on didn't come through."
-            : `Find the lightest foundation that hides your ${noun}.`,
+            : `Find the lightest touch that hides your ${noun}.`,
       leverLabel: null,
       leverName: null,
       detail:
@@ -210,7 +214,7 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
   });
   const coverage: CoverageView | null =
     coverageOptions.length > 0
-      ? { title: "Make it disappear", lede: COVERAGE_LEDE(COVERAGE_TARGET_M), targetM: COVERAGE_TARGET_M, options: coverageOptions }
+      ? { title: COVERAGE_TITLE, lede: COVERAGE_LEDE(COVERAGE_TARGET_M), targetM: COVERAGE_TARGET_M, options: coverageOptions }
       : null;
 
   // Worth it?
@@ -221,29 +225,25 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
         lede: WORTH_IT_LEDE,
         credit: WORTH_IT_CREDIT,
         beforeLabel: "Today",
-        afterLabel: "Half-strength improvement",
+        afterLabel: "Simulated, half strength",
         state: wiState,
         message: options.worthIt?.message,
         items: [...bundle.worthIt]
           .map((w) => {
-            const sentences =
-              bundle.sentences.worthIt[w.concern] ??
-              describeWorthIt({
-                concern: w.concern,
-                targetCount: w.targetCount,
-                differenceMaxDistanceM: w.whatIf.differenceMaxDistanceM ?? 0,
-                differenceProfile: w.whatIf.differenceProfile,
-              });
+            const sentences = bundle.sentences.worthIt[w.concern] ?? describeWorthIt(worthItInput(w));
+            const typicalM = w.whatIf.differenceNominalMaxDistanceM ?? (w.whatIf.differenceMaxDistanceM ?? 0) / 1.5;
             return {
               concern: w.concern,
               title: titleOf(w.concern),
               whatIf: w.whatIf,
               headline: sentences.headline,
               detail: sentences.detail,
+              soft: w.concern === "dark_circle" || w.concern === "eye_bag" || (w.concern === "redness" && typicalM >= ROOM_M),
+              typicalM,
               afterImage: w.whatIf.render.imageRef,
             };
           })
-          .sort((a, b) => (b.whatIf.differenceMaxDistanceM ?? 0) - (a.whatIf.differenceMaxDistanceM ?? 0)),
+          .sort((a, b) => b.typicalM - a.typicalM),
       }
     : null;
 
@@ -256,7 +256,7 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
       const tone = toneOf(cv);
       return { concern: cv.concern, label: titleOf(cv.concern), sentence: shareSentence(cv, tone), distanceM: keyDistanceOf(cv), tone };
     }),
-    footnote: "An ideal observer, indoor light. Real viewers see less.",
+    footnote: "A typical sharp-eyed viewer, indoor light. Real viewers see less.",
   };
 
   return {
@@ -281,6 +281,13 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
     heroLabel: HERO_LABEL,
     provenance: provenanceOf(bundle),
     notices: noticesOf(bundle),
+    disclaimers: {
+      estimate: DISCLAIMERS.estimate,
+      synthetic: bundle.source === "live" ? null : DISCLAIMERS.synthetic,
+      simulation: DISCLAIMERS.simulation,
+      tryOn: DISCLAIMERS.tryOn,
+      notHealth: DISCLAIMERS.notHealth,
+    },
     statusLines: [
       "Reading the YouCam analysis.",
       "Measuring every mark against the width of the iris.",

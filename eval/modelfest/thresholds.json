@@ -1,0 +1,282 @@
+{
+  "citation": {
+    "dataset": "ModelFest Baseline Dataset",
+    "paper": "Watson, A.B. & Ahumada, A.J. Jr. (2005). A standard model for foveal detection of spatial contrast. Journal of Vision, 5(9):6, 717-740.",
+    "doi": "10.1167/5.9.6",
+    "consortium": "Data collected by the ModelFest consortium (16 observers, 10 laboratories). http://vision.arc.nasa.gov/modelfest/",
+    "note": "Only these derived per-stimulus summary numbers are included. The stimulus images and per-observer data are not redistributed."
+  },
+  "units": "dB = 20 log10(c); c is the peak contrast of the stimulus as defined by Eq. 1 of the paper, L = L0 (1 + c (g - 128) / 127)",
+  "source": {
+    "file": "modelfestbaselinedata.csv (values are -log10 c; dB = -20 * value)",
+    "sha256": "072add3a47852b511f3bb022b30e300322b883d5c44f49979b5c5977fb3e5377",
+    "observers": 16,
+    "repeatsPerObserver": 4,
+    "method": "thresholdDb: mean over observers of the per-observer mean of 4 repeats. sdDb: sample SD (n-1) across the observer means.",
+    "checks": {
+      "minThresholdDb": -42.13,
+      "minAtStimulus": 4,
+      "rms0Db": 3.46
+    }
+  },
+  "stimuli": [
+    {
+      "id": 1,
+      "name": "Gabor fixed size 1.12 cpd",
+      "thresholdDb": -36.42,
+      "sdDb": 2.69
+    },
+    {
+      "id": 2,
+      "name": "Gabor fixed size 2 cpd",
+      "thresholdDb": -39.21,
+      "sdDb": 3.59
+    },
+    {
+      "id": 3,
+      "name": "Gabor fixed size 2.83 cpd",
+      "thresholdDb": -41.26,
+      "sdDb": 3.58
+    },
+    {
+      "id": 4,
+      "name": "Gabor fixed size 4 cpd",
+      "thresholdDb": -42.13,
+      "sdDb": 4.26
+    },
+    {
+      "id": 5,
+      "name": "Gabor fixed size 5.66 cpd",
+      "thresholdDb": -39.84,
+      "sdDb": 3.67
+    },
+    {
+      "id": 6,
+      "name": "Gabor fixed size 8 cpd",
+      "thresholdDb": -36.87,
+      "sdDb": 3.49
+    },
+    {
+      "id": 7,
+      "name": "Gabor fixed size 11.3 cpd",
+      "thresholdDb": -32.42,
+      "sdDb": 3.66
+    },
+    {
+      "id": 8,
+      "name": "Gabor fixed size 16 cpd",
+      "thresholdDb": -25.95,
+      "sdDb": 4.18
+    },
+    {
+      "id": 9,
+      "name": "Gabor fixed size 22.6 cpd",
+      "thresholdDb": -19.19,
+      "sdDb": 5.41
+    },
+    {
+      "id": 10,
+      "name": "Gabor fixed size 30 cpd",
+      "thresholdDb": -11.35,
+      "sdDb": 3.95
+    },
+    {
+      "id": 11,
+      "name": "Gabor 1-octave 2 cpd",
+      "thresholdDb": -35.39,
+      "sdDb": 3.22
+    },
+    {
+      "id": 12,
+      "name": "Gabor 1-octave 4 cpd",
+      "thresholdDb": -32.37,
+      "sdDb": 2.63
+    },
+    {
+      "id": 13,
+      "name": "Gabor 1-octave 8 cpd",
+      "thresholdDb": -23.86,
+      "sdDb": 3.37
+    },
+    {
+      "id": 14,
+      "name": "Gabor 1-octave 16 cpd",
+      "thresholdDb": -10.27,
+      "sdDb": 3.92
+    },
+    {
+      "id": 15,
+      "name": "Elongated Gabor 4 cpd",
+      "thresholdDb": -40.03,
+      "sdDb": 3.45
+    },
+    {
+      "id": 16,
+      "name": "Elongated Gabor 8 cpd",
+      "thresholdDb": -33.71,
+      "sdDb": 3.65
+    },
+    {
+      "id": 17,
+      "name": "Elongated Gabor 16 cpd",
+      "thresholdDb": -21.2,
+      "sdDb": 5.34
+    },
+    {
+      "id": 18,
+      "name": "Baguette 4 cpd (bx 2 oct, by 1 oct)",
+      "thresholdDb": -35.46,
+      "sdDb": 3.46
+    },
+    {
+      "id": 19,
+      "name": "Baguette 4 cpd (sx 0.5 deg, by 1 oct)",
+      "thresholdDb": -36.88,
+      "sdDb": 2.86
+    },
+    {
+      "id": 20,
+      "name": "Baguette 4 cpd (bx 1 oct, by 2 oct)",
+      "thresholdDb": -35.09,
+      "sdDb": 3.09
+    },
+    {
+      "id": 21,
+      "name": "Baguette 4 cpd (bx 1 oct, sy 0.5 deg)",
+      "thresholdDb": -36.19,
+      "sdDb": 3.16
+    },
+    {
+      "id": 22,
+      "name": "Compound Gabor 2 + 2.83 cpd",
+      "thresholdDb": -38.96,
+      "sdDb": 4.12
+    },
+    {
+      "id": 23,
+      "name": "Compound Gabor 2 + 4 cpd",
+      "thresholdDb": -37.64,
+      "sdDb": 4.21
+    },
+    {
+      "id": 24,
+      "name": "Compound Gabor 4 + 5.66 cpd",
+      "thresholdDb": -38.27,
+      "sdDb": 4.15
+    },
+    {
+      "id": 25,
+      "name": "Compound Gabor 4 + 8 cpd",
+      "thresholdDb": -36.51,
+      "sdDb": 4.18
+    },
+    {
+      "id": 26,
+      "name": "Gaussian sd 30 arcmin",
+      "thresholdDb": -32.73,
+      "sdDb": 6.4
+    },
+    {
+      "id": 27,
+      "name": "Gaussian sd 8.43 arcmin",
+      "thresholdDb": -30.52,
+      "sdDb": 2.85
+    },
+    {
+      "id": 28,
+      "name": "Gaussian sd 2.106 arcmin",
+      "thresholdDb": -24.17,
+      "sdDb": 2.12
+    },
+    {
+      "id": 29,
+      "name": "Gaussian sd 1.05 arcmin",
+      "thresholdDb": -16.61,
+      "sdDb": 3.51
+    },
+    {
+      "id": 30,
+      "name": "Edge x Gaussian",
+      "thresholdDb": -38.72,
+      "sdDb": 2.75
+    },
+    {
+      "id": 31,
+      "name": "Line 0.5 arcmin x Gaussian",
+      "thresholdDb": -18.68,
+      "sdDb": 3.48
+    },
+    {
+      "id": 32,
+      "name": "Dipole 3 px x Gaussian",
+      "thresholdDb": -12.51,
+      "sdDb": 2.98
+    },
+    {
+      "id": 33,
+      "name": "5 collinear Gabors 8 cpd, in phase",
+      "thresholdDb": -27.77,
+      "sdDb": 3.65
+    },
+    {
+      "id": 34,
+      "name": "5 collinear Gabors 8 cpd, out of phase",
+      "thresholdDb": -27.14,
+      "sdDb": 3.48
+    },
+    {
+      "id": 35,
+      "name": "Binary noise 1 arcmin x Gaussian",
+      "thresholdDb": -26.61,
+      "sdDb": 2.82
+    },
+    {
+      "id": 36,
+      "name": "Gabor 4 cpd, 45 deg",
+      "thresholdDb": -32.07,
+      "sdDb": 2.99
+    },
+    {
+      "id": 37,
+      "name": "Gabor 4 cpd, 0 deg",
+      "thresholdDb": -33.15,
+      "sdDb": 2.55
+    },
+    {
+      "id": 38,
+      "name": "Gabor plaid 4 cpd, 0 + 90 deg",
+      "thresholdDb": -28.52,
+      "sdDb": 2.32
+    },
+    {
+      "id": 39,
+      "name": "Gabor plaid 4 cpd, 45 + 90 deg",
+      "thresholdDb": -29.72,
+      "sdDb": 2.25
+    },
+    {
+      "id": 40,
+      "name": "Disk 0.25 deg diameter",
+      "thresholdDb": -32.53,
+      "sdDb": 2.99
+    },
+    {
+      "id": 41,
+      "name": "Bessel x Gaussian 4 cpd",
+      "thresholdDb": -30.95,
+      "sdDb": 2.95
+    },
+    {
+      "id": 42,
+      "name": "Checkerboard x Gaussian 4 cpd",
+      "thresholdDb": -41.3,
+      "sdDb": 3.59
+    },
+    {
+      "id": 43,
+      "name": "Natural scene (San Francisco) x Gaussian",
+      "thresholdDb": -30.47,
+      "sdDb": 2.61
+    }
+  ]
+}

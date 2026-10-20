@@ -92,3 +92,8 @@ persona folder, for example `masks/hd/hd_pore_whole.png`. For `resize_image` the
 About 15.5 MB in total (14.8 MiB): renders 11.5 MB (VTO 9.4 MB, simulation 2.1 MB), HD masks 2.7 MB, SD masks 0.5 MB, inputs
 0.8 MB, JSON under 20 KB. The largest mask is 213 KB, so no mask was re-encoded. The renders were left byte-identical:
 palette quantisation would change pixel values, and a lossless re-encode saved little (none for VTO, about 24% for the simulation).
+
+## scale.json (per persona)
+Iris-ruler scale for the analysed frame (`input.jpg`), computed by `scripts/scale/fixtures.ts` with MediaPipe Face
+Landmarker in headless Chrome. Fields are the `ScaleEstimate` contract (`mmPerPx`, `relSd`, `source: "iris"`, `irisPx`)
+plus diagnostics. `mmPerPx` applies to the analysed (resized) frame, not the original photo.

@@ -1,0 +1,229 @@
+// The four API operations behind app/api/youcam/*: replay for demo personas, guarded live calls otherwise.
+// Routes stay thin (parse, validate, respond); everything with a decision in it is here and unit-tested.
+import { HD_ACTIONS } from "@/lib/contracts";
+import type {
+  AnalysisRequest,
+  AnalysisResponse,
+  MakeupRequest,
+  RenderResponse,
+  SimulateRequest,
+  Size2,
+  StatusResponse,
+} from "@/lib/contracts";
+import {
+  createBudgetGuard,
+  configFromEnv,
+  writeLedger,
+  type BudgetGuard,
+  type Decision,
+  type GuardKind,
+  type LedgerEntry,
+} from "./budget";
+import { createYouCamClient, type ChargeEvent, type YouCamClient } from "./client";
+import { MAKEUP_UNITS, analysisUnits, simulationUnits, type Engine } from "./costs";
+import { YouCamError, engineError, gateError } from "./errors";
+import { liveFileRef, parseFileRef } from "./fileref";
+import { decodeImageDataUrl, sniffImage, type ImageInfo } from "./imageinfo";
+import { normalizeAnalysis, resizeImageSource } from "./normalize";
+import { buildRender } from "./render";
+import { replayAnalysis, replayMakeup, replaySimulation } from "./replay";
+
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+/** Docs: HD needs a short side of at least 1080 px, SD at least 480 px. Checked locally so a refusal is free. */
+const MIN_SHORT_SIDE: Record<Engine, number> = { hd: 1080, sd: 480 };
+
+const MASK_DOWNLOAD_CONCURRENCY = 6;
+
+export interface ServiceDeps {
+  env: () => Record<string, string | undefined>;
+  /** Builds a client that reports paid submits through `onCharge`. Throws a YouCamError when no key is set. */
+  createClient: (onCharge?: (event: ChargeEvent) => void) => YouCamClient;
+  guard: BudgetGuard;
+  ledger?: (entry: LedgerEntry) => void;
+}
+
+export interface AnalysisInput extends AnalysisRequest {
+  /** Not in the contract yet (proposed): "sd" is the cheaper engine for budget-limited sessions. */
+  engine?: Engine;
+}
+
+export interface YouCamService {
+  analysis(body: AnalysisInput, accessCode: string | null): Promise<AnalysisResponse>;
+  makeup(body: MakeupRequest, accessCode: string | null): Promise<RenderResponse>;
+  simulate(body: SimulateRequest, accessCode: string | null): Promise<RenderResponse>;
+  status(accessCode: string | null): Promise<StatusResponse>;
+}
+
+/** Decoded and checked upload: JPEG or PNG, at most 10 MB, with a readable header. */
+export function readUpload(image: string): { bytes: Uint8Array; info: ImageInfo } {
+  const tooBig = () => new YouCamError("exceed_max_filesize", "That photo is too big. Please use one under 10 MB.", 413);
+  if (image.length > Math.ceil((MAX_IMAGE_BYTES * 4) / 3) + 128) throw tooBig();
+  const bytes = decodeImageDataUrl(image);
+  const info = bytes ? sniffImage(bytes) : null;
+  if (!bytes || !info) {
+    throw new YouCamError("unsupported_image", "Please use a JPEG or PNG photo.", 415);
+  }
+  if (bytes.length > MAX_IMAGE_BYTES) throw tooBig();
+  return { bytes, info };
+}
+
+async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+export function createService(deps: ServiceDeps): YouCamService {
+  const ledger = deps.ledger ?? writeLedger;
+  const deleteTasks = () => deps.env().YOUCAM_DELETE_TASKS === "1";
+
+  async function gate(code: string | null, kind: GuardKind, cost: number): Promise<Extract<Decision, { ok: true }>> {
+    const decision = await deps.guard.decide(code, kind, { cost, reserve: true });
+    if (!decision.ok) throw gateError(decision.reason);
+    return decision;
+  }
+
+  /** Runs one paid operation: client wiring, ledger, daily-slot release and optional task cleanup. */
+  async function paid<T>(
+    decision: Extract<Decision, { ok: true }>,
+    run: (client: YouCamClient, track: (taskId: string) => void) => Promise<T>,
+  ): Promise<T> {
+    let submitted = false;
+    let taskId: string | undefined;
+    let client: YouCamClient | undefined;
+    try {
+      client = deps.createClient((event) => {
+        submitted = true;
+        deps.guard.noteSpend(event.units);
+        ledger({ action: event.action, units: event.units, codeHash: decision.codeHash, maybe: event.maybe });
+      });
+      return await run(client, (id) => {
+        taskId = id;
+      });
+    } catch (error) {
+      if (!submitted) decision.release();
+      throw error;
+    } finally {
+      if (client && taskId && deleteTasks()) await client.deleteTask(taskId);
+    }
+  }
+
+  async function liveAnalysis(body: AnalysisInput, code: string | null): Promise<AnalysisResponse> {
+    const upload = readUpload(body.image ?? "");
+    const engine: Engine = body.engine ?? (deps.env().YOUCAM_ENGINE === "sd" ? "sd" : "hd");
+    if (Math.min(upload.info.width, upload.info.height) < MIN_SHORT_SIDE[engine]) {
+      throw engineError("error_below_min_image_size");
+    }
+    const units = analysisUnits(engine, HD_ACTIONS.length);
+    const decision = await gate(code, "analysis", units);
+
+    return paid(decision, async (client, track) => {
+      const input: Size2 = { width: upload.info.width, height: upload.info.height };
+      const fileId = await client.upload(upload.bytes, upload.info.mime);
+      const run = await client.skinAnalysis(fileId, engine);
+      track(run.taskId);
+
+      // The analysed image (`resize_image`) defines the frame. Fall back to the input size if it is unreadable.
+      const resizeSource = resizeImageSource(run.output);
+      const frame: Size2 = await (resizeSource ? client.download(resizeSource) : Promise.reject(new Error("none")))
+        .then((image) => ({ width: image.width, height: image.height }))
+        .catch(() => input);
+
+      const { analysis, maskSources } = normalizeAnalysis(run.output, engine, frame);
+      const masks: Record<string, string> = {};
+      const failed = new Set<string>();
+      await mapPool(Object.entries(maskSources), MASK_DOWNLOAD_CONCURRENCY, async ([ref, url]) => {
+        try {
+          masks[ref] = (await client.download(url)).dataUrl;
+        } catch {
+          failed.add(ref); // keep the paid analysis; a concern without a mask is reported as unmeasured
+        }
+      });
+      for (const result of analysis.results) if (result.maskRef && failed.has(result.maskRef)) result.maskRef = null;
+
+      return { fileRef: liveFileRef(fileId, input), analysis, masks, unitsCharged: run.units, source: "live" as const };
+    });
+  }
+
+  return {
+    async analysis(body, code) {
+      if (body.persona !== undefined) return replayAnalysis(body.persona, body.engine);
+      return liveAnalysis(body, code);
+    },
+
+    async makeup(body, code) {
+      const ref = parseFileRef(body.fileRef);
+      if (!ref) throw new YouCamError("invalid_request", "That photo reference isn't valid. Please start again.", 400);
+      if (ref.kind === "persona") return replayMakeup(ref.id, body.effects);
+
+      const decision = await gate(code, "render", MAKEUP_UNITS);
+      return paid(decision, async (client, track) => {
+        const run = await client.makeup(ref.fileId, body.effects);
+        track(run.taskId);
+        const image = await client.download(run.url);
+        return buildRender("makeup", image, ref.frame, run.units, "live");
+      });
+    },
+
+    async simulate(body, code) {
+      const ref = parseFileRef(body.fileRef);
+      if (!ref) throw new YouCamError("invalid_request", "That photo reference isn't valid. Please start again.", 400);
+      if (ref.kind === "persona") return replaySimulation(ref.id, body.strengths);
+
+      const active = Object.values(body.strengths).filter((value) => typeof value === "number" && value > 0).length;
+      const decision = await gate(code, "render", simulationUnits(active));
+      return paid(decision, async (client, track) => {
+        const run = await client.simulate(ref.fileId, body.strengths);
+        track(run.taskId);
+        const image = await client.download(run.url);
+        return buildRender("simulation", image, ref.frame, run.units, "live");
+      });
+    },
+
+    async status(code) {
+      const decision = await deps.guard.decide(code, "analysis", {
+        cost: analysisUnits("hd", HD_ACTIONS.length),
+        reserve: false,
+      });
+      return decision.ok ? { live: true } : { live: false, reason: decision.reason };
+    },
+  };
+}
+
+// ---------- production wiring ----------
+
+function createDefaultService(): YouCamService {
+  const env = () => process.env;
+  const createClient = (onCharge?: (event: ChargeEvent) => void) => {
+    const apiKey = env().YOUCAM_API_KEY;
+    if (!apiKey) {
+      throw new YouCamError("live_unavailable", "Live analysis isn't set up on this deployment. Try a demo face.", 503);
+    }
+    return createYouCamClient({ apiKey, onCharge });
+  };
+  const guard = createBudgetGuard({
+    // Replay mode (or no key) means live can never run, which the guard reports like a kill switch.
+    config: () => {
+      const config = configFromEnv(env());
+      const liveCapable = env().YOUCAM_MODE !== "replay" && Boolean(env().YOUCAM_API_KEY);
+      return { ...config, killSwitch: config.killSwitch || !liveCapable };
+    },
+    getBalance: () => createClient().credit(),
+  });
+  return createService({ env, createClient, guard });
+}
+
+let service: YouCamService | undefined;
+
+export function getService(): YouCamService {
+  service ??= createDefaultService();
+  return service;
+}

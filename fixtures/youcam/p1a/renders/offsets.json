@@ -144,6 +144,54 @@
         1080,
         1610
       ]
+    },
+    "sim_improve_a05.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": 0.004,
+      "dyMean": -0.019,
+      "dxSd": 0.061,
+      "dySd": 0.081,
+      "patches": 35,
+      "minNcc": 0.977,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
+    },
+    "sim_improve_b05.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": -0.009,
+      "dyMean": 0.004,
+      "dxSd": 0.031,
+      "dySd": 0.052,
+      "patches": 35,
+      "minNcc": 0.899,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1610
+      ],
+      "inputSize": [
+        1080,
+        1610
+      ]
     }
   }
 }

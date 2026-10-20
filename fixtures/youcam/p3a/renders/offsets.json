@@ -121,6 +121,54 @@
         1575
       ]
     },
+    "sim_improve_a05.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": 0.033,
+      "dyMean": -0.021,
+      "dxSd": 0.135,
+      "dySd": 0.221,
+      "patches": 38,
+      "minNcc": 0.936,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1575
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    },
+    "sim_improve_b05.png": {
+      "dx": 0,
+      "dy": 0,
+      "dxMean": 0.001,
+      "dyMean": 0,
+      "dxSd": 0.023,
+      "dySd": 0.015,
+      "patches": 38,
+      "minNcc": 0.977,
+      "blackEdges": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "size": [
+        1080,
+        1575
+      ],
+      "inputSize": [
+        1080,
+        1575
+      ]
+    },
     "sim_spots05_redness05.png": {
       "dx": 0,
       "dy": 0,

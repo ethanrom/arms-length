@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { formatDistance } from "@/app/_lib/axis";
 import { cropAround } from "@/components/concerns/AnnotatedFace";
@@ -130,6 +131,11 @@ export function ReceiptTrigger({ entry, visibility, target, scale, viewing, titl
                 </p>
                 <p className="mt-3 text-[0.875rem] leading-relaxed text-ink-soft">{sentences.model}</p>
                 <p className="mt-2 text-[0.875rem] leading-relaxed text-ink-soft">An arcmin is a sixtieth of a degree, about the finest detail a sharp eye can make out.</p>
+                <p className="mt-2 text-[0.875rem] leading-relaxed">
+                  <Link href="/science#follow" className="link font-medium text-ink">
+                    See the model behind this number
+                  </Link>
+                </p>
               </Step>
               {counts && (
                 <Step n="05" sentence={`How many of your ${counts.total} marks, at a few distances.`}>

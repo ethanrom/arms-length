@@ -1,0 +1,120 @@
+/*
+ * /science: widget plates, the tape strip and range inputs. Colours come from the site tokens (app/globals.css);
+ * nothing here is saturated, and state is never carried by colour alone.
+ */
+
+.sci-plate {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+/* A measuring tape along the top edge of a plate: a tick every 8 px, a taller one every 40 px. */
+.sci-tape {
+  height: 14px;
+  border-bottom: 1px solid var(--ink);
+  background-image:
+    repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 40px);
+  background-size:
+    100% 5px,
+    100% 10px;
+  background-position:
+    0 100%,
+    0 100%;
+  background-repeat: no-repeat;
+  opacity: 0.55;
+}
+
+.sci-hatch {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgb(22 21 19 / 0.16) 6px 7px);
+}
+
+/* ---------- range input: native element, drawn as a hairline with a ringed thumb ---------- */
+
+.sci-range {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 2.75rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.sci-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--ink);
+}
+.sci-range::-moz-range-track {
+  height: 2px;
+  background: var(--ink);
+}
+.sci-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  margin-top: -0.6875rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 0 0 2px var(--paper);
+  transition: background-color 0.2s var(--ease-calm);
+}
+.sci-range::-moz-range-thumb {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+.sci-range:hover::-webkit-slider-thumb,
+.sci-range:active::-webkit-slider-thumb {
+  background: var(--paper-deep);
+}
+.sci-range:active::-webkit-slider-thumb {
+  background: var(--ink);
+}
+
+@media (forced-colors: active) {
+  .sci-range::-webkit-slider-runnable-track {
+    background: CanvasText;
+  }
+  .sci-range::-moz-range-track {
+    background: CanvasText;
+  }
+  .sci-range::-webkit-slider-thumb,
+  .sci-range::-moz-range-thumb {
+    border-color: ButtonText;
+    background: ButtonFace;
+  }
+  .sci-tape {
+    background-image: none;
+    border-bottom: 2px solid CanvasText;
+  }
+}
+
+/* The map and the scatter use real buttons as hit targets; they are invisible until focused or hovered. */
+.sci-hit {
+  position: absolute;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.875rem 0 0 -0.875rem;
+  border-radius: 50%;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.sci-hit:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px var(--paper);
+}
+
+@media print {
+  .sci-plate {
+    break-inside: avoid;
+  }
+}

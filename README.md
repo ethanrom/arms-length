@@ -37,7 +37,7 @@ Built for Perfect Corp's YouCam API Skin AI & eCommerce VTO Hackathon (Skin AI t
   returns a distance for every concern as JSON, with no extra YouCam units.
 - **Kind by design.**
   - No scores or grades.
-  - Deterministic sentence templates, checked by a test against medical and shaming word lists.
+  - Deterministic sentence templates; a test blocks any wording on our banned lists (health claims, shaming words).
   - No photos kept; the session's YouCam tasks are deleted when you leave.
 
 ## Headline results

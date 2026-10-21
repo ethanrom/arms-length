@@ -38,7 +38,8 @@ Built for Perfect Corp's YouCam API Skin AI & eCommerce VTO Hackathon (Skin AI t
 - **Kind by design.**
   - No scores or grades.
   - Deterministic sentence templates; a test blocks any wording on our banned lists (health claims, shaming words).
-  - No photos kept; the session's YouCam tasks are deleted when you leave.
+  - No photos kept; the session's YouCam tasks are deleted when you leave. A Content-Security-Policy lets pages
+    connect only to this server, so the face check runs in your browser and nothing else phones home.
 
 ## Headline results
 

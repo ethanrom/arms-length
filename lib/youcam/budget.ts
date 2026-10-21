@@ -2,8 +2,8 @@
 //
 // Live is allowed only when all hold:
 //   1. the request carries a valid access code (LIVE_ACCESS_CODES, comma-separated);
-//   2. KILL_SWITCH is not "1";
-//   3. the account balance (credit(), cached 60 s) minus this call's cost stays above UNIT_FLOOR;
+//   2. KILL_SWITCH is off (anything but empty, 0, false, no or off turns it on: a typo must not leave paid calls open);
+//   3. the account balance (credit(), cached 60 s) minus this call's cost stays above UNIT_FLOOR (never below 100);
 //   4. the code is under its daily cap (default 3 live analyses; renders have their own, larger cap).
 //
 // Daily caps live in module memory. On serverless every instance has its own memory, so the cap is
@@ -28,6 +28,15 @@ export type Decision =
 
 const BALANCE_TTL_MS = 60_000;
 
+/** UNIT_FLOOR can raise the reserve but never lower it: the units kept back are not for live visitors. */
+export const MIN_UNIT_FLOOR = 100;
+
+/** On unless explicitly off. Fails safe: "true", "yes", "on" and any other stray value all engage it. */
+function switchedOn(value: string | undefined): boolean {
+  const v = value?.trim().toLowerCase() ?? "";
+  return v !== "" && !["0", "false", "no", "off"].includes(v);
+}
+
 function positiveInt(value: string | undefined, fallback: number): number {
   const n = Number(value);
   return value !== undefined && value.trim() !== "" && Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
@@ -39,8 +48,8 @@ export function configFromEnv(env: Record<string, string | undefined>): GuardCon
       .split(",")
       .map((code) => code.trim())
       .filter(Boolean),
-    killSwitch: env.KILL_SWITCH === "1",
-    unitFloor: positiveInt(env.UNIT_FLOOR, 100),
+    killSwitch: switchedOn(env.KILL_SWITCH),
+    unitFloor: Math.max(MIN_UNIT_FLOOR, positiveInt(env.UNIT_FLOOR, MIN_UNIT_FLOOR)),
     analysisDailyCap: positiveInt(env.LIVE_DAILY_CAP, 3),
     renderDailyCap: positiveInt(env.LIVE_RENDER_DAILY_CAP, 20),
   };

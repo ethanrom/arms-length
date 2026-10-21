@@ -2,6 +2,8 @@
 // Codes come from ai_skin_analysis.yaml (documented photo errors + EngineErrorCode), makeup_vto.yaml,
 // and the HTTP error bodies (`error_code`: InvalidParameters, CreditInsufficiency, ...). Unknown codes are accepted.
 
+import { LIVE_RESERVED_MESSAGE } from "./mode";
+
 export class YouCamError extends Error {
   /** Stable machine code, e.g. "error_src_face_too_small", "daily_cap", "timeout". */
   readonly code: string;
@@ -9,13 +11,16 @@ export class YouCamError extends Error {
   readonly status: number;
   /** Raw upstream detail for logs only. Never shown, never contains keys or image data. */
   readonly detail?: string;
+  /** Seconds until the caller may retry (becomes a Retry-After header). */
+  readonly retryAfterS?: number;
 
-  constructor(code: string, message: string, status: number, detail?: string) {
+  constructor(code: string, message: string, status: number, detail?: string, retryAfterS?: number) {
     super(message);
     this.name = "YouCamError";
     this.code = code;
     this.status = status;
     this.detail = detail;
+    this.retryAfterS = retryAfterS;
   }
 }
 
@@ -123,7 +128,7 @@ export function networkError(cause: unknown): YouCamError {
 export type GateReason = "no_code" | "bad_code" | "budget_floor" | "kill_switch" | "daily_cap";
 
 const GATE: Record<GateReason, Mapped> = {
-  no_code: { message: "Live analysis needs an access code. You can try the demo faces without one.", status: 401 },
+  no_code: { message: LIVE_RESERVED_MESSAGE, status: 401 },
   bad_code: { message: "That access code wasn't recognised. Check it and try again, or use a demo face.", status: 403 },
   kill_switch: { message: "Live analysis is switched off right now. The demo faces are still available.", status: 503 },
   budget_floor: { message: "Live analysis is paused for now. The demo faces are still available.", status: 503 },
@@ -135,4 +140,20 @@ const GATE: Record<GateReason, Mapped> = {
 
 export function gateError(reason: GateReason): YouCamError {
   return new YouCamError(reason, GATE[reason].message, GATE[reason].status);
+}
+
+/** A live call on a deployment that only serves recorded faces (no API key, or YOUCAM_MODE=replay). */
+export function liveReservedError(): YouCamError {
+  return new YouCamError("live_reserved", LIVE_RESERVED_MESSAGE, 403);
+}
+
+/** Too many requests from one address; `waitS` is how long until the window resets. */
+export function rateLimitedError(waitS: number): YouCamError {
+  return new YouCamError(
+    "rate_limited",
+    `That's a lot of requests from one address. Please wait ${waitS} seconds and try again.`,
+    429,
+    undefined,
+    waitS,
+  );
 }

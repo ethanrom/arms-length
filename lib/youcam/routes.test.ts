@@ -5,6 +5,7 @@ import { POST as makeup } from "@/app/api/youcam/makeup/route";
 import { POST as simulate } from "@/app/api/youcam/simulate/route";
 import { GET as status } from "@/app/api/youcam/status/route";
 import type { ApiError, AnalysisResponse, RenderResponse, StatusResponse } from "@/lib/contracts";
+import { resetRouteLimits } from "./http";
 
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
   new Request(`http://localhost/api/youcam/${path}`, {
@@ -14,6 +15,7 @@ const post = (path: string, body: unknown, headers: Record<string, string> = {})
   });
 
 beforeEach(() => {
+  resetRouteLimits();
   vi.stubEnv("YOUCAM_MODE", "replay");
   vi.stubEnv("YOUCAM_API_KEY", "");
   vi.stubEnv("LIVE_ACCESS_CODES", "judge-alpha");
@@ -30,7 +32,8 @@ describe("app/api/youcam routes (replay, no network)", () => {
     }
   });
 
-  test("in replay mode an uploaded photo is answered with the p2b recording, labelled replay", async () => {
+  test("with REPLAY_UPLOADS=1 an uploaded photo is answered with the p2b recording, labelled replay", async () => {
+    vi.stubEnv("REPLAY_UPLOADS", "1");
     const res = await analysis(post("analysis", { image: "data:image/png;base64,AAAA" }));
     expect(res.status).toBe(200);
     const a = (await res.json()) as AnalysisResponse;
@@ -38,7 +41,9 @@ describe("app/api/youcam routes (replay, no network)", () => {
   });
 
   test("status explains why live is unavailable and never echoes the code", async () => {
+    // A key is needed for live mode; no request below reaches the balance check, so nothing touches the network.
     vi.stubEnv("YOUCAM_MODE", "live");
+    vi.stubEnv("YOUCAM_API_KEY", "test-key-not-real");
     const none = await status(new Request("http://localhost/api/youcam/status"));
     expect(await none.json()).toEqual({ live: false, reason: "no_code" } satisfies StatusResponse);
     expect(none.headers.get("cache-control")).toBe("no-store");
@@ -46,7 +51,7 @@ describe("app/api/youcam routes (replay, no network)", () => {
     const wrong = await status(new Request("http://localhost/api/youcam/status", { headers: { "x-access-code": "nope" } }));
     expect(await wrong.json()).toEqual({ live: false, reason: "bad_code" });
 
-    // A valid code but no API key: live can never run, which reads as switched off.
+    vi.stubEnv("KILL_SWITCH", "1");
     const valid = await status(new Request("http://localhost/api/youcam/status", { headers: { "x-access-code": "judge-alpha" } }));
     expect(await valid.json()).toEqual({ live: false, reason: "kill_switch" });
   });
@@ -91,6 +96,7 @@ describe("app/api/youcam routes (replay, no network)", () => {
     expect(big.status).toBe(413);
 
     vi.stubEnv("YOUCAM_MODE", "live");
+    vi.stubEnv("YOUCAM_API_KEY", "test-key-not-real");
     const live = await analysis(post("analysis", { image: "data:image/png;base64,AAAA" }));
     expect(live.status).toBe(415); // unreadable image is refused before the access-code gate
     const unknown = await analysis(post("analysis", { persona: "nobody" }));

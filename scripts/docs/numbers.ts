@@ -130,8 +130,18 @@ export function personaRun(persona: Persona): Promise<PersonaRun> {
 // ---------------------------------------------------------------------------------------------------------------
 
 interface ThresholdsFile {
-  source: { observers: number; repeatsPerObserver: number };
+  source: { observers: number; repeatsPerObserver: number; checks: { rms0Db: number } };
   stimuli: unknown[];
+}
+
+/**
+ * The most sensitive observers against the observer mean. The per-observer data are not redistributed (thresholds.json
+ * keeps observer means only), so this is the research derivation as written in docs/MODEL.md, read from its table row.
+ */
+function bestObserverDb(): { best: number; second: number } {
+  const m = /\| Most sensitive of the (\d+) ModelFest observers, against the mean \| ([\d.]+) dB \(the second most sensitive: ([\d.]+) dB\) \|/.exec(readText("docs/MODEL.md"));
+  if (!m) throw new Error('docs/MODEL.md no longer has the "Most sensitive of the N ModelFest observers" row: teach bestObserverDb() the new wording');
+  return { best: Number(m[2]), second: Number(m[3]) };
 }
 
 function modelfestSection(facts: Facts): string {
@@ -152,6 +162,10 @@ function modelfestSection(facts: Facts): string {
   facts["modelfest.paper43"] = `${paper} dB`;
   facts["modelfest.observers"] = String(thresholds.source.observers);
   facts["modelfest.n"] = String(report.nAll);
+  const rms0 = thresholds.source.checks.rms0Db;
+  const { best, second } = bestObserverDb();
+  facts["modelfest.rms0"] = `${rms0.toFixed(2)} dB`;
+  facts["modelfest.best"] = `${best} dB`;
 
   const file = "`eval/results/modelfest.json`";
   const regen = "`npx tsx eval/run.ts --detector=standard`";
@@ -167,6 +181,8 @@ function modelfestSection(facts: Facts): string {
       { what: "The paper's own RMS, Standard A, all 43 stimuli", value: `${paper} dB. Not like-for-like with the ${all} dB above: the paper's figure includes #${report.excluded.map((e) => e.id).join(" and #")}, which cannot be generated from parameters`, source: `${file} \`published.standardA.rmsAll43Db\` (Watson and Ahumada 2005, Table 5)`, reproduce: "manual: Table 5 of the paper (doi 10.1167/5.9.6)" },
       { what: "Stimuli in the ModelFest set", value: String(total), source: "`eval/modelfest/thresholds.json` `stimuli`", reproduce: "`grep -c '\"thresholdDb\"' eval/modelfest/thresholds.json`" },
       { what: "Human observers behind the thresholds", value: `${thresholds.source.observers} (${thresholds.source.repeatsPerObserver} repeats each)`, source: "`eval/modelfest/thresholds.json` `source.observers`, `source.repeatsPerObserver`", reproduce: "`grep -n '\"observers\"' eval/modelfest/thresholds.json`" },
+      { what: "How far individual observers sit from the observer mean (RMS over all observers and stimuli)", value: `${rms0.toFixed(2)} dB RMS (the paper's RMS0)`, source: "`eval/modelfest/thresholds.json` `source.checks.rms0Db`, computed from the per-observer CSV by `scripts/eval/extract-modelfest.ts` and checked there against the paper's 3.46", reproduce: "`grep -n rms0Db eval/modelfest/thresholds.json`; recomputing needs the CSV (not redistributed): `npx tsx scripts/eval/extract-modelfest.ts <modelfestbaselinedata.csv>`" },
+      { what: "How far the most sensitive observer sits below the mean", value: `${best} dB (the second most sensitive: ${second} dB)`, source: "manual: the research derivation from the per-observer data, as written in the \"Why 6 dB\" table of `docs/MODEL.md` (read from that row); it is the basis of `DEFAULT_MARGIN_DB` = 6. The per-observer data are not in the repository, so this value cannot be recomputed from committed files", reproduce: "manual: needs the per-observer CSV; `scripts/eval/extract-modelfest.ts` shows its layout" },
     ]),
   ].join("\n");
 }
@@ -440,9 +456,17 @@ async function sightSection(facts: Facts): Promise<string> {
   ].join("\n");
 }
 
-async function worthItSection(): Promise<string> {
+/** Share of a concern's changes still detectable at `distanceM` (bound), from the Worth it? difference profile. */
+function detectableShare(w: WorthIt, distanceM: number): { count: number; share: number } {
+  const entry = w.differenceProfile.find((p) => p.distanceM === distanceM);
+  if (!entry) throw new Error(`no difference profile entry at ${distanceM} m (PROFILE_DISTANCES_M changed?)`);
+  return { count: entry.count, share: entry.fraction };
+}
+
+async function worthItSection(facts: Facts): Promise<string> {
   const rows: string[][] = [];
   const groups = (["a", "b"] as const).map((g) => ({ stem: `sim_improve_${g}05`, concerns: SIMULATION_GROUPS[g].concerns }));
+  const byFace = new Map<Persona, Map<ConcernId, WorthIt>>();
   for (const persona of PERSONAS) {
     const run = await personaRun(persona);
     const found = new Map<ConcernId, WorthIt>();
@@ -450,6 +474,7 @@ async function worthItSection(): Promise<string> {
       const sim = await decodeImage(path.join(ROOT, "fixtures/youcam", persona, "renders", `${group.stem}.png`));
       for (const w of worthIt(run.base, { analysis: run.loaded.analysis, masks: run.loaded.masks }, run.loaded.photo, sim, group.concerns)) found.set(w.concern, w);
     }
+    byFace.set(persona, found);
     for (const concern of groups.flatMap((g) => g.concerns)) {
       const w = found.get(concern)!;
       if (w.targetCount === 0) continue; // nothing found on this face: no row
@@ -463,6 +488,30 @@ async function worthItSection(): Promise<string> {
       ]);
     }
   }
+
+  // Pores: how much of a half-strength change is detectable across a table.
+  const AT = COVERAGE_TARGET_M;
+  const poreRows: string[][] = [];
+  const shares: number[] = [];
+  for (const persona of PERSONAS) {
+    const w = byFace.get(persona)!.get("pore")!;
+    if (w.targetCount === 0) continue;
+    const { count, share } = detectableShare(w, AT);
+    shares.push(share);
+    poreRows.push([persona, String(w.targetCount), String(count), `${(100 * share).toFixed(1)}%`, metres(w.differenceMaxDistanceM)]);
+  }
+  const [lo, hi] = rangeOf(shares);
+  poreRows.push([`**All ${shares.length} faces**`, "", "", `**${(100 * lo).toFixed(1)}% to ${(100 * hi).toFixed(1)}%**`, ""]);
+  facts["worthit.poresRangePct"] = `${pct(lo)} to ${pct(hi)}`;
+
+  // Under-eye: large soft areas, so a small change reaches far.
+  const underEye = (["dark_circle", "eye_bag"] as const).map((concern) => {
+    const ws = PERSONAS.map((f) => byFace.get(f)!.get(concern)!).filter((w) => w.targetCount > 0);
+    const atCap = (pick: (w: WorthIt) => number): number => ws.filter((w) => pick(w) >= MAX_DISTANCE_M).length;
+    return `${concernTitle(concern)}: farthest change at the ${MAX_DISTANCE_M} m cap on ${atCap((w) => w.differenceMaxDistanceM)} of ${ws.length} faces, median too on ${atCap((w) => w.differenceMedianDistanceM)} of ${ws.length}`;
+  });
+  facts["worthit.underEye"] = underEye.join("; ");
+
   return [
     "How far the change a half-strength Skin Simulation would make stays detectable. A simulation of the picture, not a result for any product. A concern with no targets on a face (see 3 above) has no row.",
     "",
@@ -470,8 +519,32 @@ async function worthItSection(): Promise<string> {
     "",
     `Median and max are the one-sided bound over the concern's targets; "${MAX_DISTANCE_M}+" is the ${MAX_DISTANCE_M} m contract cap. A median of 0.00 means at least half of the targets show no detectable change even at ${MIN_DISTANCE_M} m, the nearest distance the model reports.`,
     "",
-    "Source: `worthIt` in `lib/vision/worthIt.ts`, with the recorded renders `fixtures/youcam/<face>/renders/sim_improve_a05.png` (under-eye shadows, puffiness, fine lines, redness) and `sim_improve_b05.png` (dark spots, pores, breakouts), `DEFAULT_VIEWING`. " +
-      `Reproduce: \`npx tsx scripts/dev/worthit.ts\` or ${sectionCmd("persona-worthit")} (about 10 s).`,
+    `**Pores, across a table.** The share of the half-strength change that is still detectable at ${AT} m (bound): \`differenceProfile\` at ${AT} m, count over the pores found.`,
+    "",
+    table(["Face", "Pores found", `Changes detectable at ${AT} m`, "Share", "Farthest change (m)"], poreRows),
+    "",
+    "Source: `worthIt` in `lib/vision/worthIt.ts`, with the recorded renders `fixtures/youcam/<face>/renders/sim_improve_a05.png` (under-eye shadows, puffiness, fine lines, redness) and `sim_improve_b05.png` (dark spots, pores, breakouts), `DEFAULT_VIEWING`; the pore share is `differenceProfile[distanceM = 1.5].fraction`. " +
+      `Reproduce: \`npx tsx scripts/dev/worthit.ts\` (prints the counts at 1.5 m) or ${sectionCmd("persona-worthit")} (about 10 s).`,
+  ].join("\n");
+}
+
+/** The two Worth it? results the Devpost text cites. Slow (it needs section 3.2), so it is a separate block of the headline. */
+function headlineWorthItSection(facts: Facts): string {
+  const get = (key: string): string => {
+    const v = facts[key];
+    if (v === undefined) throw new Error(`headline: no fact "${key}"`);
+    return v;
+  };
+  return [
+    "More headline rows, from the half-strength Skin Simulation search (section 3.2). They sit in their own block because that search is slow, so `npm test` guards them with a hash rather than recomputing them.",
+    "",
+    table(
+      ["What", "Value", "Section"],
+      [
+        ["Pores: share of a half-strength change detectable across a table", `${get("worthit.poresRangePct")}, across the four faces (bound, at ${COVERAGE_TARGET_M} m)`, "3.2"],
+        ["Under-eye: how far a half-strength change stays detectable", get("worthit.underEye"), "3.2"],
+      ],
+    ),
   ].join("\n");
 }
 
@@ -1025,6 +1098,7 @@ function headlineSection(facts: Facts): string {
     ["Model against human thresholds", `${get("modelfest.rms41")} RMS over ${get("modelfest.n")} ModelFest patterns (the paper reports ${get("modelfest.paper43")} over all 43, which include 2 patterns we cannot generate, so the two figures are not like-for-like)`, "1"],
     ["Skin-shaped patterns", get("modelfest.rmsSkin"), "1"],
     ["Human observers behind it", get("modelfest.observers"), "1"],
+    ["How much people differ", `individual observers sit ${get("modelfest.rms0")} RMS from the observer mean; the most sensitive observer sits ${get("modelfest.best")} below it`, "1"],
     ["castleCSF port against its reference (largest deviation)", get("ref.castle"), "1.1"],
     ["Five analytic stimuli against the numpy prediction (worst)", get("ref.stimuli"), "1.1"],
     ["The iris as a ruler", `${get("iris.mean")} +/- ${get("iris.sd")} (${get("iris.rel")})`, "2"],
@@ -1056,7 +1130,8 @@ export type Tier = "fast" | "slow" | "ledger";
 
 interface SectionDef {
   id: string;
-  heading: string;
+  /** null: the block continues the section above it. */
+  heading: string | null;
   level: 2 | 3;
   tier: Tier;
 }
@@ -1064,6 +1139,7 @@ interface SectionDef {
 /** Document order. A `ledger` or `slow` section is built only on request (see `buildSections`). */
 export const SECTIONS: SectionDef[] = [
   { id: "headline", heading: "Headline numbers", level: 2, tier: "fast" },
+  { id: "headline-worthit", heading: null, level: 2, tier: "slow" },
   { id: "modelfest", heading: "1. ModelFest: the model against human observers", level: 2, tier: "fast" },
   { id: "reference", heading: "1.1 Reproducing the published models", level: 3, tier: "fast" },
   { id: "iris", heading: "2. The iris ruler", level: 2, tier: "fast" },
@@ -1119,7 +1195,12 @@ export async function buildSections(options: BuildOptions = {}): Promise<Built[]
   if (wanted("vision", "fast")) put("vision", "fast", visionSection(facts));
   if (wanted("headline", "fast")) put("headline", "fast", headlineSection(facts));
 
-  if (wanted("persona-worthit", "slow")) put("persona-worthit", "slow", await worthItSection());
+  // The headline's worth-it rows come from the same search as section 3.2, so one run serves both.
+  if (wanted("persona-worthit", "slow") || wanted("headline-worthit", "slow")) {
+    const body = await worthItSection(facts);
+    if (wanted("persona-worthit", "slow")) put("persona-worthit", "slow", body);
+    if (wanted("headline-worthit", "slow")) put("headline-worthit", "slow", headlineWorthItSection(facts));
+  }
   if (wanted("persona-coverage", "slow")) put("persona-coverage", "slow", await coverageSection());
   if (wanted("engineering-tests", "slow")) put("engineering-tests", "slow", engineeringTestsSection(measureTestCounts()));
 
@@ -1195,7 +1276,8 @@ export function renderDocument(built: Built[]): string {
   for (const def of SECTIONS) {
     const b = built.find((x) => x.id === def.id);
     if (!b) continue;
-    parts.push(`${"#".repeat(def.level)} ${def.heading}`, wrap(def.id, b.body));
+    if (def.heading !== null) parts.push(`${"#".repeat(def.level)} ${def.heading}`);
+    parts.push(wrap(def.id, b.body));
   }
   parts.push("## How this file stays true", wrap("fingerprint", fingerprint.body));
   return parts.join("\n\n") + "\n";

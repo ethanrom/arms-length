@@ -40,7 +40,10 @@ import { decodeImage, loadPersona, type LoadedPersona } from "../../lib/skin/fix
 import { measureAnalysis } from "../../lib/skin/measure";
 import { fixturePath } from "../../lib/youcam/fixtures";
 import { MAKEUP_UNITS, analysisUnits, simulationUnits } from "../../lib/youcam/costs";
+import { coneSensitivity, discConeSensitivity, type Vec3 } from "../../lib/vision/castle";
 import { DEFAULT_MARGIN_DB, MODELFEST_LUMINANCE } from "../../lib/vision/params";
+import { blobThreshold } from "../../lib/vision/shapes";
+import { blobThresholdLookup } from "../../lib/vision/tables";
 import { buildVisibilityReport, type VisibilityReportExt } from "../../lib/vision/report";
 import { rawDistances, type TargetSpec } from "../../lib/vision/visibility";
 import { worthIt, type WorthIt } from "../../lib/vision/worthIt";
@@ -62,14 +65,7 @@ const int = (n: number): string => n.toLocaleString("en-US");
 const mm4 = (x: number): string => x.toFixed(4);
 /** Distances for reading: two decimals under 1 m, one above, "10+" at the contract cap. */
 const metres = (x: number): string => (x >= MAX_DISTANCE_M ? `${MAX_DISTANCE_M}+` : x < 1 ? x.toFixed(2) : x.toFixed(1));
-/** "0.8", "4.5", "12": up to 2 significant digits, as in docs/EVAL.md. */
-const sig2 = (x: number): string => String(Number(x.toPrecision(2)));
 const rangeOf = (xs: number[]): [number, number] => [Math.min(...xs), Math.max(...xs)];
-const median = (xs: number[]): number => {
-  const s = [...xs].sort((a, b) => a - b);
-  const h = s.length >> 1;
-  return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2;
-};
 
 interface Row {
   what: string;
@@ -158,9 +154,9 @@ function modelfestSection(facts: Facts): string {
   facts["modelfest.n"] = String(report.nAll);
 
   const file = "`eval/results/modelfest.json`";
-  const regen = "`npx tsx eval/run.ts --detector=standard` (rewrites that file)";
+  const regen = "`npx tsx eval/run.ts --detector=standard`";
   return [
-    `Our detector is Watson and Ahumada's Standard A (2005), run on the ModelFest stimuli at ${MODELFEST_LUMINANCE} cd/m^2 with no safety margin.`,
+    `Our detector is Watson and Ahumada's Standard A (2005), run on the ModelFest stimuli at ${MODELFEST_LUMINANCE} cd/m^2 with no safety margin. \`npx tsx eval/run.ts --detector=standard\` rewrites \`eval/results/modelfest.json\` from the code.`,
     "",
     quantityTable([
       { what: "Analytic stimuli scored", value: `${report.nAll} of ${total}`, source: `${file} \`nAll\`; \`eval/modelfest/thresholds.json\` \`stimuli\``, reproduce: regen },
@@ -168,9 +164,148 @@ function modelfestSection(facts: Facts): string {
       { what: "RMS error, all scored stimuli", value: `${all} dB`, source: `${file} \`rmsAllDb\``, reproduce: regen },
       { what: "RMS error, the skin-relevant shapes", value: `${skin} dB over ${report.nSkin} shapes (#${skinIds.join(", #")})`, source: `${file} \`rmsSkinDb\`, \`nSkin\``, reproduce: regen },
       { what: "Largest single error", value: `${Math.abs(worst.errorDb).toFixed(2)} dB (#${worst.id}, ${worst.name})`, source: `${file} \`results[].errorDb\``, reproduce: regen },
-      { what: "The paper's own RMS, Standard A, all 43 stimuli", value: `${paper} dB`, source: `${file} \`published.standardA.rmsAll43Db\` (Watson and Ahumada 2005, Table 5)`, reproduce: "manual: Table 5 of the paper (doi 10.1167/5.9.6)" },
+      { what: "The paper's own RMS, Standard A, all 43 stimuli", value: `${paper} dB. Not like-for-like with the ${all} dB above: the paper's figure includes #${report.excluded.map((e) => e.id).join(" and #")}, which cannot be generated from parameters`, source: `${file} \`published.standardA.rmsAll43Db\` (Watson and Ahumada 2005, Table 5)`, reproduce: "manual: Table 5 of the paper (doi 10.1167/5.9.6)" },
       { what: "Stimuli in the ModelFest set", value: String(total), source: "`eval/modelfest/thresholds.json` `stimuli`", reproduce: "`grep -c '\"thresholdDb\"' eval/modelfest/thresholds.json`" },
       { what: "Human observers behind the thresholds", value: `${thresholds.source.observers} (${thresholds.source.repeatsPerObserver} repeats each)`, source: "`eval/modelfest/thresholds.json` `source.observers`, `source.repeatsPerObserver`", reproduce: "`grep -n '\"observers\"' eval/modelfest/thresholds.json`" },
+    ]),
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// 1.1 Reproducing the published models: measured deviations against the references the unit tests use
+// ---------------------------------------------------------------------------------------------------------------
+
+const db = (x: number): number => 20 * Math.log10(x);
+
+export interface CastleDeviation {
+  rows: number;
+  /** Largest |log10 sensitivity - reference port| over the dataset rows. */
+  maxLogDiff: number;
+  worstRow: string;
+  /** The tolerance lib/vision/castle.test.ts asserts. */
+  logTolerance: number;
+  /** Largest |difference from the dataset's own measured value| in dB, Gabor rows and disc rows. */
+  maxDataDb: { gabor: number; disc: number };
+  dataToleranceDb: { gabor: number; disc: number };
+}
+
+/**
+ * Re-runs the rows of lib/vision/castle.test.ts (read from its source, so the reference values live in one place) and
+ * reports how far the port actually is from the reference, next to the tolerance the test allows.
+ */
+export function castleDeviation(): CastleDeviation {
+  const text = readText("lib/vision/castle.test.ts");
+  const chunks = text.split(/\n\s*name:/).slice(1);
+  const field = (chunk: string, key: string): number => {
+    const m = new RegExp(`\\b${key}:\\s*(-?[\\d.]+(?:e-?\\d+)?)`).exec(chunk);
+    if (!m) throw new Error(`castle.test.ts row has no ${key}`);
+    return Number(m[1]);
+  };
+  const vec = (chunk: string, key: string): Vec3 => {
+    const m = new RegExp(`\\b${key}:\\s*\\[([^\\]]+)\\]`).exec(chunk);
+    const v = m ? m[1].split(",").map((x) => Number(x.trim())) : [];
+    if (v.length !== 3) throw new Error(`castle.test.ts row has no ${key}`);
+    return v as unknown as Vec3;
+  };
+  let maxLogDiff = 0;
+  let worstRow = "";
+  const data = { gabor: 0, disc: 0 };
+  for (const chunk of chunks) {
+    const name = /^\s*"([^"]+)"/.exec(chunk)?.[1] ?? "?";
+    const gabor = /\bf:\s/.test(chunk);
+    const log = Math.log10(
+      gabor
+        ? coneSensitivity(field(chunk, "f"), field(chunk, "area"), vec(chunk, "bg"), vec(chunk, "delta"))
+        : discConeSensitivity(field(chunk, "radius"), vec(chunk, "bg"), vec(chunk, "delta")),
+    );
+    const diff = Math.abs(log - field(chunk, "python"));
+    if (diff > maxLogDiff) {
+      maxLogDiff = diff;
+      worstRow = name;
+    }
+    const kind = gabor ? "gabor" : "disc";
+    data[kind] = Math.max(data[kind], Math.abs(20 * (log - field(chunk, "measured"))));
+  }
+  const tolerances = (re: RegExp): number[] => [...text.matchAll(re)].map((m) => Number(m[1]));
+  const logTol = tolerances(/Math\.abs\(log - row\.python\), row\.name\)\.toBeLessThan\(([^)]+)\)/g);
+  const dataTol = tolerances(/Math\.abs\(20 \* \(log - row\.measured\)\), row\.name\)\.toBeLessThan\(([^)]+)\)/g);
+  if (chunks.length !== 5 || logTol.length !== 2 || dataTol.length !== 2 || logTol[0] !== logTol[1]) {
+    throw new Error("lib/vision/castle.test.ts changed shape: teach castleDeviation() the new layout");
+  }
+  return {
+    rows: chunks.length,
+    maxLogDiff,
+    worstRow,
+    logTolerance: logTol[0],
+    maxDataDb: data,
+    dataToleranceDb: { gabor: dataTol[0], disc: dataTol[1] },
+  };
+}
+
+export interface StimulusDeviation {
+  stimuli: number;
+  /** Worst |our threshold - the independent numpy prediction| in dB, computed directly and through the lookup table. */
+  directDb: number;
+  directWorst: string;
+  tableDb: number;
+  tableWorst: string;
+  toleranceDb: number;
+}
+
+/** The five analytic ModelFest patterns (#26-29, #40) of lib/vision/standard.test.ts, read from its source. */
+export function stimulusDeviation(): StimulusDeviation {
+  const text = readText("lib/vision/standard.test.ts");
+  const rows = [...text.matchAll(/\["(#\d+ [^"]+)", "(gaussian|disk)", ([\d.]+)(?: \/ ([\d.]+))?, (-?[\d.]+)\]/g)];
+  const tol = [...text.matchAll(/blobThreshold(?:Lookup)?\(shape, size\)\) - expected\), name\)\.toBeLessThan\(([\d.]+)\)/g)].map((m) => Number(m[1]));
+  if (rows.length !== 5 || tol.length !== 2 || tol[0] !== tol[1]) {
+    throw new Error("lib/vision/standard.test.ts changed shape: teach stimulusDeviation() the new layout");
+  }
+  const out: StimulusDeviation = { stimuli: rows.length, directDb: 0, directWorst: "", tableDb: 0, tableWorst: "", toleranceDb: tol[0] };
+  for (const [, name, shape, size, per, expected] of rows) {
+    const s = Number(size) / (per ? Number(per) : 1);
+    const direct = Math.abs(db(blobThreshold(shape as "gaussian" | "disk", s)) - Number(expected));
+    const table = Math.abs(db(blobThresholdLookup(shape as "gaussian" | "disk", s)) - Number(expected));
+    if (direct > out.directDb) Object.assign(out, { directDb: direct, directWorst: name });
+    if (table > out.tableDb) Object.assign(out, { tableDb: table, tableWorst: name });
+  }
+  return out;
+}
+
+function referenceSection(facts: Facts): string {
+  const c = castleDeviation();
+  const w = stimulusDeviation();
+  facts["ref.castle"] = `${c.maxLogDiff.toExponential(1)} log10 (test tolerance ${c.logTolerance})`;
+  facts["ref.stimuli"] = `${Math.max(w.directDb, w.tableDb).toFixed(3)} dB (test tolerance ${w.toleranceDb} dB)`;
+  const castleTest = "`lib/vision/castle.test.ts`";
+  const stdTest = "`lib/vision/standard.test.ts`";
+  return [
+    "Both are re-run here from the rows the unit tests use (read from the test files), so the measured deviation sits next to the tolerance the test allows. The reference values in the tests are written to 6 decimals, so deviations of a few 1e-7 are rounding in the reference. The distance from the dataset's own measured value is how well castleCSF itself fits its data, not an error of the port.",
+    "",
+    quantityTable([
+      {
+        what: "castleCSF port: largest deviation from its reference port",
+        value: `${c.maxLogDiff.toExponential(1)} in log10 sensitivity over ${c.rows} dataset rows (worst: ${c.worstRow}); the test allows ${c.logTolerance}`,
+        source: `${castleTest}, run against \`coneSensitivity\` and \`discConeSensitivity\` in \`lib/vision/castle.ts\``,
+        reproduce: `\`npx vitest run lib/vision/castle.test.ts\`; ${sectionCmd("reference")}`,
+      },
+      {
+        what: "castleCSF port: largest distance from the dataset's own measured value",
+        value: `${c.maxDataDb.gabor.toFixed(2)} dB on the Gabor rows (the test allows ${c.dataToleranceDb.gabor}), ${c.maxDataDb.disc.toFixed(2)} dB on the disc rows (allows ${c.dataToleranceDb.disc})`,
+        source: castleTest,
+        reproduce: sectionCmd("reference"),
+      },
+      {
+        what: "Five analytic ModelFest stimuli (#26-29, #40): worst deviation from the independent numpy prediction, computed directly",
+        value: `${w.directDb.toFixed(3)} dB (${w.directWorst}); the test allows ${w.toleranceDb} dB`,
+        source: `${stdTest}, run against \`blobThreshold\` in \`lib/vision/shapes.ts\``,
+        reproduce: `\`npx vitest run lib/vision/standard.test.ts\`; ${sectionCmd("reference")}`,
+      },
+      {
+        what: "The same five, through the lookup tables the app uses",
+        value: `${w.tableDb.toFixed(3)} dB (${w.tableWorst}); the test allows ${w.toleranceDb} dB`,
+        source: `${stdTest}, run against \`blobThresholdLookup\` in \`lib/vision/tables.ts\``,
+        reproduce: sectionCmd("reference"),
+      },
     ]),
   ].join("\n");
 }
@@ -224,8 +359,8 @@ async function irisSection(facts: Facts): Promise<string> {
       { what: "Iris diameter, population mean", value: `${IRIS_DIAMETER_MM} mm`, source: "`IRIS_DIAMETER_MM` in `lib/scale/iris.ts` (Rufer, Schroder and Erb 2005, Cornea 24(3):259-261)", reproduce: "`grep -n IRIS_DIAMETER lib/scale/iris.ts`" },
       { what: "Iris diameter, population SD", value: `${IRIS_DIAMETER_SD_MM} mm (${popRel}% of the mean)`, source: "`IRIS_DIAMETER_SD_MM`, `IRIS_POPULATION_REL_SD` in `lib/scale/iris.ts`", reproduce: "`npx vitest run lib/scale/scale.test.ts`" },
       { what: "mm per pixel, the four faces", value: `${mm4(mmRange[0])} to ${mm4(mmRange[1])}`, source: scaleSrc, reproduce: "`npx tsx scripts/scale/fixtures.ts p1a` (needs headless Chrome)" },
-      { what: "Mask-based scale vs the iris scale, the four faces (HD masks)", value: `within ${hd} (\`lib/scale/fromMasks.test.ts\` asserts under 10%)`, source: maskSrc, reproduce: `${sectionCmd("iris")}; \`npx vitest run lib/scale/fromMasks.test.ts\`` },
-      { what: "Mask-based scale vs the iris scale, including p2b on SD masks", value: `within ${(100 * allAbs[0]).toFixed(1)}% to ${(100 * allAbs[1]).toFixed(1)}%`, source: maskSrc, reproduce: sectionCmd("iris") },
+      { what: "Mask-based scale vs the iris scale, the four faces (HD masks)", value: `${hd} different (\`lib/scale/fromMasks.test.ts\` asserts under 10% on p2b and p3a)`, source: maskSrc, reproduce: `${sectionCmd("iris")}; \`npx vitest run lib/scale/fromMasks.test.ts\`` },
+      { what: "Mask-based scale vs the iris scale, including p2b on SD masks", value: `${(100 * allAbs[0]).toFixed(1)}% to ${(100 * allAbs[1]).toFixed(1)}% different`, source: maskSrc, reproduce: sectionCmd("iris") },
       { what: "Interpupillary distance assumed for the mask-based scale", value: `${IPD_MM} mm, SD ${IPD_SD_MM} mm`, source: "`IPD_MM`, `IPD_SD_MM` in `lib/scale/fromMasks.ts`", reproduce: "`grep -n IPD_ lib/scale/fromMasks.ts`" },
     ]),
     "",
@@ -329,11 +464,11 @@ async function worthItSection(): Promise<string> {
     }
   }
   return [
-    "How far the change a half-strength Skin Simulation would make stays detectable. A simulation of the picture, not a result for any product. Concerns the face does not have are left out.",
+    "How far the change a half-strength Skin Simulation would make stays detectable. A simulation of the picture, not a result for any product. A concern with no targets on a face (see 3 above) has no row.",
     "",
     table(["Face", "Concern", "Found", "Median (m)", "Max (m)", "Max, typical observer (m)"], rows),
     "",
-    "Median and max are the one-sided bound over the concern's targets; \"10+\" is the 10 m contract cap. Targets found are the same as in the table above (the redness mask is empty on p2b and p5a).",
+    `Median and max are the one-sided bound over the concern's targets; "${MAX_DISTANCE_M}+" is the ${MAX_DISTANCE_M} m contract cap. A median of 0.00 means at least half of the targets show no detectable change even at ${MIN_DISTANCE_M} m, the nearest distance the model reports.`,
     "",
     "Source: `worthIt` in `lib/vision/worthIt.ts`, with the recorded renders `fixtures/youcam/<face>/renders/sim_improve_a05.png` (under-eye shadows, puffiness, fine lines, redness) and `sim_improve_b05.png` (dark spots, pores, breakouts), `DEFAULT_VIEWING`. " +
       `Reproduce: \`npx tsx scripts/dev/worthit.ts\` or ${sectionCmd("persona-worthit")} (about 10 s).`,
@@ -373,17 +508,37 @@ async function coverageSection(): Promise<string> {
         share(at(50)),
         share(at(75)),
         share(at(100)),
-        plan.status === "met" ? `${chosen} (reaches ${pct(MET_FRACTION)} or less)` : `${chosen} (knee)`,
+        plan.status === "met" ? `${chosen} (reaches ${pct(MET_FRACTION)} or less)` : plan.chosen ? `${chosen} (knee)` : "none (no effect)",
       ]);
     }
+  }
+  // Concerns without a makeup lever are answered before any render, so asking costs nothing.
+  const first = await personaRun(PERSONAS[0]);
+  const unsearched: string[] = [];
+  for (const concern of CONCERN_ORDER.filter((c) => !COVERAGE_CONCERNS.includes(c))) {
+    const plan = await planCoverage({
+      concern,
+      base: first.base,
+      scale: first.scale,
+      viewing: DEFAULT_VIEWING,
+      photo: first.loaded.photo,
+      render: async () => {
+        throw new Error("a concern without a lever must not render");
+      },
+    });
+    if (plan.status === "no_lever") unsearched.push(concernTitle(concern));
   }
   return [
     `Foundation \`coverageIntensity\` with \`skin_smooth\` at 0, checked on recorded try-on renders (grid ${COVERAGE_GRID.join(", ")}). The columns are the share of the concern's marks still detectable at ${COVERAGE_TARGET_M} m (bound). "Least coverage" is the lowest coverage that brings the share to ${pct(MET_FRACTION)} or less; when nothing does, it is the knee, the lowest coverage with ${pct(KNEE_SHARE)} of the reduction that 100 gives.`,
     "",
-    table(["Face", "Concern", "Marks", "No makeup", "Coverage 50", "75", "100", "Least coverage"], rows),
+    table(["Face", "Concern", "Marks", "No makeup", "Coverage 50", "Coverage 75", "Coverage 100", "Least coverage"], rows),
     "",
-    skipped.length ? `${skipped.join(", ")}: no makeup renders were recorded, so there is no row. ` : "",
-    "Under-eye shadows, puffiness, fine lines and redness have no verified makeup lever and are not searched (`lib/coverage/plan.ts`).",
+    [
+      skipped.length ? `${skipped.join(", ")}: no makeup renders were recorded, so there is no row.` : "",
+      unsearched.length ? `${unsearched.join(", ")}: no verified makeup lever, so \`planCoverage\` answers \`no_lever\` and nothing is searched.` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
     "",
     "Source: `planCoverage` in `lib/coverage/plan.ts` with `replayMakeupRender` (`lib/coverage/replayRender.ts`) on `fixtures/youcam/<face>/renders/foundation_cov*.png`. " +
       `Reproduce: \`npx tsx scripts/docs/product-tables.ts\` (the same search, in docs/EVAL.md) or ${sectionCmd("persona-coverage")} (about 30 s).`,
@@ -472,9 +627,9 @@ function aiSection(facts: Facts): string {
   facts["ai.cvBRange"] = `${pct(cvB[0])} to ${pct(cvB[1])}`;
 
   const file = "`eval/llm-baseline/results/summary.json`";
-  const rebuild = "`npx tsx eval/llm-baseline/run.ts --offline` (no network; rebuilds the file from the cached replies)";
+  const rebuild = "`npx tsx eval/llm-baseline/run.ts --offline`";
   return [
-    `Claude Opus 5.5 on Amazon Bedrock (\`${s.meta.model}\`) against our model, on the four demo faces (Test A) and nine synthetic spots (Test B). Every number is in ${file}; the full write-up is \`eval/llm-baseline/README.md\`.`,
+    `Claude Opus 5.5 on Amazon Bedrock (\`${s.meta.model}\`) against our model, on the four demo faces (Test A) and nine synthetic spots (Test B). Every number is in ${file}; the full write-up is \`eval/llm-baseline/README.md\`. \`npx tsx eval/llm-baseline/run.ts --offline\` rebuilds that file from the cached replies, with no network and no spend.`,
     "",
     quantityTable([
       { what: "Calls", value: `${s.meta.calls} (Test A ${callsA}, Test B ${callsB})`, source: `${file} \`meta.calls\`, \`testA.cells\`, \`testB.patches\``, reproduce: rebuild },
@@ -495,7 +650,7 @@ function aiSection(facts: Facts): string {
       { what: "Doubling the spot: single answer pairs, lowest to highest ratio", value: `${x1(rangeOf(askRatios)[0])} to ${x1(rangeOf(askRatios)[1])}`, source: `${file} \`testB.scaling[].llm2over1Range\`, \`llm4over2Range\``, reproduce: sectionCmd("ai") },
       { what: "Doubling the spot: our model", value: "2.0 for every doubling, by construction", source: `${file} \`testB.scaling[].ours2over1\`, \`ours4over2\``, reproduce: "`npx vitest run eval/llm-baseline`" },
       { what: "Faces: Claude's median for pores", value: poreMedians.length === 1 && poreMedians[0] !== null ? `${poreMedians[0]} m on all ${pores.length} faces` : poreMedians.join(" / "), source: `${file} \`testA.cells\` (concern \`pores\`)`, reproduce: sectionCmd("ai") },
-      { what: "Faces: our pores still detectable at 1.5 m, bound (same faces, in the order of the table below)", value: `${pores.map((c) => c.persona).join(", ")}: ${poreShare.join(", ")}`, source: `${file} \`testA.cells[].ours.fractionAt1_5m\``, reproduce: sectionCmd("ai") },
+      { what: "Faces: our pores still detectable at 1.5 m, bound", value: `${pores.map((c) => c.persona).join(", ")}: ${poreShare.join(", ")}`, source: `${file} \`testA.cells[].ours.fractionAt1_5m\``, reproduce: sectionCmd("ai") },
       { what: "Faces: breakouts, Claude answered null in every run", value: `${breakNull.map((c) => c.persona).join(", ")} (YouCam found ${breakFound.join(", ")})`, source: `${file} \`testA.cells\` (concern \`breakouts\`, \`ours.targetCount\`)`, reproduce: sectionCmd("ai") },
       { what: "Our side, run twice in one process", value: a.oursDeterminism.rerunIdentical ? `identical (SHA-256 ${a.oursDeterminism.sha256.slice(0, 8)}...)` : "NOT identical", source: `${file} \`testA.oursDeterminism\``, reproduce: rebuild },
     ]),
@@ -523,11 +678,11 @@ export function appEndpoints(): { endpoints: string[]; tasks: string[]; offlineO
       const rel = `${dir}/${entry.name}`;
       if (entry.isDirectory()) walk(rel);
       else if (entry.name.endsWith(".ts")) {
-        for (const m of readText(rel).matchAll(/["'`](\/s2s\/v\d+\.\d+\/[a-z0-9/-]+)["'`]/g)) if (!used.has(m[1])) offline.add(m[1]);
+        for (const m of readText(rel).matchAll(/["'`](\/s2s\/v\d+\.\d+\/[a-z0-9/-]+)(?=["'`?])/g)) if (!used.has(m[1])) offline.add(m[1]);
       }
     }
   };
-  walk("scripts/spikes");
+  walk("scripts");
   return { endpoints, tasks: tasks.map((t) => t.slug), offlineOnly: [...offline].sort() };
 }
 
@@ -565,7 +720,7 @@ function youcamSection(facts: Facts): string {
     quantityTable([
       { what: "YouCam products used", value: `${tasks.length} (${tasks.join(", ")})`, source: "`runTask(...)` calls in `lib/youcam/client.ts`", reproduce: "`grep -n 'runTask(' -A1 lib/youcam/client.ts`" },
       { what: "YouCam API endpoints the running app calls", value: `${endpoints.length}: ${endpoints.map((e) => `\`${e}\``).join(", ")}`, source: "`api(...)` and `runTask(...)` calls in `lib/youcam/client.ts`; every task endpoint is a submit (POST) and a free poll (GET)", reproduce: `${sectionCmd("youcam")}; \`grep -n '/s2s/' lib/youcam/client.ts\`` },
-      { what: "Free reads used only by scripts (ledger and price list)", value: `${offlineOnly.length}: ${offlineOnly.map((e) => `\`GET ${e}\``).join(", ")}`, source: "`/s2s/` paths in `scripts/spikes/*.ts` that the client does not call", reproduce: "`grep -rn '/s2s/' scripts/spikes`" },
+      { what: "Free reads used only by scripts (ledger and price list)", value: `${offlineOnly.length}: ${offlineOnly.map((e) => `\`GET ${e}\``).join(", ")}`, source: "literal `/s2s/` paths in `scripts/**/*.ts` that the client does not call", reproduce: "`grep -rn '/s2s/' scripts`" },
       { what: "HD Skin Analysis, units per call", value: `${hd} for ${hdConcerns} concerns (tiers 1-4 / 5-8 / 9-12 / 13-16 concerns: ${[1, 5, 9, 13].map((n) => analysisUnits("hd", n)).join(" / ")})`, source: `\`analysisUnits("hd", HD_ACTIONS.length)\` in ${costs}`, reproduce: sectionCmd("youcam") },
       { what: "SD Skin Analysis, units per call (the cheaper fallback)", value: `${sd} for ${sdConcerns} concerns`, source: `\`analysisUnits("sd", SD_ACTIONS.length)\` in ${costs}`, reproduce: sectionCmd("youcam") },
       { what: "Skin Simulation, units per call", value: `${sim} for ${simAll} concerns in one call (${simSmall} for 1-4 concerns)`, source: `\`simulationUnits\` in ${costs}; the seven concerns are \`SIMULATION_GROUPS.all\` in \`lib/integration/types.ts\``, reproduce: sectionCmd("youcam") },
@@ -839,13 +994,14 @@ function visionSection(facts: Facts): string {
   facts["vision.disk"] = `${l.nominal.toFixed(1)} m typical, ${l.bound.toFixed(1)} m bound`;
   facts["vision.margin"] = `${DEFAULT_MARGIN_DB} dB`;
   facts["vision.ratio"] = `${(l.bound / l.nominal).toFixed(2)}`;
+  facts["vision.ratioRange"] = `${ratioRange[0].toFixed(2)} to x${ratioRange[1].toFixed(2)}`;
 
   const eval_ = "`illustrativeDistances()` in `scripts/docs/eval-tables.ts`; docs/EVAL.md \"Illustrative distances\"";
   return quantityTable([
     { what: "A 3 mm disk at 12% contrast, at ModelFest's 30 cd/m^2: typical observer", value: `${l.nominal.toFixed(1)} m`, source: `\`rawDistances\` in \`lib/vision/visibility.ts\` (margin 0); ${eval_}`, reproduce: `${sectionCmd("vision")}; \`npx vitest run lib/vision/params.doc.test.ts\`` },
     { what: "The same disk, bound (margin 6 dB)", value: `${l.bound.toFixed(1)} m`, source: "`rawDistances` (bound), `DEFAULT_MARGIN_DB`", reproduce: sectionCmd("vision") },
     { what: "The same disk at the app's default light (45 cd/m^2, indoor): typical and bound", value: `${a.nominal.toFixed(1)} m and ${a.bound.toFixed(1)} m (the app caps a distance at ${MAX_DISTANCE_M} m)`, source: "`rawDistances` with `DEFAULT_VIEWING`; luminance factor is an unverified heuristic (`docs/MODEL.md` limitations)", reproduce: sectionCmd("vision") },
-    { what: "Safety margin", value: `${DEFAULT_MARGIN_DB} dB, a factor of ${contrastFactor.toFixed(2)} in contrast sensitivity`, source: "`DEFAULT_MARGIN_DB` in `lib/vision/params.ts`; `DEFAULT_VIEWING.marginDb` in `lib/contracts/vision.ts`", reproduce: "`grep -n MARGIN lib/vision/params.ts`" },
+    { what: "Safety margin", value: `${DEFAULT_MARGIN_DB} dB, a factor of ${contrastFactor.toFixed(3)} in contrast sensitivity`, source: "`DEFAULT_MARGIN_DB` in `lib/vision/params.ts`; `DEFAULT_VIEWING.marginDb` in `lib/contracts/vision.ts`", reproduce: "`grep -n MARGIN lib/vision/params.ts`" },
     { what: "What the margin does to a distance: bound over typical, that 3 mm disk", value: `x${(l.bound / l.nominal).toFixed(2)}`, source: "`rawDistances` bound / nominal", reproduce: sectionCmd("vision") },
     { what: "Bound over typical, across the seven illustrative features", value: `x${ratioRange[0].toFixed(2)} to x${ratioRange[1].toFixed(2)}`, source: eval_, reproduce: sectionCmd("vision") },
     { what: "20/20 acuity", value: `1 arcminute; \`acuityScale\` 1 = 20/20, 2 = 20/40. 1 arcminute spans ${arcminMm.toFixed(2)} mm at 1 m`, source: "`DEFAULT_VIEWING.acuityScale` in `lib/contracts/vision.ts`; the 1 arcminute is the Snellen definition of 20/20 (manual: textbook definition, not a fitted constant)", reproduce: "`grep -n acuityScale lib/contracts/vision.ts`" },
@@ -866,13 +1022,15 @@ function headlineSection(facts: Facts): string {
     return v;
   };
   const rows: string[][] = [
-    ["Model against human thresholds", `${get("modelfest.rms41")} RMS over ${get("modelfest.n")} ModelFest patterns (the paper: ${get("modelfest.paper43")} over 43)`, "1"],
+    ["Model against human thresholds", `${get("modelfest.rms41")} RMS over ${get("modelfest.n")} ModelFest patterns (the paper reports ${get("modelfest.paper43")} over all 43, which include 2 patterns we cannot generate, so the two figures are not like-for-like)`, "1"],
     ["Skin-shaped patterns", get("modelfest.rmsSkin"), "1"],
     ["Human observers behind it", get("modelfest.observers"), "1"],
+    ["castleCSF port against its reference (largest deviation)", get("ref.castle"), "1.1"],
+    ["Five analytic stimuli against the numpy prediction (worst)", get("ref.stimuli"), "1.1"],
     ["The iris as a ruler", `${get("iris.mean")} +/- ${get("iris.sd")} (${get("iris.rel")})`, "2"],
-    ["Mask-based scale against the iris scale", `within ${get("iris.maskAgreement")}`, "2"],
+    ["Mask-based scale against the iris scale", `${get("iris.maskAgreement")} from the iris scale, four faces`, "2"],
     ["A 3 mm, 12% spot", get("vision.disk"), "7"],
-    ["The safety margin", `${get("vision.margin")}, about x${get("vision.ratio")} in distance`, "7"],
+    ["The safety margin", `${get("vision.margin")}: x${get("vision.ratio")} in distance for a 3 mm spot, x${get("vision.ratioRange")} across the seven example features`, "7"],
     ["Pores out of sight at 1.5 m on p2b", `${get("sight.p2b.pore")} (${get("sight.p2b.poreFound")} found)`, "3"],
     ["AI baseline calls and cost", `${get("ai.calls")} calls, ${get("ai.cost")}`, "4"],
     ["AI run-to-run spread, same question", `CV ${get("ai.cvB")} (median); highest of five asks ${get("ai.ratioB")} the lowest`, "4"],
@@ -907,6 +1065,7 @@ interface SectionDef {
 export const SECTIONS: SectionDef[] = [
   { id: "headline", heading: "Headline numbers", level: 2, tier: "fast" },
   { id: "modelfest", heading: "1. ModelFest: the model against human observers", level: 2, tier: "fast" },
+  { id: "reference", heading: "1.1 Reproducing the published models", level: 3, tier: "fast" },
   { id: "iris", heading: "2. The iris ruler", level: 2, tier: "fast" },
   { id: "persona-found", heading: "3. The four demo faces: what was found", level: 2, tier: "fast" },
   { id: "persona-sight", heading: "3.1 Out of sight at 1 m and 1.5 m", level: 3, tier: "fast" },
@@ -950,6 +1109,7 @@ export async function buildSections(options: BuildOptions = {}): Promise<Built[]
   const put = (id: string, tier: Tier, body: string): void => void built.set(id, { id, tier, body });
 
   if (wanted("modelfest", "fast")) put("modelfest", "fast", modelfestSection(facts));
+  if (wanted("reference", "fast")) put("reference", "fast", referenceSection(facts));
   if (wanted("iris", "fast")) put("iris", "fast", await irisSection(facts));
   if (wanted("persona-found", "fast")) put("persona-found", "fast", await foundSection());
   if (wanted("persona-sight", "fast")) put("persona-sight", "fast", await sightSection(facts));

@@ -17,6 +17,7 @@ Each row is a value from a section below (the last column), picked up by the gen
 | Model against human thresholds | 0.69 dB RMS over 41 ModelFest patterns (the paper reports 1.03 dB over all 43, which include 2 patterns we cannot generate, so the two figures are not like-for-like) | 1 |
 | Skin-shaped patterns | 0.78 dB | 1 |
 | Human observers behind it | 16 | 1 |
+| How much people differ | individual observers sit 3.46 dB RMS from the observer mean; the most sensitive observer sits 4.2 dB below it | 1 |
 | castleCSF port against its reference (largest deviation) | 4.2e-7 log10 (test tolerance 0.0001) | 1.1 |
 | Five analytic stimuli against the numpy prediction (worst) | 0.029 dB (test tolerance 0.1 dB) | 1.1 |
 | The iris as a ruler | 11.71 mm +/- 0.42 mm (3.6%) | 2 |
@@ -35,6 +36,17 @@ Test counts and units spent and left are in sections 6 and 5; they are measured 
 
 <!-- generated:headline:end -->
 
+<!-- generated:headline-worthit:start -->
+
+More headline rows, from the half-strength Skin Simulation search (section 3.2). They sit in their own block because that search is slow, so `npm test` guards them with a hash rather than recomputing them.
+
+| What | Value | Section |
+| --- | --- | --- |
+| Pores: share of a half-strength change detectable across a table | 4% to 14%, across the four faces (bound, at 1.5 m) | 3.2 |
+| Under-eye: how far a half-strength change stays detectable | Under-eye shadows: farthest change at the 10 m cap on 4 of 4 faces, median too on 4 of 4; Under-eye puffiness: farthest change at the 10 m cap on 4 of 4 faces, median too on 4 of 4 | 3.2 |
+
+<!-- generated:headline-worthit:end -->
+
 ## 1. ModelFest: the model against human observers
 
 <!-- generated:modelfest:start -->
@@ -51,6 +63,8 @@ Our detector is Watson and Ahumada's Standard A (2005), run on the ModelFest sti
 | The paper's own RMS, Standard A, all 43 stimuli | 1.03 dB. Not like-for-like with the 0.69 dB above: the paper's figure includes #35 and #43, which cannot be generated from parameters | `eval/results/modelfest.json` `published.standardA.rmsAll43Db` (Watson and Ahumada 2005, Table 5) | manual: Table 5 of the paper (doi 10.1167/5.9.6) |
 | Stimuli in the ModelFest set | 43 | `eval/modelfest/thresholds.json` `stimuli` | `grep -c '"thresholdDb"' eval/modelfest/thresholds.json` |
 | Human observers behind the thresholds | 16 (4 repeats each) | `eval/modelfest/thresholds.json` `source.observers`, `source.repeatsPerObserver` | `grep -n '"observers"' eval/modelfest/thresholds.json` |
+| How far individual observers sit from the observer mean (RMS over all observers and stimuli) | 3.46 dB RMS (the paper's RMS0) | `eval/modelfest/thresholds.json` `source.checks.rms0Db`, computed from the per-observer CSV by `scripts/eval/extract-modelfest.ts` and checked there against the paper's 3.46 | `grep -n rms0Db eval/modelfest/thresholds.json`; recomputing needs the CSV (not redistributed): `npx tsx scripts/eval/extract-modelfest.ts <modelfestbaselinedata.csv>` |
+| How far the most sensitive observer sits below the mean | 4.2 dB (the second most sensitive: 3.95 dB) | manual: the research derivation from the per-observer data, as written in the "Why 6 dB" table of `docs/MODEL.md` (read from that row); it is the basis of `DEFAULT_MARGIN_DB` = 6. The per-observer data are not in the repository, so this value cannot be recomputed from committed files | manual: needs the per-observer CSV; `scripts/eval/extract-modelfest.ts` shows its layout |
 
 <!-- generated:modelfest:end -->
 
@@ -193,7 +207,17 @@ How far the change a half-strength Skin Simulation would make stays detectable. 
 
 Median and max are the one-sided bound over the concern's targets; "10+" is the 10 m contract cap. A median of 0.00 means at least half of the targets show no detectable change even at 0.1 m, the nearest distance the model reports.
 
-Source: `worthIt` in `lib/vision/worthIt.ts`, with the recorded renders `fixtures/youcam/<face>/renders/sim_improve_a05.png` (under-eye shadows, puffiness, fine lines, redness) and `sim_improve_b05.png` (dark spots, pores, breakouts), `DEFAULT_VIEWING`. Reproduce: `npx tsx scripts/dev/worthit.ts` or `npx tsx scripts/docs/numbers.ts --section persona-worthit` (about 10 s).
+**Pores, across a table.** The share of the half-strength change that is still detectable at 1.5 m (bound): `differenceProfile` at 1.5 m, count over the pores found.
+
+| Face | Pores found | Changes detectable at 1.5 m | Share | Farthest change (m) |
+| --- | --- | --- | --- | --- |
+| p1a | 450 | 38 | 8.4% | 3.2 |
+| p2b | 649 | 91 | 14.0% | 2.6 |
+| p3a | 221 | 25 | 11.3% | 2.7 |
+| p5a | 250 | 11 | 4.4% | 2.6 |
+| **All 4 faces** |  |  | **4.4% to 14.0%** |  |
+
+Source: `worthIt` in `lib/vision/worthIt.ts`, with the recorded renders `fixtures/youcam/<face>/renders/sim_improve_a05.png` (under-eye shadows, puffiness, fine lines, redness) and `sim_improve_b05.png` (dark spots, pores, breakouts), `DEFAULT_VIEWING`; the pore share is `differenceProfile[distanceM = 1.5].fraction`. Reproduce: `npx tsx scripts/dev/worthit.ts` (prints the counts at 1.5 m) or `npx tsx scripts/docs/numbers.ts --section persona-worthit` (about 10 s).
 
 <!-- generated:persona-worthit:end -->
 
@@ -364,8 +388,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 Slow tables (3.2, 3.3 and 6.1) are not recomputed by `npm test`. Instead `lib/vision/numbers.doc.test.ts` checks two hashes:
 
-- inputs: `f8249bbabafb360c`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
-- slow tables: `0616001dea3446d6`. The tables above as committed, so a hand edit differs.
+- inputs: `4a00c1cac52df404`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
+- slow tables: `4cf08c1044f4297f`. The tables above as committed, so a hand edit differs.
 
 When either test fails, run `npx tsx scripts/docs/numbers.ts --write` and commit. `--check` recomputes everything, including the slow tables.
 

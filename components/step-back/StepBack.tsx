@@ -282,7 +282,7 @@ export function StepBack({
                 <div
                   key={c.id}
                   aria-hidden="true"
-                  className="tag-in pointer-events-none absolute"
+                  className="tag-in pointer-events-none absolute z-20"
                   style={{ left: percent(toScaled((c.anchor.x / frame.width) * 100)), top: percent(toScaled((c.anchor.y / frame.height) * 100)) }}
                 >
                   <span

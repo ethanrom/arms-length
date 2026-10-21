@@ -174,7 +174,7 @@ function ConcernCard({ view, open, onToggle, tickM, anchors, receipt, scale, vie
             onClick={onToggle}
             className="group -mx-2 block w-[calc(100%+1rem)] px-2 text-left"
           >
-            <span className="flex items-center gap-3">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span
                 aria-hidden="true"
                 className={`block h-2.5 w-2.5 shrink-0 rounded-full border border-ink ${relief ? "bg-ink forced-colors:bg-[CanvasText]" : "bg-transparent"}`}

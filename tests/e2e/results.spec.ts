@@ -116,8 +116,8 @@ test("the You | Them seam works from the keyboard", async ({ page }) => {
 
 test("the Step back slider changes the live counter and speaks its value", async ({ page }) => {
   await page.goto("/try/p2b");
+  await ready(page); // the seam only shows once the page has hydrated and the renders are in
   const slider = page.getByRole("slider", { name: /Step back/ });
-  await expect(slider).toBeVisible({ timeout: 30_000 });
   const pores = page.locator('[data-counter="pore"]');
 
   await slider.focus();
@@ -173,7 +173,7 @@ test("the explorer opens on good news, never the worst, and a card keeps its mar
 
 test("a receipt shows both thresholds, where the size comes from, and the safety line for marks", async ({ page }) => {
   await page.goto("/try/p2b");
-  await expect(page.getByRole("slider", { name: /Step back/ })).toBeVisible({ timeout: 30_000 });
+  await ready(page);
 
   const card = page.locator("h4 button[aria-expanded]").filter({ hasText: /pores/i }).first();
   await expect(card).toHaveAttribute("aria-expanded", "true");
@@ -249,7 +249,7 @@ test("keyboard only: skip link, a persona card, a concern card and the receipt s
   await page.getByRole("link", { name: /Synthetic face A/ }).focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/try\/p2b$/);
-  await expect(page.getByRole("slider", { name: /Step back/ })).toBeVisible({ timeout: 30_000 });
+  await ready(page);
 
   const card = page.locator("h4 button[aria-expanded]").filter({ hasText: /dark spots/i }).first();
   await card.focus();

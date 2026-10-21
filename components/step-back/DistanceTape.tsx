@@ -157,7 +157,7 @@ export function DistanceTape({
 
       {compact ? (
         /* numbered distances under the tape; the named stops are buttons beside it */
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0" style={{ top: ZONE - 6 }}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0" style={{ top: ZONE + 2 }}>
           {COMPACT_LABELS_M.map((d) => {
             const x = toUnit(d, axis);
             const align = x < 0.04 ? "left" : x > 0.96 ? "right" : "center";

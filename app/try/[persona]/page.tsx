@@ -33,7 +33,7 @@ async function Results({ params }: { params: PageProps<"/try/[persona]">["params
 function Preparing() {
   return (
     <main id="main" className="page py-12" aria-busy="true">
-      <p className="eyebrow">Preparing</p>
+      <p className="eyebrow !text-[0.875rem]">Preparing</p>
       <h1 className="display mt-4 text-[clamp(2.5rem,1.4rem+4.6vw,5.5rem)]">
         Bringing the face <em className="font-normal italic">into focus</em>
       </h1>

@@ -87,7 +87,7 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
   return (
     <main id="main" tabIndex={-1} className="outline-none">
       <div className="page pb-16 pt-10 md:pb-24 md:pt-16">
-        <p className="eyebrow">Check mine</p>
+        <p className="eyebrow !text-[0.875rem]">Check mine</p>
         <h1 className="display mt-4 max-w-4xl text-[clamp(2.6rem,1.3rem+5vw,5.5rem)]">
           Your skin, <em className="font-normal italic">from the other side</em>
         </h1>
@@ -132,7 +132,7 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
 
         {snapshot && (snapshot.stage === "uploading" || snapshot.stage === "measuring") && (
           <div className="mt-10 max-w-[34rem]" aria-busy="true">
-            <p className="eyebrow">Analysing</p>
+            <p className="eyebrow !text-[0.875rem]">Analysing</p>
             <p role="status" className="serif mt-3 text-[1.75rem] leading-tight" style={{ fontWeight: 380 }}>
               {snapshot.message}
             </p>

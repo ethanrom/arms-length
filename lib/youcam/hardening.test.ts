@@ -70,7 +70,7 @@ describe("no .env at all: a public demo", () => {
   test("status says replay_only, whatever code is sent, and is never cached", async () => {
     for (const headers of [{}, { "x-access-code": "guess" }] as Record<string, string>[]) {
       const res = await status(get(headers));
-      expect(await res.json()).toEqual({ live: false, reason: "replay_only" } satisfies StatusResponse);
+      expect(await res.json()).toEqual({ live: false, reason: "replay_only", uploadsAllowed: false } satisfies StatusResponse);
       expect(res.headers.get("cache-control")).toBe("no-store");
     }
   });
@@ -141,8 +141,8 @@ describe("keys but no LIVE_ACCESS_CODES: live stays off", () => {
   });
 
   test("status names the missing code, and any code is refused before the balance is read", async () => {
-    expect(await (await status(get())).json()).toEqual({ live: false, reason: "no_code" });
-    expect(await (await status(get({ "x-access-code": "anything" }))).json()).toEqual({ live: false, reason: "bad_code" });
+    expect(await (await status(get())).json()).toEqual({ live: false, reason: "no_code", uploadsAllowed: false });
+    expect(await (await status(get({ "x-access-code": "anything" }))).json()).toEqual({ live: false, reason: "bad_code", uploadsAllowed: false });
     expect(network).not.toHaveBeenCalled();
   });
 
@@ -162,6 +162,30 @@ describe("keys but no LIVE_ACCESS_CODES: live stays off", () => {
     const res = await analysis(post("analysis", { image: pngDataUrl(1080, 1341) }, { "x-access-code": "judge-alpha" }));
     expect(res.status).toBe(503);
     expect((await errorOf(res)).code).toBe("kill_switch");
+    expect(network).not.toHaveBeenCalled();
+  });
+});
+
+describe("status.uploadsAllowed", () => {
+  const uploads = async (headers: Record<string, string> = {}) => ((await (await status(get(headers))).json()) as StatusResponse).uploadsAllowed;
+
+  test("false when keyless, whatever code is sent", async () => {
+    expect(await uploads()).toBe(false);
+    expect(await uploads({ "x-access-code": "guess" })).toBe(false);
+  });
+
+  test("true in replay mode only with REPLAY_UPLOADS=1", async () => {
+    vi.stubEnv("REPLAY_UPLOADS", "1");
+    expect(await uploads()).toBe(true);
+    vi.stubEnv("REPLAY_UPLOADS", "0");
+    expect(await uploads()).toBe(false);
+  });
+
+  test("false when live is off for the caller, even with REPLAY_UPLOADS=1 (keys, no code)", async () => {
+    vi.stubEnv("YOUCAM_API_KEY", "test-key-not-real");
+    vi.stubEnv("REPLAY_UPLOADS", "1");
+    expect(await uploads()).toBe(false);
+    expect(await uploads({ "x-access-code": "anything" })).toBe(false);
     expect(network).not.toHaveBeenCalled();
   });
 });
@@ -211,7 +235,7 @@ describe("per-address limits", () => {
     vi.stubEnv("LIVE_ACCESS_CODES", "judge-alpha");
     const ip = { "x-forwarded-for": "203.0.113.9" };
     for (let i = 0; i < BAD_CODE_LIMIT.max; i++) {
-      expect(await (await status(get({ ...ip, "x-access-code": `guess-${i}` }))).json()).toEqual({ live: false, reason: "bad_code" });
+      expect(await (await status(get({ ...ip, "x-access-code": `guess-${i}` }))).json()).toEqual({ live: false, reason: "bad_code", uploadsAllowed: false });
     }
     const locked = await status(get({ ...ip, "x-access-code": "judge-alpha" }));
     expect(locked.status).toBe(429);
@@ -220,7 +244,7 @@ describe("per-address limits", () => {
     expect((await analysis(post("analysis", { persona: "p2b" }, ip))).status).toBe(200);
     // another address is not locked out
     const other = await status(get({ "x-forwarded-for": "198.51.100.2", "x-access-code": "guess" }));
-    expect(await other.json()).toEqual({ live: false, reason: "bad_code" });
+    expect(await other.json()).toEqual({ live: false, reason: "bad_code", uploadsAllowed: false });
     expect(network).not.toHaveBeenCalled();
   });
 

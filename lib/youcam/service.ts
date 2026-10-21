@@ -25,7 +25,7 @@ import { YouCamError, engineError, gateError, liveReservedError } from "./errors
 import { liveFileRef, parseFileRef } from "./fileref";
 import { signTaskId, verifyTaskToken } from "./tasktokens";
 import { decodeImageDataUrl, sniffImage, type ImageInfo } from "./imageinfo";
-import { youcamMode } from "./mode";
+import { replayUploadsEnabled, youcamMode } from "./mode";
 import { normalizeAnalysis, resizeImageSource } from "./normalize";
 import { buildRender } from "./render";
 import { replayAnalysis, replayMakeup, replaySimulation } from "./replay";
@@ -235,12 +235,13 @@ export function createService(deps: ServiceDeps): YouCamService {
     acceptsCode: (code) => deps.guard.accepts(code),
 
     async status(code) {
-      if (!liveEnabled()) return { live: false, reason: "replay_only" };
+      // A photo is accepted when live is allowed for this code, or in replay mode when REPLAY_UPLOADS=1 (dev and e2e).
+      if (!liveEnabled()) return { live: false, reason: "replay_only", uploadsAllowed: replayUploadsEnabled(deps.env()) };
       const decision = await deps.guard.decide(code, "analysis", {
         cost: analysisUnits("hd", HD_ACTIONS.length),
         reserve: false,
       });
-      return decision.ok ? { live: true } : { live: false, reason: decision.reason };
+      return decision.ok ? { live: true, uploadsAllowed: true } : { live: false, reason: decision.reason, uploadsAllowed: false };
     },
   };
 }

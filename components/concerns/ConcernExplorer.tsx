@@ -1,18 +1,20 @@
 "use client";
 
 import { useId, useState } from "react";
-import type { ConcernView } from "@/components/results/derive";
+import { formatDistance, fractionAt } from "@/app/_lib/axis";
+import { openingView, type ConcernView } from "@/components/results/derive";
 import type { ScaleEstimate, ViewingConditions } from "@/lib/contracts";
+import { formatInterval, shareWord } from "@/lib/copy";
 import { ReceiptTrigger } from "@/components/receipt/ReceiptSheet";
 import type { DistanceAnchor, OutOfScopeNote, ReceiptEntry } from "@/components/results/types";
 import { AnnotatedFace, cropAround } from "./AnnotatedFace";
+import { ChartFigure } from "./ChartFigure";
 import { DistanceAxisHeader, DistanceBar } from "./DistanceBar";
 import { SurvivalCurve } from "./SurvivalCurve";
 
 interface ConcernExplorerProps {
   views: ConcernView[];
   src: string;
-  alt: string;
   frame: { width: number; height: number };
   anchors: DistanceAnchor[];
   outOfScope: OutOfScopeNote[];
@@ -23,9 +25,9 @@ interface ConcernExplorerProps {
   viewing: ViewingConditions;
 }
 
-export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, receipts, reliefNote, scale, viewing }: ConcernExplorerProps) {
-  // Start with the most visible concern open, so the face is annotated from the first glance.
-  const first = views.find((v) => !v.relief) ?? views[0];
+export function ConcernExplorer({ views, src, frame, anchors, outOfScope, receipts, reliefNote, scale, viewing }: ConcernExplorerProps) {
+  // Open on good news: the first relief item, or the concern that fades most when nothing is out of sight yet. Never the worst.
+  const first = openingView(views);
   const [openId, setOpenId] = useState<string | null>(first ? first.id : null);
   const open = views.find((v) => v.id === openId) ?? null;
   const relief = views.filter((v) => v.relief);
@@ -34,6 +36,7 @@ export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, r
   const aspect = frame.width / frame.height;
 
   const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
+  const shared = { openId, onToggle: toggle, tickM, anchors, receipts, scale, viewing, src, frame };
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-16">
@@ -42,14 +45,12 @@ export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, r
         <div className="sticky top-6">
           <div className="stage on-stage relative flex items-center justify-center overflow-hidden [--stage-h:min(calc(100svh-5rem),820px)]">
             <div className="relative" style={{ width: `min(100%, calc(var(--stage-h) * ${aspect}))` }}>
-              <AnnotatedFace src={src} alt={alt} frame={frame} view={open} sizes="(min-width: 1024px) 40vw, 90vw" />
+              <AnnotatedFace src={src} alt="" frame={frame} view={open} sizes="(min-width: 1024px) 40vw, 90vw" />
               <p
                 aria-live="polite"
-                className="absolute inset-x-3 bottom-3 border border-ink/15 bg-paper px-3 py-2 text-[0.8125rem] leading-snug"
+                className="absolute inset-x-3 bottom-3 border border-ink/15 bg-paper px-3 py-2 text-[0.875rem] leading-snug"
               >
-                {open
-                  ? `${open.copy.title}: ${open.targets.length} marked, the most visible outlined firmly.`
-                  : "Open a card to see where on the face it sits."}
+                {open ? `${open.copy.title}: the most visible are outlined firmly.` : "Open a card to see where on the face it sits."}
               </p>
             </div>
           </div>
@@ -57,57 +58,27 @@ export function ConcernExplorer({ views, src, alt, frame, anchors, outOfScope, r
       </div>
 
       <div>
-        <p className="mb-4 max-w-[34rem] text-[0.8125rem] leading-relaxed text-muted">{reliefNote}</p>
+        <p className="mb-4 max-w-[34rem] text-[0.875rem] leading-relaxed text-ink-soft">{reliefNote}</p>
         <div className="mb-1 hidden sm:block">
           <DistanceAxisHeader anchors={anchors} />
         </div>
 
-        <Group
-          id="relief"
-          heading="Mostly out of sight"
-          note="Nobody needs to look at these twice."
-          views={relief}
-          openId={openId}
-          onToggle={toggle}
-          tickM={tickM}
-          anchors={anchors}
-          receipts={receipts}
-          scale={scale}
-          viewing={viewing}
-          src={src}
-          alt={alt}
-          frame={frame}
-        />
-        <Group
-          id="visible"
-          heading="Still in view"
-          note="Most visible first."
-          views={visible}
-          openId={openId}
-          onToggle={toggle}
-          tickM={tickM}
-          anchors={anchors}
-          receipts={receipts}
-          scale={scale}
-          viewing={viewing}
-          src={src}
-          alt={alt}
-          frame={frame}
-        />
+        <Group id="relief" heading="Mostly out of sight" note="Nothing to see from here." views={relief} {...shared} />
+        <Group id="visible" heading="These carry further" note="Most visible first." views={visible} {...shared} />
 
         {outOfScope.length > 0 && (
           <section aria-labelledby="not-visibility" className="mt-12 border-t border-rule pt-6">
-            <h3 id="not-visibility" className="eyebrow">
+            <h3 id="not-visibility" className="eyebrow !text-[0.875rem]">
               Not about visibility
             </h3>
-            <p className="mt-2 max-w-md text-[0.875rem] leading-relaxed text-muted">
+            <p className="mt-2 max-w-md text-[0.875rem] leading-relaxed text-ink-soft">
               These describe shape, feel or light rather than a mark someone can see, so we give them no distance.
             </p>
-            <ul className="mt-4 grid gap-x-8 gap-y-2 text-[0.875rem] sm:grid-cols-2">
+            <ul className="mt-4 grid gap-x-8 gap-y-2 text-[0.9375rem] sm:grid-cols-2">
               {outOfScope.map((o) => (
                 <li key={o.label} className="flex flex-col py-1">
-                  <span className="text-ink-soft">{o.label}</span>
-                  <span className="text-[0.8125rem] text-muted">{o.reason}</span>
+                  <span className="text-ink">{o.label}</span>
+                  <span className="text-[0.875rem] text-ink-soft">{o.reason}</span>
                 </li>
               ))}
             </ul>
@@ -131,11 +102,10 @@ interface GroupProps {
   scale: ScaleEstimate;
   viewing: ViewingConditions;
   src: string;
-  alt: string;
   frame: { width: number; height: number };
 }
 
-function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, receipts, scale, viewing, src, alt, frame }: GroupProps) {
+function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, receipts, scale, viewing, src, frame }: GroupProps) {
   if (views.length === 0) return null;
   return (
     <section aria-labelledby={`group-${id}`} className="mt-10 first:mt-0">
@@ -143,7 +113,7 @@ function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, rec
         <h3 id={`group-${id}`} className="serif text-[1.375rem] leading-tight" style={{ fontWeight: 400 }}>
           {heading}
         </h3>
-        <p className="text-[0.8125rem] text-muted">{note}</p>
+        <p className="text-[0.875rem] text-ink-soft">{note}</p>
       </header>
       <ul>
         {views.map((v) => (
@@ -158,7 +128,6 @@ function Group({ id, heading, note, views, openId, onToggle, tickM, anchors, rec
             scale={scale}
             viewing={viewing}
             src={src}
-            alt={alt}
             frame={frame}
           />
         ))}
@@ -173,6 +142,8 @@ function scaledInterval([lo, hi]: [number, number], at: number, of: number): [nu
   return [lo * k, hi * k];
 }
 
+const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 interface CardProps {
   view: ConcernView;
   open: boolean;
@@ -183,13 +154,14 @@ interface CardProps {
   scale: ScaleEstimate;
   viewing: ViewingConditions;
   src: string;
-  alt: string;
   frame: { width: number; height: number };
 }
 
-function ConcernCard({ view, open, onToggle, tickM, receipt, scale, viewing, src, alt, frame }: CardProps) {
+function ConcernCard({ view, open, onToggle, tickM, anchors, receipt, scale, viewing, src, frame }: CardProps) {
   const panelId = useId();
   const { copy, visibility, relief } = view;
+  // The named distances the table reads off, without the selfie stop that sits 5 cm from the mirror.
+  const stops = anchors.filter((a) => a.label !== "Selfie");
 
   return (
     <li className="border-b border-rule last:border-b-0">
@@ -205,39 +177,68 @@ function ConcernCard({ view, open, onToggle, tickM, receipt, scale, viewing, src
             <span className="flex items-center gap-3">
               <span
                 aria-hidden="true"
-                className={`block h-2.5 w-2.5 shrink-0 rounded-full border border-ink ${relief ? "bg-transparent" : "bg-ink"}`}
+                className={`block h-2.5 w-2.5 shrink-0 rounded-full border border-ink ${relief ? "bg-ink forced-colors:bg-[CanvasText]" : "bg-transparent"}`}
               />
-              <span className="eyebrow !text-ink-soft">{copy.title}</span>
-              <span className="eyebrow ml-auto flex items-center gap-2 !tracking-[0.1em]">
+              <span className="eyebrow !text-[0.875rem] !text-ink-soft">{copy.title}</span>
+              <span className="eyebrow ml-auto flex items-center gap-2 !text-[0.875rem] !tracking-[0.06em]">
                 <span className="num">{copy.keyLine}</span>
-                <span
-                  aria-hidden="true"
-                  className="relative block h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110"
-                >
+                <span aria-hidden="true" className="relative block h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110">
                   <span className="absolute left-0 top-1/2 h-px w-full bg-ink" />
                   <span className={`absolute left-1/2 top-0 h-full w-px bg-ink transition-transform duration-300 ${open ? "scale-y-0" : ""}`} />
                 </span>
               </span>
             </span>
-            <span className="serif mt-3 block text-[clamp(1.375rem,1.1rem+1vw,1.75rem)] leading-[1.18]" style={{ fontWeight: 380 }}>
+            <span className="serif mt-3 block text-[clamp(1.375rem,1.1rem+1vw,1.75rem)] leading-[1.18]" style={{ fontWeight: 400 }}>
               {copy.headline}
             </span>
-            <span className="mt-2 block max-w-[34rem] text-[0.9375rem] leading-relaxed text-muted">{copy.detail}</span>
+            <span className="mt-2 block max-w-[34rem] text-[1rem] leading-relaxed text-ink-soft">{copy.detail}</span>
           </button>
         </h4>
+
+        {/* a mark's distance says how visible it is, not what it is */}
+        {copy.safety && <p className="mt-3 max-w-[34rem] border-l-2 border-ink pl-3 text-[0.875rem] leading-relaxed text-ink-soft">{copy.safety}</p>}
 
         {/* A large soft area states no distance, so it gets neither a bar nor a curve. */}
         {!view.soft && (
           <div className="mt-4">
             {view.profile ? (
-              <SurvivalCurve profile={view.profile} nominalProfile={view.nominalProfile} medianM={view.keyDistanceM} relief={relief} tickM={tickM} />
+              <ChartFigure
+                caption="Solid line: a typical sharp-eyed person. Dashed line: the most that even perfect eyes could pick out. The dot marks where about half have dropped out of sight for a typical person."
+                tableLabel={`${copy.title}: share that can be picked out at each distance`}
+                head={["Distance", "Typical sharp-eyed person", "Even perfect eyes (at most)"]}
+                rows={stops.map((a) => [
+                  `${a.label}, ${formatDistance(a.distanceM)}`,
+                  capitalise(shareWord(fractionAt(view.nominalProfile ?? view.profile!, a.distanceM))),
+                  capitalise(shareWord(fractionAt(view.profile!, a.distanceM))),
+                ])}
+              >
+                <SurvivalCurve profile={view.profile} nominalProfile={view.nominalProfile} medianM={view.keyDistanceM} relief={relief} tickM={tickM} decorative />
+              </ChartFigure>
             ) : (
-              <DistanceBar maxM={view.keyDistanceM} intervalM={scaledInterval(visibility.intervalM, view.keyDistanceM, visibility.maxDistanceM)} relief={relief} tickM={tickM} />
+              <ChartFigure
+                caption={`A typical sharp-eyed person could pick it out up to about ${formatDistance(view.keyDistanceM)}. Even perfect eyes, at most ${formatDistance(visibility.maxDistanceM)}.`}
+                tableLabel={`${copy.title}: farthest distance it can be picked out`}
+                head={["Observer", "Farthest distance"]}
+                rows={[
+                  ["Typical sharp-eyed person", `About ${formatDistance(view.keyDistanceM)}`],
+                  ["Even perfect eyes (at most)", formatDistance(visibility.maxDistanceM)],
+                  ["Plausible range, perfect eyes", formatInterval(visibility.intervalM)],
+                ]}
+              >
+                <DistanceBar
+                  maxM={view.keyDistanceM}
+                  intervalM={scaledInterval(visibility.intervalM, view.keyDistanceM, visibility.maxDistanceM)}
+                  relief={relief}
+                  tickM={tickM}
+                  decorative
+                />
+              </ChartFigure>
             )}
           </div>
         )}
-        {receipt && view.targets.some((t) => t.id === receipt.targetId) && (
-          <div className="mt-1">
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-8 gap-y-1">
+          {receipt && view.targets.some((t) => t.id === receipt.targetId) && (
             <ReceiptTrigger
               entry={receipt}
               visibility={visibility}
@@ -246,27 +247,31 @@ function ConcernCard({ view, open, onToggle, tickM, receipt, scale, viewing, src
               viewing={viewing}
               title={copy.title}
               src={src}
-              alt={alt}
               frame={frame}
             />
-          </div>
-        )}
+          )}
+          {copy.hook && (
+            <a href="#make-it-disappear" className="link inline-flex min-h-10 items-center text-[0.875rem]">
+              {copy.hook}
+            </a>
+          )}
+        </div>
 
         <div id={panelId} role="region" aria-label={`${copy.title}: details`} hidden={!open} className="mt-5">
           {open && (
             <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)]">
               <div className="lg:hidden">
                 <div className="stage on-stage">
-                  <AnnotatedFace src={src} alt={alt} frame={frame} view={view} crop={cropAround(view.bounds, frame)} sizes="100vw" />
+                  <AnnotatedFace src={src} alt="" frame={frame} view={view} crop={cropAround(view.bounds, frame)} sizes="100vw" />
                 </div>
               </div>
               <dl className="grid gap-5 text-[0.9375rem] leading-relaxed">
                 <div>
-                  <dt className="eyebrow">What this number means</dt>
+                  <dt className="eyebrow !text-[0.875rem]">What this number means</dt>
                   <dd className="mt-1.5 max-w-[34rem] text-ink-soft">{copy.explainer}</dd>
                 </div>
                 <div>
-                  <dt className="eyebrow">How sure we are</dt>
+                  <dt className="eyebrow !text-[0.875rem]">How sure we are</dt>
                   <dd className="mt-1.5 max-w-[34rem] text-ink-soft">{copy.confidence}</dd>
                 </div>
               </dl>

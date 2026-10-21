@@ -52,10 +52,11 @@ function densestWindow(points: Weighted[], frame: Size2, w: number, h: number, z
 }
 
 /**
- * The patch of cheek and nose with the most pores and spots that fade within the slider's range: the loupe shows it
- * magnified. Falls back to the middle of the face when nothing was found.
+ * The patch of cheek and nose with the most pores and spots that fade within the slider's range: the loupe magnifies it.
+ * The patch sits below the eyes (the lower edge of the under-eye areas, when the analysis found them) and above the
+ * mouth (where the pores stop). Falls back to the middle of the face when nothing was found.
  */
-export function loupePatch(features: readonly Feature[], targets: readonly TargetVisibility[], frame: Size2): Box {
+export function loupePatch(features: readonly Feature[], targets: readonly TargetVisibility[], frame: Size2, regions: readonly RegionMeasure[] = []): Box {
   const w = frame.width * LOUPE_WIDTH_FRAC;
   const h = w / LOUPE_ASPECT;
   const nominal = new Map(targets.map((t) => [t.targetId, t.nominalM ?? t.distanceM]));
@@ -69,12 +70,15 @@ export function loupePatch(features: readonly Feature[], targets: readonly Targe
   const maxX = Math.max(...extent.map((p) => p.x));
   const minY = Math.min(...extent.map((p) => p.y));
   const maxY = Math.max(...extent.map((p) => p.y));
-  // The zone is where the patch's centre may sit.
+  const eyes = regions.filter((r) => r.concern === "dark_circle" || r.concern === "eye_bag");
+  const belowEyes = eyes.length ? Math.max(...eyes.map((r) => r.bbox.y + r.bbox.h)) : minY + (maxY - minY) * 0.45;
+  // The zone is where the patch's centre may sit: far enough below the eyes that the patch clears them.
+  const top = Math.min(belowEyes + h / 2, maxY - h * 0.1);
   const zone: Box = {
-    x: minX + (maxX - minX) * 0.14,
-    y: minY + (maxY - minY) * 0.36,
-    w: (maxX - minX) * 0.72,
-    h: (maxY - minY) * 0.4,
+    x: minX + (maxX - minX) * 0.12,
+    y: top,
+    w: (maxX - minX) * 0.76,
+    h: Math.max(0, maxY - (maxY - top) * 0.1 - top),
   };
 
   const points = marks.map((f): Weighted => {

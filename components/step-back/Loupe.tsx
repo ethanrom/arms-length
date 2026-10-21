@@ -2,34 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Box, RgbaImage } from "@/lib/contracts";
+import { cropOf } from "./cropImage";
 import { loadPhoto } from "./photo";
 
 const BACKING_WIDTH = 640;
-
-/** Crops are cached per rendered frame, so dragging the slider only draws small canvases. */
-const cropCache = new WeakMap<RgbaImage, Map<string, HTMLCanvasElement>>();
-
-function cropOf(image: RgbaImage, frame: { width: number; height: number }, patch: Box): HTMLCanvasElement {
-  const k = image.width / frame.width;
-  const sx = Math.max(0, Math.round(patch.x * k));
-  const sy = Math.max(0, Math.round(patch.y * k));
-  const sw = Math.max(1, Math.min(image.width - sx, Math.round(patch.w * k)));
-  const sh = Math.max(1, Math.min(image.height - sy, Math.round(patch.h * k)));
-  const key = `${sx},${sy},${sw},${sh}`;
-  let byKey = cropCache.get(image);
-  if (!byKey) cropCache.set(image, (byKey = new Map()));
-  let canvas = byKey.get(key);
-  if (!canvas) {
-    canvas = document.createElement("canvas");
-    canvas.width = sw;
-    canvas.height = sh;
-    const data = new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height);
-    // Only the dirty rectangle is painted, and it lands at the canvas origin.
-    canvas.getContext("2d")?.putImageData(data, -sx, -sy, sx, sy, sw, sh);
-    byKey.set(key, canvas);
-  }
-  return canvas;
-}
 
 interface LoupeProps {
   src: string;

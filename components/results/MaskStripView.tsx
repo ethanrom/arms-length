@@ -6,13 +6,13 @@ import type { MaskStrip } from "./types";
  * input for everything measured below. Each thumbnail is the photo with that concern's transparent overlay on top.
  */
 export function MaskStripView({ strip, compact }: { strip: MaskStrip; compact?: boolean }) {
-  const w = compact ? 68 : 92;
+  const w = compact ? 84 : 92;
   const h = Math.round(w * 1.25);
   return (
     <section aria-label={strip.title} className="grid gap-x-12 gap-y-5 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-center">
       <div>
-        <p className="eyebrow">{strip.title}</p>
-        <p className="mt-2 hidden max-w-[26rem] text-[0.875rem] leading-relaxed text-muted sm:block">{strip.note}</p>
+        <p className="eyebrow !text-[0.875rem]">{strip.title}</p>
+        <p className="mt-2 max-w-[26rem] text-[0.875rem] leading-relaxed text-ink-soft">{strip.note}</p>
       </div>
       <ul className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         {strip.items.map((m) => (
@@ -32,9 +32,9 @@ export function MaskStripView({ strip, compact }: { strip: MaskStrip; compact?: 
                   <Image src={m.image} alt="" fill unoptimized sizes={`${w}px`} className="object-cover" style={{ objectPosition: "50% 38%" }} />
                 )}
               </div>
-              <figcaption className="mt-1.5 max-w-[5.75rem] text-[0.6875rem] leading-tight text-ink-soft">
+              <figcaption className="mt-1.5 max-w-[6.5rem] text-[0.875rem] leading-tight text-ink-soft">
                 {m.label}
-                {m.note && <span className="mt-0.5 block text-muted">{m.note}</span>}
+                {m.note && <span className="mt-0.5 block text-ink-soft">{m.note}</span>}
               </figcaption>
             </figure>
           </li>

@@ -336,7 +336,7 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
       tagline: TAGLINE,
       validation: { text: VALIDATION_BADGE, href: VALIDATION_HREF },
     },
-    loupe: loupePatch(measurements.features, report.targets, bundle.frame),
+    loupe: loupePatch(measurements.features, report.targets, bundle.frame, measurements.regions),
     tagline: TAGLINE,
     heroLabel: heroLabel(ownPhoto),
     provenance: provenanceOf(bundle),

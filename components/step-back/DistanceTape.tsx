@@ -164,7 +164,7 @@ export function DistanceTape({
             return (
               <span
                 key={d}
-                className="num absolute whitespace-nowrap font-mono text-[0.875rem] leading-none"
+                className={`num absolute whitespace-nowrap font-mono text-[0.875rem] leading-none ${d === 0.5 || d === 6 ? "hidden sm:inline" : ""}`}
                 style={{
                   left: left(d),
                   transform: align === "center" ? "translateX(-50%)" : align === "right" ? "translateX(-100%)" : undefined,

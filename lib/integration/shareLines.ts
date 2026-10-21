@@ -63,11 +63,17 @@ export function decodeShareLine(token: string): ShareLineSpec | null {
   return null;
 }
 
+/** The two halves of a line: "Pores" and "out of sight across a table". */
+export function shareLineParts(spec: ShareLineSpec): { title: string; rest: string } {
+  const title = titleOf(spec.concern);
+  if (spec.kind === "beyond") return { title, rest: `out of sight beyond ${formatDistance(spec.distanceM)}` };
+  return { title, rest: `${spec.kind === "all" ? "out of sight" : "mostly out of sight"} ${anchorFor(anchorM(spec.anchor))}` };
+}
+
 /** "Pores: out of sight across a table". */
 export function shareLineText(spec: ShareLineSpec): string {
-  const title = titleOf(spec.concern);
-  if (spec.kind === "beyond") return `${title}: out of sight beyond ${formatDistance(spec.distanceM)}`;
-  return `${title}: ${spec.kind === "all" ? "out of sight" : "mostly out of sight"} ${anchorFor(anchorM(spec.anchor))}`;
+  const { title, rest } = shareLineParts(spec);
+  return `${title}: ${rest}`;
 }
 
 /** Where on the distance axis the card draws the tick for a line. */

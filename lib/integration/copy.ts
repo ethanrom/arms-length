@@ -157,7 +157,7 @@ export const TAGLINE = "YouCam's AI finds it. Vision science measures it.";
 
 /** What is and is not drawn on the hero, said once under the face. The photo is "Your photo" only when it is one. */
 export const heroLabel = (own: boolean) =>
-  `${own ? "Your photo" : "The photo"}, nothing redrawn, filtered by a model of human eyesight at this distance. It assumes indoor light and an unretouched photo.`;
+  `${own ? "Your photo" : "The photo"}, nothing redrawn, filtered by a model of human eyesight at this distance.`;
 export const RENDERER_NOTE = "Drawn by the same model that gives the numbers: detail below a typical sharp-eyed person's threshold fades.";
 
 export const WORTH_IT_LEDE = `These are pictures from YouCam Skin Simulation, cropped to the part of the face each change would touch. Each line says how far away a typical person could still tell the difference, so you can see which changes others could notice and which only the mirror would. ${DISCLAIMERS.simulation}`;

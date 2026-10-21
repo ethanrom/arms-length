@@ -7,7 +7,7 @@ import { angleDeg } from "@/lib/vision/geometry";
 import { luminanceGain } from "@/lib/vision/castle";
 import { blobThresholdLookup } from "@/lib/vision/tables";
 import { targetVisibility } from "@/lib/vision/visibility";
-import { buildReceipt, receiptSentences } from "./receipt";
+import { buildReceipt, locationInPhoto, receiptSentences } from "./receipt";
 import type { ReadingBundle } from "./types";
 
 const scale: ScaleEstimate = { mmPerPx: 0.17, relSd: 0.04, source: "iris", irisPx: 69 };
@@ -114,5 +114,15 @@ describe("receipts on a recorded face", () => {
         expect(r.typicalVisible, `${target.id} typical at ${d} m`).toBe(d <= r.typicalM);
       }
     }
+  });
+});
+
+describe("locationInPhoto", () => {
+  test("names the part of the picture an outline sits in", () => {
+    const frame = { width: 1000, height: 1000 };
+    expect(locationInPhoto({ x: 100, y: 100, w: 50, h: 50 }, frame)).toBe("the upper left of the photo");
+    expect(locationInPhoto({ x: 800, y: 800, w: 50, h: 50 }, frame)).toBe("the lower right of the photo");
+    expect(locationInPhoto({ x: 475, y: 475, w: 50, h: 50 }, frame)).toBe("the middle of the photo");
+    expect(locationInPhoto({ x: 100, y: 475, w: 50, h: 50 }, frame)).toBe("the left of the photo");
   });
 });

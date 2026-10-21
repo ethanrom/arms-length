@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { CaptureFlow } from "@/components/capture/CaptureFlow";
 import { ResultsExperience } from "@/components/results/ResultsExperience";
 import type { CaptureResult } from "@/lib/capture/types";
 import type { ConcernId } from "@/lib/contracts";
 import { ACCESS_STORAGE_KEY, checkAccess, createLiveSession, type Access, type LiveSession, type LiveSnapshot } from "@/lib/integration/live";
-import { PRIVACY_LINE } from "@/lib/integration/privacy";
+import { AGE_CONFIRMATION, AGE_NOTE, PRIVACY_LINE } from "@/lib/integration/privacy";
 import { buildResultsData } from "@/lib/integration/viewModel";
 
 type Gate = { kind: "checking" } | { kind: "denied"; message: string } | { kind: "ok"; replay: boolean; code: string | null };
@@ -19,6 +19,7 @@ type Gate = { kind: "checking" } | { kind: "denied"; message: string } | { kind:
 export function LiveSessionView() {
   const [gate, setGate] = useState<Gate>({ kind: "checking" });
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
+  const [adult, setAdult] = useState(false);
   const session = useRef<LiveSession | null>(null);
 
   useEffect(() => {
@@ -68,7 +69,14 @@ export function LiveSessionView() {
   const data = useMemo(() => (bundle ? buildResultsData(bundle, options) : null), [bundle, options]);
 
   if (data) {
-    return <ResultsExperience data={data} onRunCoverage={runCoverage} back={{ href: "/try", label: "Back to the demo faces" }} />;
+    return (
+      <ResultsExperience
+        data={data}
+        onRunCoverage={runCoverage}
+        back={{ href: "/try", label: "Back to the demo faces" }}
+        unitsCharged={snapshot?.unitsCharged}
+      />
+    );
   }
 
   return (
@@ -104,18 +112,18 @@ export function LiveSessionView() {
         {gate.kind === "ok" && (!snapshot || snapshot.stage === "idle") && (
           <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
             <div>
-              <p className="lede max-w-[30rem]">Face the camera straight on, in even light. {PRIVACY_LINE}</p>
+              <p className="lede max-w-[30rem]">Face the camera straight on, in even light.</p>
               {gate.replay && (
                 <p role="note" className="mt-6 max-w-[30rem] border-l-2 border-ink pl-4 text-[0.875rem] leading-relaxed text-ink-soft">
                   Replay mode: whatever you add is answered with a recorded analysis of a synthetic face. No units are spent.
                 </p>
               )}
-              <p className="mt-6 max-w-[30rem] text-[0.875rem] leading-relaxed text-muted">
+              <p className="mt-6 max-w-[30rem] text-[0.875rem] leading-relaxed text-ink-soft">
                 For the most detail, upload a phone photo. A webcam frame is enlarged to reach the high-detail analysis, and the finest detail, such as pores, is then less certain.
               </p>
             </div>
             <div className="border border-rule bg-white p-5 sm:p-8">
-              <CaptureFlow onCapture={begin} />
+              {adult ? <CaptureFlow onCapture={begin} /> : <AgeGate onConfirm={() => setAdult(true)} />}
             </div>
           </div>
         )}
@@ -151,5 +159,21 @@ export function LiveSessionView() {
         )}
       </div>
     </main>
+  );
+}
+
+/** Own photos are for people 18 and over: one plain checkbox, then the camera. The consent text sits right above it. */
+function AgeGate({ onConfirm }: { onConfirm: () => void }) {
+  const id = useId();
+  return (
+    <div>
+      <h2 className="title text-[1.5rem]">Before you add a photo</h2>
+      <p className="mt-4 max-w-[34rem] text-[1rem] leading-relaxed text-ink-soft">{PRIVACY_LINE}</p>
+      <p className="mt-3 max-w-[34rem] text-[0.875rem] leading-relaxed text-ink-soft">{AGE_NOTE}</p>
+      <label htmlFor={id} className="mt-6 flex min-h-12 cursor-pointer items-center gap-3">
+        <input id={id} type="checkbox" className="h-5 w-5 shrink-0 accent-[#161513]" checked={false} onChange={onConfirm} />
+        <span className="text-[1.0625rem]">{AGE_CONFIRMATION}</span>
+      </label>
+    </div>
   );
 }

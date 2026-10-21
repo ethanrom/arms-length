@@ -187,3 +187,20 @@ export function receiptSentences(r: ReceiptNumbers): ReceiptSentences {
     model: "Step 4 comes from a published model of human contrast sensitivity, checked against lab measurements, not from a guess.",
   };
 }
+
+// ---------------------------------------------------------------------------------------------------
+// where in the photo
+// ---------------------------------------------------------------------------------------------------
+
+/** "the upper left of the photo": a position in plain words, for a receipt's text equivalent of its outline. */
+export function locationInPhoto(box: { x: number; y: number; w: number; h: number }, frame: { width: number; height: number }): string {
+  const cx = (box.x + box.w / 2) / frame.width;
+  const cy = (box.y + box.h / 2) / frame.height;
+  // The left of the photo is the left of the picture, not of the person.
+  const col = cx < 0.4 ? "left" : cx > 0.6 ? "right" : "";
+  const row = cy < 0.36 ? "upper" : cy > 0.64 ? "lower" : "";
+  if (!col && !row) return "the middle of the photo";
+  if (!row) return `the ${col} of the photo`;
+  if (!col) return `the ${row} part of the photo`;
+  return `the ${row} ${col} of the photo`;
+}

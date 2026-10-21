@@ -23,7 +23,7 @@ export function Section({ id, index, eyebrow, title, lede, children, className, 
         <div className="page">
           <header className="mb-6 flex flex-wrap items-baseline justify-between gap-x-10 gap-y-2 md:mb-8">
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              {index && <span className="num font-mono text-[0.75rem]">{index}</span>}
+              {index && <span className="num font-mono text-[0.875rem]">{index}</span>}
               <Heading id={`${id}-title`} className="title text-[clamp(1.75rem,1.3rem+1.4vw,2.5rem)]">
                 {title}
               </Heading>

@@ -1,0 +1,663 @@
+{
+  "about": "A real response from POST /api/visibility for a recorded synthetic face, produced by scripts/dropin/save-example.ts. No YouCam units were spent.",
+  "request": {
+    "persona": "p2b",
+    "bodyBytes": 1498894,
+    "fields": [
+      "output",
+      "image",
+      "masks"
+    ]
+  },
+  "headers": {
+    "x-scale-source": "assumed",
+    "x-scale-method": "eye-regions",
+    "x-scale-mm-per-px": "0.16998",
+    "x-scale-rel-sd": "0.0632"
+  },
+  "response": {
+    "viewing": {
+      "luminanceCdM2": 45,
+      "acuityScale": 1,
+      "label": "indoor",
+      "marginDb": 6
+    },
+    "targets": [
+      {
+        "targetId": "acne:0",
+        "concern": "acne",
+        "distanceM": 1.765266569395186,
+        "nominalM": 1.2316549537754256,
+        "intervalM": [
+          1.6537019843106289,
+          1.8768311544797431
+        ]
+      },
+      {
+        "targetId": "acne:1",
+        "concern": "acne",
+        "distanceM": 1.4932851886469631,
+        "nominalM": 1.0363278803741962,
+        "intervalM": [
+          1.398909786442755,
+          1.5876605908511712
+        ]
+      }
+    ],
+    "concerns": [
+      {
+        "concern": "age_spot",
+        "targetCount": 89,
+        "maxDistanceM": 10,
+        "medianDistanceM": 4.555937463044866,
+        "intervalM": [
+          10,
+          10
+        ],
+        "topTargets": [
+          "age_spot:18",
+          "age_spot:39",
+          "age_spot:43",
+          "age_spot:45",
+          "age_spot:57"
+        ],
+        "profile": [
+          {
+            "distanceM": 0.25,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 0.3,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 0.6,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 1,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 1.5,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 2.5,
+            "count": 80,
+            "fraction": 0.898876404494382
+          },
+          {
+            "distanceM": 4,
+            "count": 55,
+            "fraction": 0.6179775280898876
+          },
+          {
+            "distanceM": 6,
+            "count": 31,
+            "fraction": 0.34831460674157305
+          }
+        ],
+        "nominalProfile": [
+          {
+            "distanceM": 0.25,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 0.3,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 0.6,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 1,
+            "count": 88,
+            "fraction": 0.9887640449438202
+          },
+          {
+            "distanceM": 1.5,
+            "count": 82,
+            "fraction": 0.9213483146067416
+          },
+          {
+            "distanceM": 2.5,
+            "count": 64,
+            "fraction": 0.7191011235955056
+          },
+          {
+            "distanceM": 4,
+            "count": 31,
+            "fraction": 0.34831460674157305
+          },
+          {
+            "distanceM": 6,
+            "count": 13,
+            "fraction": 0.14606741573033707
+          }
+        ],
+        "nominalMaxDistanceM": 10,
+        "confidence": "low"
+      },
+      {
+        "concern": "dark_circle",
+        "targetCount": 2,
+        "maxDistanceM": 10,
+        "medianDistanceM": 10,
+        "intervalM": [
+          10,
+          10
+        ],
+        "topTargets": [
+          "dark_circle:0",
+          "dark_circle:1"
+        ],
+        "profile": [
+          {
+            "distanceM": 0.25,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.3,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.6,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 2.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 4,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 6,
+            "count": 2,
+            "fraction": 1
+          }
+        ],
+        "nominalProfile": [
+          {
+            "distanceM": 0.25,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.3,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.6,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 2.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 4,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 6,
+            "count": 2,
+            "fraction": 1
+          }
+        ],
+        "nominalMaxDistanceM": 10,
+        "confidence": "low"
+      },
+      {
+        "concern": "eye_bag",
+        "targetCount": 2,
+        "maxDistanceM": 10,
+        "medianDistanceM": 10,
+        "intervalM": [
+          10,
+          10
+        ],
+        "topTargets": [
+          "eye_bag:0",
+          "eye_bag:1"
+        ],
+        "profile": [
+          {
+            "distanceM": 0.25,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.3,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.6,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 2.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 4,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 6,
+            "count": 2,
+            "fraction": 1
+          }
+        ],
+        "nominalProfile": [
+          {
+            "distanceM": 0.25,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.3,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.6,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 1.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 2.5,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 4,
+            "count": 2,
+            "fraction": 1
+          },
+          {
+            "distanceM": 6,
+            "count": 2,
+            "fraction": 1
+          }
+        ],
+        "nominalMaxDistanceM": 10,
+        "confidence": "low"
+      },
+      {
+        "concern": "wrinkle",
+        "targetCount": 188,
+        "maxDistanceM": 10,
+        "medianDistanceM": 2.9482513074259176,
+        "intervalM": [
+          10,
+          10
+        ],
+        "topTargets": [
+          "wrinkle:43",
+          "wrinkle:46",
+          "wrinkle:87",
+          "wrinkle:88",
+          "wrinkle:104"
+        ],
+        "profile": [
+          {
+            "distanceM": 0.25,
+            "count": 178,
+            "fraction": 0.9468085106382979
+          },
+          {
+            "distanceM": 0.3,
+            "count": 177,
+            "fraction": 0.9414893617021277
+          },
+          {
+            "distanceM": 0.6,
+            "count": 171,
+            "fraction": 0.9095744680851063
+          },
+          {
+            "distanceM": 1,
+            "count": 162,
+            "fraction": 0.8617021276595744
+          },
+          {
+            "distanceM": 1.5,
+            "count": 144,
+            "fraction": 0.7659574468085106
+          },
+          {
+            "distanceM": 2.5,
+            "count": 108,
+            "fraction": 0.574468085106383
+          },
+          {
+            "distanceM": 4,
+            "count": 56,
+            "fraction": 0.2978723404255319
+          },
+          {
+            "distanceM": 6,
+            "count": 31,
+            "fraction": 0.16489361702127658
+          }
+        ],
+        "nominalProfile": [
+          {
+            "distanceM": 0.25,
+            "count": 170,
+            "fraction": 0.9042553191489362
+          },
+          {
+            "distanceM": 0.3,
+            "count": 170,
+            "fraction": 0.9042553191489362
+          },
+          {
+            "distanceM": 0.6,
+            "count": 161,
+            "fraction": 0.8563829787234043
+          },
+          {
+            "distanceM": 1,
+            "count": 142,
+            "fraction": 0.7553191489361702
+          },
+          {
+            "distanceM": 1.5,
+            "count": 117,
+            "fraction": 0.6223404255319149
+          },
+          {
+            "distanceM": 2.5,
+            "count": 60,
+            "fraction": 0.3191489361702128
+          },
+          {
+            "distanceM": 4,
+            "count": 29,
+            "fraction": 0.15425531914893617
+          },
+          {
+            "distanceM": 6,
+            "count": 10,
+            "fraction": 0.05319148936170213
+          }
+        ],
+        "nominalMaxDistanceM": 10,
+        "confidence": "low"
+      },
+      {
+        "concern": "acne",
+        "targetCount": 18,
+        "maxDistanceM": 5.130329193973234,
+        "medianDistanceM": 1.6554660015496112,
+        "intervalM": [
+          4.80609315064924,
+          5.454565237297227
+        ],
+        "topTargets": [
+          "acne:12",
+          "acne:13",
+          "acne:16",
+          "acne:14",
+          "acne:2"
+        ],
+        "profile": [
+          {
+            "distanceM": 0.25,
+            "count": 18,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.3,
+            "count": 18,
+            "fraction": 1
+          },
+          {
+            "distanceM": 0.6,
+            "count": 17,
+            "fraction": 0.9444444444444444
+          },
+          {
+            "distanceM": 1,
+            "count": 17,
+            "fraction": 0.9444444444444444
+          },
+          {
+            "distanceM": 1.5,
+            "count": 13,
+            "fraction": 0.7222222222222222
+          },
+          {
+            "distanceM": 2.5,
+            "count": 3,
+            "fraction": 0.16666666666666666
+          },
+          {
+            "distanceM": 4,
+            "count": 1,
+            "fraction": 0.05555555555555555
+          },
+          {
+            "distanceM": 6,
+            "count": 0,
+            "fraction": 0
+          }
+        ],
+        "nominalProfile": [
+          {
+            "distanceM": 0.25,
+            "count": 17,
+            "fraction": 0.9444444444444444
+          },
+          {
+            "distanceM": 0.3,
+            "count": 17,
+            "fraction": 0.9444444444444444
+          },
+          {
+            "distanceM": 0.6,
+            "count": 17,
+            "fraction": 0.9444444444444444
+          },
+          {
+            "distanceM": 1,
+            "count": 15,
+            "fraction": 0.8333333333333334
+          },
+          {
+            "distanceM": 1.5,
+            "count": 4,
+            "fraction": 0.2222222222222222
+          },
+          {
+            "distanceM": 2.5,
+            "count": 1,
+            "fraction": 0.05555555555555555
+          },
+          {
+            "distanceM": 4,
+            "count": 0,
+            "fraction": 0
+          },
+          {
+            "distanceM": 6,
+            "count": 0,
+            "fraction": 0
+          }
+        ],
+        "nominalMaxDistanceM": 3.486686169517228,
+        "confidence": "low"
+      },
+      {
+        "concern": "pore",
+        "targetCount": 649,
+        "maxDistanceM": 4.224846811570234,
+        "medianDistanceM": 1.5505252935720852,
+        "intervalM": [
+          3.9578371203709386,
+          4.4918565027695285
+        ],
+        "topTargets": [
+          "pore:580",
+          "pore:483",
+          "pore:460",
+          "pore:281",
+          "pore:600"
+        ],
+        "profile": [
+          {
+            "distanceM": 0.25,
+            "count": 630,
+            "fraction": 0.9707241910631741
+          },
+          {
+            "distanceM": 0.3,
+            "count": 627,
+            "fraction": 0.9661016949152542
+          },
+          {
+            "distanceM": 0.6,
+            "count": 571,
+            "fraction": 0.8798151001540832
+          },
+          {
+            "distanceM": 1,
+            "count": 472,
+            "fraction": 0.7272727272727273
+          },
+          {
+            "distanceM": 1.5,
+            "count": 343,
+            "fraction": 0.5285053929121726
+          },
+          {
+            "distanceM": 2.5,
+            "count": 86,
+            "fraction": 0.1325115562403698
+          },
+          {
+            "distanceM": 4,
+            "count": 5,
+            "fraction": 0.007704160246533128
+          },
+          {
+            "distanceM": 6,
+            "count": 0,
+            "fraction": 0
+          }
+        ],
+        "nominalProfile": [
+          {
+            "distanceM": 0.25,
+            "count": 605,
+            "fraction": 0.9322033898305084
+          },
+          {
+            "distanceM": 0.3,
+            "count": 585,
+            "fraction": 0.901386748844376
+          },
+          {
+            "distanceM": 0.6,
+            "count": 501,
+            "fraction": 0.7719568567026194
+          },
+          {
+            "distanceM": 1,
+            "count": 348,
+            "fraction": 0.5362095531587057
+          },
+          {
+            "distanceM": 1.5,
+            "count": 141,
+            "fraction": 0.2172573189522342
+          },
+          {
+            "distanceM": 2.5,
+            "count": 8,
+            "fraction": 0.012326656394453005
+          },
+          {
+            "distanceM": 4,
+            "count": 0,
+            "fraction": 0
+          },
+          {
+            "distanceM": 6,
+            "count": 0,
+            "fraction": 0
+          }
+        ],
+        "nominalMaxDistanceM": 2.925155614394262,
+        "confidence": "low"
+      }
+    ],
+    "targetsTotal": 948
+  }
+}

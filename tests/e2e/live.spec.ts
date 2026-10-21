@@ -18,11 +18,12 @@ test("the status route says replay_only in replay mode", async ({ request }) => 
   expect(await res.json()).toEqual({ live: false, reason: "replay_only", uploadsAllowed: true });
 });
 
-test("Check mine: gate, upload, results from a replayed analysis, then the lightest touch", async ({ page }) => {
+test("Use my photo: gate, upload, results from a replayed analysis, then the lightest touch", async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto("/try");
   await expect(page.getByLabel(/Access code/)).toBeVisible();
-  await page.getByRole("button", { name: "Check mine" }).click();
+  await page.getByRole("checkbox", { name: /I am 18 or over/ }).check();
+  await page.getByRole("button", { name: "Use my photo" }).click();
   await expect(page).toHaveURL(/\/try\/live$/);
 
   // The capture flow, with the optional photo upload.

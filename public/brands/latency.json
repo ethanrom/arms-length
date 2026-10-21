@@ -1,0 +1,20 @@
+{
+  "about": "Wall-clock time of POST /api/visibility from request sent to body read, after one warm-up request. Produced by scripts/dropin/time-example.ts.",
+  "persona": "p2b",
+  "runs": 5,
+  "timesMs": [
+    861,
+    877,
+    821,
+    754,
+    753
+  ],
+  "medianMs": 821,
+  "minMs": 753,
+  "maxMs": 877,
+  "bodyBytes": 1498894,
+  "server": "a production build (next start) on the same machine",
+  "node": "v24.4.1",
+  "platform": "win32",
+  "measuredAt": "2026-10-21"
+}

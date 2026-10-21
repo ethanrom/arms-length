@@ -13,7 +13,8 @@ test.use({ reducedMotion: "reduce" });
 const STATIC_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/", heading: /25\s*cm/ },
   { path: "/try", heading: /Whose skin should/ },
-  { path: "/self-test", heading: /Don.t trust us/ },
+  { path: "/self-test", heading: /your own eyes/ },
+  { path: "/privacy", heading: /in plain words/ },
   { path: "/how-it-works", heading: /From a skin analysis/ },
   { path: "/for-brands", heading: /visibility layer/ },
 ];
@@ -123,7 +124,7 @@ test("keyboard only: skip link, a persona card, a concern card and the receipt s
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
 
   // Reach the first demo face and open it.
-  await page.getByRole("link", { name: /Synthetic face A/ }).focus();
+  await page.getByRole("link", { name: /Deep brown skin, about 42/ }).focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/try\/p2b$/);
   await expect(page.getByRole("slider", { name: /Step back/ })).toBeVisible({ timeout: 30_000 });

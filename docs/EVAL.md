@@ -268,8 +268,8 @@ contrast and location, from the photo and YouCam's masks), **give the same answe
 The four demo photos (synthetic faces), five independent asks each, with the interpupillary distance given as about 63 mm.
 The question asks for the **farthest** distance at which each concern could still be seen, so the matching number of ours
 is the bound of the farthest target. We also show how many of the face's targets are still in view at 1.5 m. "10+" is our
-10 m cap. Fine lines and redness are left out of this table: in the committed run our numbers for them were measured
-against a Skin Simulation, a basis we withdrew (MODEL.md, section 3), while the four concerns below do not depend on it.
+10 m cap. All six concerns are shown. Our side measures every one of them against the skin around it (MODEL.md, section 3),
+and "none found" means YouCam's mask for that concern is empty on that face.
 
 <!-- generated:llm-faces:start -->
 
@@ -283,6 +283,10 @@ against a Skin Simulation, a basis we withdrew (MODEL.md, section 3), while the 
 | p2b | Dark spots | 4 (3.5 to 4) | 7% | 10+ | 88 of 89 |
 | p3a | Dark spots | 6 (5 to 6) | 8% | 10+ | 187 of 194 |
 | p5a | Dark spots | 2.5 (2.5 to 3) | 10% | 7.1 | 50 of 53 |
+| p1a | Fine lines | 0.6 (0.5 to 0.6), null in 2 of 5 | 10% | 10+ | 62 of 93 |
+| p2b | Fine lines | 1.5 (1.5 to 2) | 14% | 10+ | 144 of 188 |
+| p3a | Fine lines | 2 (1.5 to 2.5) | 20% | 10+ | 160 of 207 |
+| p5a | Fine lines | 1 (1 to 1) | 0% | 10+ | 60 of 107 |
 | p1a | Breakouts | 3 (3 to 4) | 14% | 9.1 | 24 of 40 |
 | p2b | Breakouts | null in 5 of 5 runs | - | 5.1 | 13 of 18 |
 | p3a | Breakouts | null in 5 of 5 runs | - | 3.2 | 5 of 5 |
@@ -291,12 +295,16 @@ against a Skin Simulation, a basis we withdrew (MODEL.md, section 3), while the 
 | p2b | Under-eye shadows | 6 (5 to 7) | 12% | 10+ | 2 of 2 |
 | p3a | Under-eye shadows | 3.5 (3 to 3.5) | 7% | 10+ | 3 of 3 |
 | p5a | Under-eye shadows | 4 (3 to 5) | 18% | 10+ | 2 of 2 |
+| p1a | Redness | 3 (2.5 to 4) | 20% | 10+ | 5 of 5 |
+| p2b | Redness | null in 5 of 5 runs | - | none found | - |
+| p3a | Redness | 9 (6 to 10) | 19% | 10+ | 3 of 4 |
+| p5a | Redness | null in 5 of 5 runs | - | none found | - |
 
 <!-- generated:llm-faces:end -->
 
 - **Consistency is better than we expected, and still not zero.** Over the 19 of 24 face-and-concern cells in which Claude
-  gave several numbers (including the two concerns not shown), the median run-to-run spread (CV) is 15% and the highest answer is a median 1.4x the lowest (worst 1.7x). One cell flips on
-  whether the concern exists at all: p1a fine lines was a number in 3 runs and null in 2.
+  gave several numbers, the median run-to-run spread (CV) is 15% and the highest answer is a median 1.4x the lowest
+  (worst 1.7x). One cell flips on whether the concern exists at all: p1a fine lines was a number in 3 runs and null in 2.
 - **The numbers barely move with the face.** Pores are 0.8 m on every face. The share of pores in view at 1.5 m, by our
   count, is 33%, 53%, 37% and 22% (p1a, p2b, p3a, p5a).
 - **Breakouts were null on three faces** where YouCam found 18, 5 and 3 of them (visible from at most 5.1, 3.2 and 2.5 m by
@@ -304,6 +312,11 @@ against a Skin Simulation, a basis we withdrew (MODEL.md, section 3), while the 
 - **Where they agree.** On p2b and p5a Claude answered "null" for redness in all five runs, and YouCam's redness mask is
   empty on both faces. For under-eye shadows Claude says 3.5 to 6 m and ours is at the 10 m cap, which is expected for a
   large soft area (MODEL.md, section 9).
+- **Fine lines: the farthest line is a poor summary, and the two sides differ most here.** Claude says 0.6 to 2 m. Ours is
+  at the 10 m cap on all four faces, because the longest forehead creases are long, and the bound is deliberately generous.
+  The number to read is the count in view at 1.5 m (56% to 77% of the lines marked), which is why the product shows a
+  profile (how many lines, at each distance) and not one distance for lines. A typical viewer sees fewer lines than the
+  bound allows, and there is no ground truth for these faces, so this row shows a gap between the two, not who is right.
 - **What it cannot return** is the thing the product shows: *which* marks, *where*, and *how many* at a given distance.
   It gives one number per concern.
 - **Ours is identical on every run.** Computing the four faces twice in one process gives byte-identical results

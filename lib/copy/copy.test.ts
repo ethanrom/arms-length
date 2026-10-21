@@ -627,6 +627,14 @@ describe("disclaimers", () => {
     expect(DISCLAIMERS.simulation).toMatch(/^A simulation\./);
     expect(DISCLAIMERS.notHealth).toBe("Visibility, not health. Not health advice.");
     expect(DISCLAIMERS.privacy).not.toMatch(/delete|deleted|don't keep|never/i);
+    // The verified retention clauses (internal/research/task-delete.md): deletion is requested, not promised, and the
+    // Skin Simulation picture is the one YouCam cannot delete early.
+    expect(DISCLAIMERS.retention).toMatch(/ask YouCam to delete/);
+    expect(DISCLAIMERS.retention).toMatch(/don't store your photo/);
+    expect(DISCLAIMERS.simulationRetention).toMatch(/Skin Simulation/);
+    expect(DISCLAIMERS.simulationRetention).toMatch(/24 hours/);
+    expect(DISCLAIMERS.simulationRetention).toMatch(/30 days/);
+    expect(DISCLAIMERS.adults).toMatch(/18/);
     expect(safetyLineFor("age_spot")).toBe(MARK_SAFETY_LINE);
     expect(safetyLineFor("acne")).toBe(MARK_SAFETY_LINE);
     expect(safetyLineFor("pore")).toBeNull();
@@ -703,8 +711,8 @@ describe("lint", () => {
       expect(lintText(`about ${word}`, UI_LISTS).map((v) => v.word), word).toContain(word);
     }
     expect(lintText("Pores, nobody notices.").map((v) => v.word)).toEqual(["nobody notices"]);
-    // The default is the core set; the UI-only words need UI_LISTS.
-    expect(lintText("Your age spots, refining")).toEqual([]);
+    // The default is every list; docs ask for the softer set.
+    expect(lintText("Your age spots, refining").map((v) => v.word)).toEqual(["age spots", "refining"]);
     expect(lintText("Age spots and acne marks", DOC_LISTS)).toEqual([]);
     expect(lintText("Refining by bisection, a healthier skin", DOC_LISTS).map((v) => v.word)).toEqual(["healthier"]);
     expect(lintText("Refining by bisection", UI_LISTS).map((v) => v.word)).toEqual(["refining"]);
@@ -765,9 +773,10 @@ describe("lint", () => {
         ["components/capture/Cam.tsx", "flaw"],
         ["public/demo/a.json", "flawless"],
       ]);
-      // The UI-only list is opt-in for files until the last old names are renamed.
+      // The old concern names are caught by default; the softer set lets them through.
       await writeFile(join(dir, "components/capture/Cam.tsx"), 'export const C = () => <p>Your age spots</p>;\n');
-      expect(await lintFiles(undefined, { cwd: dir, lists: UI_LISTS })).toContainEqual(expect.objectContaining({ file: "components/capture/Cam.tsx", word: "age spots" }));
+      expect(await lintFiles(undefined, { cwd: dir })).toContainEqual(expect.objectContaining({ file: "components/capture/Cam.tsx", word: "age spots" }));
+      expect(await lintFiles(undefined, { cwd: dir, lists: DOC_LISTS })).not.toContainEqual(expect.objectContaining({ word: "age spots" }));
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -775,18 +784,10 @@ describe("lint", () => {
 });
 
 describe("the repository's own copy", () => {
-  // Strings that still say "age spots" or "acne marks". Rename them to "dark spots" and "breakouts" (lib/copy/concerns.ts),
-  // then empty this list and make UI_LISTS the default of lintFiles. The test only lets the list shrink.
-  const PENDING_RENAME = ["app/how-it-works/page.tsx", "app/page.tsx", "lib/mock/copy.ts", "lib/mock/selfTest.ts"];
-
-  test("pages, components (capture included), route handlers and public JSON pass the core lists", async () => {
+  // Reads every page, component and recorded JSON file: slow on a busy machine, so well past vitest's 5 s default.
+  test("pages, components (capture included), route handlers and public JSON pass every list", async () => {
     expect((await lintFiles()).map((v) => `${v.file}:${v.line} ${v.word}`)).toEqual([]);
-  });
-
-  test("the old concern names live only in the files still waiting to be renamed", async () => {
-    const found = await lintFiles(undefined, { lists: ["ui"] });
-    expect([...new Set(found.map((v) => v.file))].filter((f) => !PENDING_RENAME.includes(f))).toEqual([]);
-  });
+  }, 60_000);
 
   test("the copy sources pass every list", async () => {
     expect(await lintFiles(["lib/copy/**/*.ts"], { lists: UI_LISTS })).toEqual([]);

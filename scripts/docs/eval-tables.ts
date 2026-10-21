@@ -219,14 +219,18 @@ export function loadLlmSummary(): LlmSummary {
 const sig = (x: number): string => String(Number(x.toPrecision(2)));
 
 /**
- * Faces: the concerns whose numbers do not depend on the contrast basis. Fine lines and redness are left out on purpose:
- * the committed run measured them against a Skin Simulation (the basis since withdrawn, MODEL.md section 3).
+ * Faces: every concern the question covers. Fine lines and redness were left out while summary.json still measured them
+ * against a Skin Simulation (the basis withdrawn in MODEL.md section 3); commit 6375024 re-measured them on the surround
+ * basis like the rest, and rebuilding the summary offline (`eval/llm-baseline/run.ts --offline`) changes nothing, so
+ * they are back.
  */
 const LLM_FACE_CONCERNS: { key: string; label: string }[] = [
   { key: "pores", label: "Pores" },
   { key: "dark_spots", label: "Dark spots" },
+  { key: "fine_lines", label: "Fine lines" },
   { key: "breakouts", label: "Breakouts" },
   { key: "under_eye_shadows", label: "Under-eye shadows" },
+  { key: "redness", label: "Redness" },
 ];
 
 export function llmFacesTable(summary: LlmSummary = loadLlmSummary()): string {

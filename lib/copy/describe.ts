@@ -70,7 +70,7 @@ const conditions = (them: string) => `looking right at ${them} in normal indoor 
  * distance here says that the area is large, not that the shading is strong, and every face shares it. The universal fact
  * leads, with no distance and no grade (expert panel, 2026-10-21).
  */
-function isSoftArea(cv: ConcernVisibilityExt): boolean {
+export function isSoftArea(cv: ConcernVisibilityExt): boolean {
   if (cv.concern === "dark_circle" || cv.concern === "eye_bag") return true;
   return cv.concern === "redness" && nominalMaxM(cv) >= ROOM_M;
 }

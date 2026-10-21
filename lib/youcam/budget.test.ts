@@ -95,7 +95,21 @@ describe("budget guard", () => {
       unitFloor: 250,
       analysisDailyCap: 5,
     });
-    expect(configFromEnv({ KILL_SWITCH: "true", UNIT_FLOOR: "lots" })).toMatchObject({ killSwitch: false, unitFloor: 100 });
+    expect(configFromEnv({ UNIT_FLOOR: "lots" })).toMatchObject({ unitFloor: 100 });
+  });
+
+  test("the kill switch fails safe: any value but empty, 0, false, no or off engages it", () => {
+    const on = (value: string | undefined) => configFromEnv({ KILL_SWITCH: value }).killSwitch;
+    for (const value of ["1", "true", "TRUE", " yes ", "on", "enabled", "x"]) expect(on(value)).toBe(true);
+    for (const value of [undefined, "", "  ", "0", "false", "No", "off"]) expect(on(value)).toBe(false);
+  });
+
+  test("UNIT_FLOOR can raise the reserve but never lower it below 100", () => {
+    for (const value of ["0", "50", "99", "-5", "", "lots", undefined]) {
+      expect(configFromEnv({ UNIT_FLOOR: value }).unitFloor).toBe(100);
+    }
+    expect(configFromEnv({ UNIT_FLOOR: "100" }).unitFloor).toBe(100);
+    expect(configFromEnv({ UNIT_FLOOR: "400" }).unitFloor).toBe(400);
   });
 
   test("the ledger line is one JSON object with a hashed code, never the code itself", () => {

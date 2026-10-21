@@ -1,8 +1,12 @@
 // Request body schemas for app/api/youcam/*. They mirror lib/contracts/api.ts.
 import { z } from "zod";
 
-/** A 10 MB image as base64 is about 13.4 M characters; the service re-checks the decoded size. */
-export const MAX_BODY_BYTES = { analysis: 14_500_000, render: 64_000 } as const;
+/**
+ * Request body caps in bytes. Vercel refuses bodies over 4.5 MB before our code runs, so the photo route stays under it:
+ * 4 MB of base64 is about a 3 MB JPEG, and the capture step sends well under 1.5 MB (1080 x 1919 at quality 0.92).
+ * The service re-checks the decoded size against YouCam's own 10 MB limit.
+ */
+export const MAX_BODY_BYTES = { analysis: 4_000_000, render: 64_000, cleanup: 16_000 } as const;
 
 const strength = z.number().min(0).max(1);
 

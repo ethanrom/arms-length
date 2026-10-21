@@ -21,10 +21,11 @@ import {
 } from "./budget";
 import { createYouCamClient, type ChargeEvent, type YouCamClient } from "./client";
 import { MAKEUP_UNITS, analysisUnits, simulationUnits, type Engine } from "./costs";
-import { YouCamError, engineError, gateError } from "./errors";
+import { YouCamError, engineError, gateError, liveReservedError } from "./errors";
 import { liveFileRef, parseFileRef } from "./fileref";
 import { signTaskId, verifyTaskToken } from "./tasktokens";
 import { decodeImageDataUrl, sniffImage, type ImageInfo } from "./imageinfo";
+import { youcamMode } from "./mode";
 import { normalizeAnalysis, resizeImageSource } from "./normalize";
 import { buildRender } from "./render";
 import { replayAnalysis, replayMakeup, replaySimulation } from "./replay";
@@ -42,6 +43,11 @@ export interface ServiceDeps {
   createClient: (onCharge?: (event: ChargeEvent) => void) => YouCamClient;
   guard: BudgetGuard;
   ledger?: (entry: LedgerEntry) => void;
+  /**
+   * False on a deployment that only serves recorded faces (no API key, or YOUCAM_MODE=replay): paid calls are refused
+   * with the "reserved for judges" line before the guard is consulted, and status says replay_only. Default: true.
+   */
+  liveEnabled?: () => boolean;
 }
 
 export interface AnalysisInput extends AnalysisRequest {
@@ -69,6 +75,8 @@ export interface YouCamService {
   status(accessCode: string | null): Promise<StatusResponse>;
   /** Deletes the YouCam tasks (and their files and outputs) a session created. Free; needs a configured access code. */
   cleanup(tokens: string[], accessCode: string | null): Promise<CleanupResult>;
+  /** True for a configured access code (constant-time compare). Lets routes count wrong guesses. */
+  acceptsCode(accessCode: string | null): boolean;
 }
 
 /** Decoded and checked upload: JPEG or PNG, at most 10 MB, with a readable header. */
@@ -102,8 +110,10 @@ export function createService(deps: ServiceDeps): YouCamService {
   // On unless explicitly "0": deleting at the end of a session is what the privacy line promises.
   const deleteTasks = () => deps.env().YOUCAM_DELETE_TASKS !== "0";
   const secret = () => deps.env().YOUCAM_API_KEY ?? "";
+  const liveEnabled = deps.liveEnabled ?? (() => true);
 
   async function gate(code: string | null, kind: GuardKind, cost: number): Promise<Extract<Decision, { ok: true }>> {
+    if (!liveEnabled()) throw liveReservedError();
     const decision = await deps.guard.decide(code, kind, { cost, reserve: true });
     if (!decision.ok) throw gateError(decision.reason);
     return decision;
@@ -221,7 +231,10 @@ export function createService(deps: ServiceDeps): YouCamService {
       return { deleted, failed: foreign + mine.length - deleted };
     },
 
+    acceptsCode: (code) => deps.guard.accepts(code),
+
     async status(code) {
+      if (!liveEnabled()) return { live: false, reason: "replay_only" };
       const decision = await deps.guard.decide(code, "analysis", {
         cost: analysisUnits("hd", HD_ACTIONS.length),
         reserve: false,
@@ -243,15 +256,11 @@ function createDefaultService(): YouCamService {
     return createYouCamClient({ apiKey, onCharge });
   };
   const guard = createBudgetGuard({
-    // Replay mode (or no key) means live can never run, which the guard reports like a kill switch.
-    config: () => {
-      const config = configFromEnv(env());
-      const liveCapable = env().YOUCAM_MODE !== "replay" && Boolean(env().YOUCAM_API_KEY);
-      return { ...config, killSwitch: config.killSwitch || !liveCapable };
-    },
+    config: () => configFromEnv(env()),
     getBalance: () => createClient().credit(),
   });
-  return createService({ env, createClient, guard });
+  // No key (or YOUCAM_MODE=replay) means live can never run: the service answers from recordings only.
+  return createService({ env, createClient, guard, liveEnabled: () => youcamMode(env()) === "live" });
 }
 
 let service: YouCamService | undefined;

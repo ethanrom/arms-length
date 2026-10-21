@@ -46,7 +46,7 @@ export function IrisFigure({ src, alt, frame, crop, iris, stageGrey = "#787878",
             ))}
           </g>
         </svg>
-        <span className="num absolute bottom-3 left-3 border border-ink/15 bg-paper px-2.5 py-1.5 font-mono text-[0.75rem] leading-none">{label}</span>
+        <span className="num absolute bottom-3 left-3 border border-ink/15 bg-paper px-2.5 py-1.5 font-mono text-[0.875rem] leading-none">{label}</span>
       </div>
     </figure>
   );

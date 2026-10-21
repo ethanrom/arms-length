@@ -52,7 +52,7 @@ export function MeasureFigure({ src, alt, frame, crop, features, stageGrey = "#7
                 features.map((f) => (
                   <span
                     key={f.id}
-                    className="num absolute whitespace-nowrap border border-ink/15 bg-paper px-1.5 py-1 font-mono text-[0.625rem] leading-none"
+                    className="num absolute whitespace-nowrap border border-ink/15 bg-paper px-1.5 py-1 font-mono text-[0.875rem] leading-none"
                     style={{
                       left: `${((f.centroid.x - crop.x) / crop.w) * 100}%`,
                       top: `${((f.centroid.y - crop.y + Math.max(f.bbox.w, f.bbox.h) * 0.9 + 14) / crop.h) * 100}%`,
@@ -63,8 +63,8 @@ export function MeasureFigure({ src, alt, frame, crop, features, stageGrey = "#7
                   </span>
                 ))}
             </div>
-            <p className="px-3 py-3 text-[0.8125rem] leading-snug text-ink-soft">
-              <span className="num mr-2 font-mono text-[0.6875rem] text-muted">0{p + 1}</span>
+            <p className="px-3 py-3 text-[0.9375rem] leading-snug text-ink-soft">
+              <span className="num mr-2 font-mono text-[0.875rem] text-muted">0{p + 1}</span>
               {captions[p]}
             </p>
           </li>

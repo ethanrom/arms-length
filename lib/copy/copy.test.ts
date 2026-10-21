@@ -784,9 +784,10 @@ describe("lint", () => {
 });
 
 describe("the repository's own copy", () => {
+  // Reads every page, component and recorded JSON file: slow on a busy machine, so well past vitest's 5 s default.
   test("pages, components (capture included), route handlers and public JSON pass every list", async () => {
     expect((await lintFiles()).map((v) => `${v.file}:${v.line} ${v.word}`)).toEqual([]);
-  });
+  }, 60_000);
 
   test("the copy sources pass every list", async () => {
     expect(await lintFiles(["lib/copy/**/*.ts"], { lists: UI_LISTS })).toEqual([]);

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { animate, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   DEFAULT_STOPS,
   clampDistance,
@@ -20,6 +20,10 @@ import { useDistanceFrames } from "@/components/step-back/useDistanceFrames";
 import { DEFAULT_VIEWING, type ScaleEstimate, type ViewingConditions } from "@/lib/contracts";
 
 const EASE = [0.45, 0, 0.2, 1] as const;
+
+const noSubscription = () => () => {};
+/** False while the server HTML is being hydrated, true afterwards: the OS motion setting is only known in the browser. */
+const useHydrated = () => useSyncExternalStore(noSubscription, () => true, () => false);
 
 // Used only if the page is rendered without a recorded reading; the real call site always passes both.
 const FALLBACK_SCALE: ScaleEstimate = { mmPerPx: 0.17, relSd: 0.04, source: "iris" };
@@ -42,7 +46,8 @@ type Playback = "idle" | "playing" | "paused";
  * The 12 s sweep starts on its own, so it has a visible Pause/Play button (WCAG 2.2.2); touching the tape stops it for good.
  */
 export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, viewing = DEFAULT_VIEWING }: LivingFaceProps) {
-  const reduce = useReducedMotion();
+  const reducePreference = useReducedMotion();
+  const reduce = useHydrated() && reducePreference;
   const [picked, setPicked] = useState<number | null>(null);
   const [auto, setAuto] = useState(0.25);
   const [playback, setPlayback] = useState<Playback>("idle");
@@ -100,7 +105,7 @@ export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, v
 
   return (
     <div>
-      <div className="stage on-stage relative h-[clamp(15rem,37svh,26rem)] overflow-hidden lg:h-[min(66svh,600px)] lg:min-h-[24rem]">
+      <div className="stage on-stage relative h-[clamp(15rem,37svh,26rem)] overflow-hidden lg:h-[min(56svh,560px)] lg:min-h-[22rem]">
         <div className="absolute inset-0 scale-[1.04]">
           <Image
             src={src}
@@ -122,7 +127,7 @@ export function LivingFace({ src, alt, frame, anchors, scale = FALLBACK_SCALE, v
           ))}
         </div>
         <div className="absolute left-3 top-3 border border-ink/15 bg-paper px-3 py-2 sm:left-4 sm:top-4 sm:px-4 sm:py-2.5" aria-hidden="true">
-          <span className="eyebrow block !text-[0.75rem]">Seen from</span>
+          <span className="eyebrow block !text-[0.875rem]">Seen from</span>
           <span className="serif num mt-0.5 block text-[1.75rem] leading-none sm:text-[2.25rem]">{formatDistance(distance)}</span>
           <span className="mt-1 block min-h-[1.1em] text-[0.875rem] leading-none text-muted">{where}</span>
         </div>

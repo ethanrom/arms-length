@@ -208,8 +208,8 @@ Tips for other developers. Each one cost us a few units or an afternoon.
      side of at least 1080 px; the face should fill more than 60% of the width), so a refusal is free.
    - We saw no rate-limit headers and no HTTP 4xx or 5xx answers across the 61 units (our one failure was a dropped
      connection). The docs state about 250 requests per 300 s per IP, and our client backs off on 429.
-   - Error codes are not always in the documented list, so `errors.ts` maps the ones we know to plain sentences and gives
-     any unknown code a safe retry message.
+   - Tip: handle error codes as an open list. `errors.ts` maps the ones we know to plain sentences and gives
+     any other code a safe retry message.
 10. **Deleting a task: the body is `{task_id}`, and Skin Simulation refuses.** Verified against the live service on
     2026-10-20, and again in our first live session on 2026-10-21:
     - `POST /s2s/v2.0/task/delete` with `{"task_id": "<id>"}` returns 200 `{"status":200}` in about 2.2 s and costs nothing
@@ -236,8 +236,8 @@ Tips for other developers. Each one cost us a few units or an afternoon.
       says: "Uploaded files and their associated `file_id` values are stored for 30 days. After an AI task is created, the
       corresponding `task_id` remains valid for 30 days. [...] All uploaded and generated images and videos are
       automatically removed after 30 days." The skin-analysis reference pages say results are retained for 24 hours after
-      completion, and result and mask URLs are valid for 2 hours. The pages do not agree with each other, so a claim about
-      what is kept uses the worst case, **up to 30 days**. YouCam's API privacy policy governs anything not stated there; we
+      completion, and result and mask URLs are valid for 2 hours. The pages quote different periods, so a claim about
+      what is kept uses the longest, **up to 30 days**. YouCam's API privacy policy governs anything not stated there; we
       did not read it, because the page needs JavaScript.
 
 ## 5. Unit budget and safety
@@ -275,10 +275,11 @@ Every paid call goes through one guard (`lib/youcam/budget.ts`, used by `lib/you
 - **Balance floor.** Live mode refuses a call if the balance after it would be at or below `UNIT_FLOOR` (default **100**).
   The balance is read from `GET /s2s/v1.0/client/credit`, cached for 60 s, and lowered locally after every spend so a burst
   of requests cannot overshoot. If the balance cannot be read, live mode stays closed.
-- **Kill switch.** `KILL_SWITCH=1` refuses every paid call at once.
-- **Replay mode.** `YOUCAM_MODE=replay`, or no API key, makes live calls impossible. The guard then reports it like a kill switch.
-- **Checks before spending.** Wrong file type, over 10 MB, or an HD photo with a short side under 1080 px is refused before
-  anything is uploaded.
+- **Kill switch.** `KILL_SWITCH` accepts `1`, `true` or `yes` and fails safe: set it and every paid call is refused at once.
+- **Replay mode, and the keyless deploy.** `YOUCAM_MODE=replay`, or no API key, makes live calls impossible. The guard then reports it like a kill switch. A deploy without a key therefore always replays, and uploads are refused unless `REPLAY_UPLOADS=1`, which is for tests only.
+- **Per-address limits.** Every route limits requests per IP address, and an address is locked out after 8 wrong access codes.
+- **Checks before spending.** Wrong file type, over 4 MB (the hosting platform's 4.5 MB request-body limit), or an HD photo with a
+  short side under 1080 px is refused before anything is uploaded.
 - **Ledger.** Each paid call writes one JSON line with the action, units, access-code hash, timestamp and a `maybe` flag for
   submits whose outcome is unknown. The balance is cross-checked with the credit and credit-history endpoints.
 - **Cheaper fallback.** `YOUCAM_ENGINE=sd` switches live analysis to the 12-unit engine.

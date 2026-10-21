@@ -1,6 +1,7 @@
 /**
- * Illustrative contrast sensitivity curve (Mannos & Sakrison 1974 shape, scaled to a peak near 200).
- * The model itself uses Barten (1999); this figure only shows the idea.
+ * A contrast sensitivity curve of Mannos & Sakrison's (1974) shape, scaled to a peak near 200.
+ * The model itself uses Barten (1999); this figure shows the idea. Text is sized so that it stays near 13 px when the
+ * chart scrolls sideways on a phone (see min-w below).
  */
 const W = 680;
 const H = 380;
@@ -38,11 +39,12 @@ const S_TICKS = [1, 10, 100];
 export function CsfChart() {
   return (
     <figure>
+      <div className="overflow-x-auto" tabIndex={0} aria-label="Contrast sensitivity chart, scrolls sideways on small screens">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
         aria-labelledby="csf-title csf-desc"
-        className="h-auto w-full"
+        className="h-auto w-full min-w-[34rem]"
         style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
       >
         <title id="csf-title">Contrast sensitivity against spatial frequency</title>
@@ -54,7 +56,7 @@ export function CsfChart() {
         {S_TICKS.map((s) => (
           <g key={s}>
             <line x1={M.l} x2={W - M.r} y1={y(s)} y2={y(s)} stroke="#d8d4cb" strokeWidth="1" />
-            <text x={M.l - 10} y={y(s) + 4} textAnchor="end" fontSize="12" fill="#5f5c56" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <text x={M.l - 10} y={y(s) + 4} textAnchor="end" fontSize="17" fill="#5f5c56" style={{ fontVariantNumeric: "tabular-nums" }}>
               {s}
             </text>
           </g>
@@ -62,16 +64,16 @@ export function CsfChart() {
         {F_TICKS.map((f) => (
           <g key={f}>
             <line x1={x(f)} x2={x(f)} y1={H - M.b} y2={H - M.b + 6} stroke="#161513" strokeWidth="1" />
-            <text x={x(f)} y={H - M.b + 22} textAnchor="middle" fontSize="12" fill="#5f5c56" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <text x={x(f)} y={H - M.b + 22} textAnchor="middle" fontSize="17" fill="#5f5c56" style={{ fontVariantNumeric: "tabular-nums" }}>
               {f}
             </text>
           </g>
         ))}
         <line x1={M.l} x2={W - M.r} y1={H - M.b} y2={H - M.b} stroke="#161513" strokeWidth="1" />
-        <text x={(M.l + W - M.r) / 2} y={H - 8} textAnchor="middle" fontSize="12" fill="#161513" letterSpacing="0.8">
+        <text x={(M.l + W - M.r) / 2} y={H - 8} textAnchor="middle" fontSize="17" fill="#161513" letterSpacing="0.3">
           DETAIL SIZE: CYCLES PER DEGREE (FINER TO THE RIGHT)
         </text>
-        <text transform={`translate(14 ${(M.t + H - M.b) / 2}) rotate(-90)`} textAnchor="middle" fontSize="12" fill="#161513" letterSpacing="0.8">
+        <text transform={`translate(16 ${(M.t + H - M.b) / 2}) rotate(-90)`} textAnchor="middle" fontSize="17" fill="#161513" letterSpacing="0.3">
           SENSITIVITY
         </text>
 
@@ -80,22 +82,23 @@ export function CsfChart() {
 
         {/* the threshold a 12% contrast spot needs */}
         <line x1={M.l} x2={W - M.r} y1={y(NEED)} y2={y(NEED)} stroke="#161513" strokeWidth="1" strokeDasharray="5 4" />
-        <text x={M.l + 8} y={y(NEED) - 8} fontSize="12" fill="#161513">
+        <text x={M.l + 8} y={y(NEED) - 8} fontSize="17" fill="#161513">
           A spot with 12% contrast needs sensitivity of about 8
         </text>
         <line x1={x(cross)} x2={x(cross)} y1={y(NEED)} y2={H - M.b} stroke="#161513" strokeWidth="1" />
         <circle cx={x(cross)} cy={y(NEED)} r="5" fill="#f5f3ef" stroke="#161513" strokeWidth="1.8" />
-        <text x={x(cross) - 10} y={H - M.b - 12} textAnchor="end" fontSize="12" fill="#161513">
+        <text x={x(cross) - 10} y={H - M.b - 12} textAnchor="end" fontSize="17" fill="#161513">
           Finer than this, it vanishes
         </text>
 
         {/* the peak */}
-        <text x={x(6)} y={y(sensitivity(8)) - 12} textAnchor="middle" fontSize="12" fill="#5f5c56">
+        <text x={x(6)} y={y(sensitivity(8)) - 12} textAnchor="middle" fontSize="17" fill="#5f5c56">
           most sensitive: medium detail
         </text>
       </svg>
-      <figcaption className="mt-3 max-w-[40rem] text-[0.8125rem] leading-relaxed text-muted">
-        Illustrative curve (Mannos and Sakrison, 1974 shape, scaled to a peak near 200). Our model uses Barten (1999). Stepping back makes every feature
+      </div>
+      <figcaption className="mt-3 max-w-[40rem] text-[0.875rem] leading-relaxed text-muted">
+        A curve of this shape (Mannos and Sakrison, 1974, scaled to a peak near 200); our model uses Barten (1999). Stepping back makes every feature
         subtend a smaller angle, which slides it to the right along this axis until the curve can no longer reach the dashed line.
       </figcaption>
     </figure>

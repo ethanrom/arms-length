@@ -32,7 +32,8 @@ describe("app/api/youcam routes (replay, no network)", () => {
     }
   });
 
-  test("in replay mode an uploaded photo is answered with the p2b recording, labelled replay", async () => {
+  test("with REPLAY_UPLOADS=1 an uploaded photo is answered with the p2b recording, labelled replay", async () => {
+    vi.stubEnv("REPLAY_UPLOADS", "1");
     const res = await analysis(post("analysis", { image: "data:image/png;base64,AAAA" }));
     expect(res.status).toBe(200);
     const a = (await res.json()) as AnalysisResponse;

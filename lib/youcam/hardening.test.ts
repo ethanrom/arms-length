@@ -18,6 +18,7 @@ const ENV_KEYS = [
   "YOUCAM_API_KEY",
   "YOUCAM_SECRET_KEY",
   "YOUCAM_MODE",
+  "REPLAY_UPLOADS",
   "LIVE_ACCESS_CODES",
   "UNIT_FLOOR",
   "KILL_SWITCH",
@@ -82,15 +83,30 @@ describe("no .env at all: a public demo", () => {
       expect(res.status).toBe(403);
       expect(await errorOf(res)).toEqual({ code: "live_reserved", message: LIVE_RESERVED_MESSAGE });
     }
-    expect(LIVE_RESERVED_MESSAGE).toBe("Live analysis is reserved for judges; try a demo face.");
+    expect(LIVE_RESERVED_MESSAGE).toBe("Live analysis is reserved for judges with an access code. Try a demo face.");
     expect(network).not.toHaveBeenCalled();
   });
 
-  test("recorded faces still work, and an uploaded photo is answered with a labelled recording", async () => {
+  test("recorded faces still work, but an uploaded photo is refused: it is never answered with someone else's face", async () => {
     const demo = await analysis(post("analysis", { persona: "p2b" }));
     expect(await demo.json()).toMatchObject({ source: "replay", unitsCharged: 0 });
+    for (const image of [pngDataUrl(1080, 1341), "data:image/png;base64,AAAA"]) {
+      const upload = await analysis(post("analysis", { image }));
+      expect(upload.status).toBe(403);
+      expect(await errorOf(upload)).toEqual({ code: "live_reserved", message: LIVE_RESERVED_MESSAGE });
+    }
+    expect(network).not.toHaveBeenCalled();
+  });
+
+  test("REPLAY_UPLOADS=1 (dev and e2e) answers an upload with the labelled p2b recording; it needs replay mode", async () => {
+    vi.stubEnv("REPLAY_UPLOADS", "1");
     const upload = (await (await analysis(post("analysis", { image: pngDataUrl(1080, 1341) }))).json()) as AnalysisResponse;
     expect(upload).toMatchObject({ source: "replay", unitsCharged: 0, fileRef: "persona:p2b" });
+
+    // With a key and live mode the flag does nothing: the upload takes the live path and its access-code gate.
+    vi.stubEnv("YOUCAM_API_KEY", "test-key-not-real");
+    const live = await analysis(post("analysis", { image: pngDataUrl(1080, 1341) }));
+    expect(live.status).toBe(401);
     expect(network).not.toHaveBeenCalled();
   });
 

@@ -19,7 +19,7 @@ later, with a judge access code, only when you are ready (section 3).
    ```
 
    It loads `/`, `/try`, `/try/p2b`, the demo assets, `/api/youcam/status` (must say `replay_only`), `/api/visibility`,
-   and asks for a recorded analysis and a recorded render. All ten checks should pass. Drop `--keyless` once live is on.
+   and asks for a recorded analysis and a recorded render. All eleven checks should pass. Drop `--keyless` once live is on.
 
 ## 2. Environment variables
 
@@ -31,6 +31,7 @@ deployments: redeploy after editing.
 | `YOUCAM_API_KEY` | Your YouCam API key. Server side only. **Without it the app is replay-only**, whatever `YOUCAM_MODE` says. | empty |
 | `YOUCAM_SECRET_KEY` | Not read by the app today (the API authenticates with the key alone). Leave empty. | empty |
 | `YOUCAM_MODE` | `replay` forces recorded answers even with a key. `live` or unset: live when a key exists. | unset |
+| `REPLAY_UPLOADS` | Dev and test only (Playwright sets it). In replay mode, answers an uploaded photo with a recorded face. **Leave unset on a public deploy**, so uploads are refused. | unset |
 | `LIVE_ACCESS_CODES` | Comma-separated codes that unlock live analysis. **Empty means live is off**, even with a key. | empty |
 | `UNIT_FLOOR` | Live refuses a call that would leave the balance at or under this. Can raise the floor, never lower it under 100. | `100` |
 | `KILL_SWITCH` | Anything but empty, `0`, `false`, `no` or `off` refuses every paid call. | off |

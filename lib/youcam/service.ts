@@ -144,6 +144,7 @@ export function createService(deps: ServiceDeps): YouCamService {
   }
 
   async function liveAnalysis(body: AnalysisInput, code: string | null): Promise<AnalysisResponse> {
+    if (!liveEnabled()) throw liveReservedError();
     const upload = readUpload(body.image ?? "");
     const engine: Engine = body.engine ?? (deps.env().YOUCAM_ENGINE === "sd" ? "sd" : "hd");
     if (Math.min(upload.info.width, upload.info.height) < MIN_SHORT_SIDE[engine]) {

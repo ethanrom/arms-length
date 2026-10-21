@@ -9,10 +9,18 @@ export type YouCamMode = "live" | "replay";
 
 type Env = Record<string, string | undefined>;
 
+/**
+ * Dev and test only: in replay mode, answer an uploaded photo with a recorded demo face (labelled replay). Off by default,
+ * because on a public deploy a visitor who uploads their own photo must never be shown someone else's face.
+ */
+export function replayUploadsEnabled(env: Env): boolean {
+  return env.REPLAY_UPLOADS?.trim() === "1";
+}
+
 export function youcamMode(env: Env): YouCamMode {
   if (env.YOUCAM_MODE?.trim().toLowerCase() === "replay") return "replay";
   return env.YOUCAM_API_KEY?.trim() ? "live" : "replay";
 }
 
 /** The sentence shown wherever a live call is turned away because this deployment is a recorded-faces demo. */
-export const LIVE_RESERVED_MESSAGE = "Live analysis is reserved for judges; try a demo face.";
+export const LIVE_RESERVED_MESSAGE = "Live analysis is reserved for judges with an access code. Try a demo face.";

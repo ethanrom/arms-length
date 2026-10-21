@@ -125,6 +125,14 @@ async function main() {
       : { ok: false, note: `HTTP ${res.status}: ${text.slice(0, 120)}` };
   });
 
+  await check("an uploaded photo is refused", async () => {
+    const res = await post("/api/youcam/analysis", { image: "data:image/png;base64,AAAA" });
+    const body = await json<{ error?: { message?: string } }>(res);
+    return res.status >= 400 && res.status < 500 && typeof body?.error?.message === "string"
+      ? { ok: true, note: `HTTP ${res.status}: ${body.error.message}` }
+      : { ok: false, note: `HTTP ${res.status}; an upload was answered (REPLAY_UPLOADS must be unset on a public deploy)` };
+  });
+
   await check("live without a code is refused", async () => {
     const res = await post("/api/youcam/makeup", { fileRef: `live:1080x1341:${"F".repeat(64)}`, effects: [{ category: "foundation" }] });
     const body = await json<{ error?: { message?: string } }>(res);

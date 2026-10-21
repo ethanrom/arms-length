@@ -16,8 +16,9 @@ What it cannot do is give a number you can build on:
 - **It is a fresh estimate on every ask.** Five identical asks about one patch differ by 16% to 36% (CV, median 27%),
   and the highest of the five is 1.4x to 2.1x the lowest. That run-to-run range is as wide as our whole
   average-observer-to-bound band (1.4x to 1.6x). Ours has zero spread.
-- **It does not obey the size law.** At fixed contrast, distance must double when the spot doubles. Per-ask ratios run
-  from 1.0x to 4.3x, and at 30% contrast the median answers rise by only 1.7x and 1.4x.
+- **It does not double reliably.** At fixed contrast, distance must double when the spot doubles. On average its median
+  answers roughly did (1.98x and 1.79x), but single pairs of answers run from 1.0x to 4.3x, and at 30% contrast the
+  medians rise by only 1.7x and 1.4x. Ours is exactly 2.0 by construction.
 - **On real faces the numbers are not tied to the face.** It gave the same median for pores (0.8 m) on all four faces,
   where our measured pore counts in view at 1.5 m run from 22% to 53%, and it answered "null" for breakouts on three
   faces where YouCam found 18, 5 and 3 of them. It also gives one number per concern, with no count and no location.
@@ -180,5 +181,5 @@ holds the 80-call and $5 limits before every call, and allows at most one retry 
 | `prompts.ts`, `prompts.md` | the exact prompts (the markdown is generated) |
 | `answers.ts`, `stats.ts` | reply parsing and the statistics |
 | `ours.ts` | our numbers for the faces and the disk ground truth |
-| `summary.ts`, `chart.ts` | `results/summary.json` and `results/chart.svg` |
+| `summary.ts`, `chart.ts`, `doubling.ts` | `results/summary.json` and `results/chart.svg`; `run.ts` also writes `public/charts/ai-comparison.svg`, the copy /how-it-works shows, with the model named only as "a frontier AI model" |
 | `llm-baseline.test.ts` | tests: disk geometry in pixels, contrast maths, the size law, reply parsing |

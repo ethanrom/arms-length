@@ -1,5 +1,6 @@
 /**
- * Static SVG for the head-to-head (results/chart.svg).
+ * Static SVG for the head-to-head. run.ts writes it twice: results/chart.svg names the model exactly (research copy) and
+ * public/charts/ai-comparison.svg, shown on /how-it-works, uses a generic label so the product carries no third-party name.
  *
  * Panel 1: per synthetic patch, the model's five answers as dots against our nominal-to-bound range (a bar), on a log
  * distance axis. Panel 2: the size-doubling ratios against the ideal 2.0, log axis.
@@ -7,7 +8,18 @@
  * dark). The second channel is shape: dots are the LLM, bars and lines are our model. Every mark has a native tooltip
  * and the full table is in summary.json.
  */
+import { doublingFacts } from "./doubling";
 import type { Summary } from "./summary";
+
+export interface ChartLabels {
+  /** How sentences and tooltips refer to the model that was asked. */
+  model: string;
+  /** Legend entry for the dots. */
+  legend: string;
+}
+
+export const RESEARCH_LABELS: ChartLabels = { model: "Claude Opus 5.5", legend: "Claude Opus 5.5 on Amazon Bedrock: each of its 5 answers per patch" };
+export const SITE_LABELS: ChartLabels = { model: "a frontier AI model", legend: "A frontier AI model: each of its 5 answers per patch" };
 
 const W = 720;
 const LEFT = 128;
@@ -33,7 +45,7 @@ function dodge(xs: number[]): number[] {
   return offsets;
 }
 
-export function renderChart(s: Summary): string {
+export function renderChart(s: Summary, labels: ChartLabels = RESEARCH_LABELS): string {
   const patches = s.testB.patches;
   const scaling = s.testB.scaling;
   const agg = s.testB.aggregate;
@@ -46,7 +58,9 @@ export function renderChart(s: Summary): string {
   const ticks1: number[] = [];
   for (let t = lo1; t <= hi1 * 1.0001; t *= 2) ticks1.push(t);
 
-  const P1_TOP = 206;
+  // The header has three lines of subtitle; everything below it sits one line (18) lower than it would with two.
+  const HD = 18;
+  const P1_TOP = 206 + HD;
   const GROUP_H = 22;
   const GROUP_GAP = 10;
   const groups = [5, 15, 30];
@@ -69,7 +83,7 @@ export function renderChart(s: Summary): string {
       const xs = p.llm.values.map(x1);
       const off = dodge(xs);
       p.llm.values.forEach((v, i) => {
-        p1 += `<g><title>${esc(`Claude Opus 5.5 answer ${i + 1} of ${p.llm.values.length}, ${d} mm at ${c}%: ${metres(v)}`)}</title><circle class="llm" cx="${xs[i]}" cy="${cy + off[i]}" r="${R}"/></g>`;
+        p1 += `<g><title>${esc(`Answer ${i + 1} of ${p.llm.values.length} from ${labels.model}, ${d} mm at ${c}%: ${metres(v)}`)}</title><circle class="llm" cx="${xs[i]}" cy="${cy + off[i]}" r="${R}"/></g>`;
       });
     });
   });
@@ -87,7 +101,7 @@ export function renderChart(s: Summary): string {
   const hi2 = Math.max(4.5, Math.max(...vals2) * 1.05);
   const x2 = (v: number) => LEFT + ((Math.log2(v) - Math.log2(lo2)) / (Math.log2(hi2) - Math.log2(lo2))) * (RIGHT - LEFT);
   const P2_HEAD = p1Bottom + 92;
-  const P2_TOP = P2_HEAD + 72;
+  const P2_TOP = P2_HEAD + 90;
   const p2Bottom = P2_TOP + groups.length * (GROUP_H + 2 * ROW + GROUP_GAP) - GROUP_GAP;
   const ticks2 = [1, 1.5, 2, 3, 4].filter((t) => t <= hi2);
 
@@ -107,7 +121,7 @@ export function renderChart(s: Summary): string {
         p2 += `<g><title>${esc(`Lowest to highest of all 25 pairs of answers: ${num(row.range[0])} to ${num(row.range[1])}`)}</title><line class="whisker" x1="${x2(row.range[0])}" y1="${cy}" x2="${x2(row.range[1])}" y2="${cy}"/></g>`;
       }
       if (row.med !== null) {
-        p2 += `<g><title>${esc(`Claude Opus 5.5, ${row.label} at ${c}%: ratio of median answers ${num(row.med)}`)}</title><circle class="llm" cx="${x2(row.med)}" cy="${cy}" r="${R}"/></g>`;
+        p2 += `<g><title>${esc(`Ratio of median answers from ${labels.model}, ${row.label} at ${c}%: ${num(row.med)}`)}</title><circle class="llm" cx="${x2(row.med)}" cy="${cy}" r="${R}"/></g>`;
         p2 += `<text class="val" x="${x2(row.med)}" y="${cy - 10}" text-anchor="middle">${num(row.med, 1)}</text>`;
       }
     });
@@ -116,10 +130,14 @@ export function renderChart(s: Summary): string {
   p2 += `<text class="axt" x="${(LEFT + RIGHT) / 2}" y="${p2Bottom + 40}" text-anchor="middle">Distance after doubling the spot's diameter, divided by the distance before (log scale)</text>`;
 
   const H = p2Bottom + 136;
-  const allRatios = ratioRows.map((r) => r.med).filter((v): v is number => v !== null);
-  const sub1 = `Told the size and contrast, Claude Opus 5.5 lands a typical ${num(agg.geometricMeanFactorOfMedianVsNominal, 1)}x from the model's average-observer distance,`;
-  const sub2 = `but identical asks spread by ${Math.round(agg.medianCv * 100)}% (median CV), and doubling the spot raised its answer by ${num(Math.min(...allRatios), 1)}x to ${num(Math.max(...allRatios), 1)}x, not 2.0x.`;
-  const desc = `${sub1} ${sub2} ${agg.answersInsideModelRange} of ${agg.answersTotal} answers fall inside the model's range. Per-patch values are in summary.json.`;
+  const dbl = doublingFacts(s);
+  const fix = (v: number, digits = 1): string => v.toFixed(digits);
+  const subs = [
+    `Told the size and contrast, ${labels.model} lands a typical ${num(agg.geometricMeanFactorOfMedianVsNominal, 1)}x from our average-observer distance,`,
+    `but identical asks spread by ${Math.round(agg.medianCv * 100)}% (median CV). Doubling the spot roughly doubled its answers on average,`,
+    `yet single pairs of answers ranged from ${fix(dbl.pairLow)}x to ${fix(dbl.pairHigh)}x. Ours doubles exactly, every time.`,
+  ];
+  const desc = `${subs.join(" ")} ${agg.answersInsideModelRange} of ${agg.answersTotal} answers fall inside our model's range. Per-patch values are in summary.json.`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="t d">
 <title id="t">Asking an AI versus measuring it: visibility distance of a dark spot</title>
@@ -158,16 +176,18 @@ export function renderChart(s: Summary): string {
 </style>
 <rect class="bg" width="${W}" height="${H}"/>
 <text class="title" x="40" y="38">Why not just ask an AI?</text>
-<text class="sub" x="40" y="62">${esc(sub1)}</text>
-<text class="sub" x="40" y="80">${esc(sub2)}</text>
-<circle class="llm" cx="48" cy="108" r="${R}"/><text class="legend" x="62" y="112">Claude Opus 5.5 on Amazon Bedrock: each of its 5 answers per patch</text>
-<rect class="ours" x="37" y="127" width="22" height="6" rx="3"/><text class="legend" x="66" y="134">Our model: average observer (left end) to one-sided bound (right end)</text>
-<text class="ptitle" x="40" y="168">1. How far away can the dark spot on a 60 mm skin patch still be seen?</text>
-<text class="sub" x="40" y="188">Asked with the spot's size and contrast stated, for 20/20 vision in indoor light.</text>
+<text class="sub" x="40" y="62">${esc(subs[0])}</text>
+<text class="sub" x="40" y="80">${esc(subs[1])}</text>
+<text class="sub" x="40" y="98">${esc(subs[2])}</text>
+<circle class="llm" cx="48" cy="${108 + HD}" r="${R}"/><text class="legend" x="62" y="${112 + HD}">${esc(labels.legend)}</text>
+<rect class="ours" x="37" y="${127 + HD}" width="22" height="6" rx="3"/><text class="legend" x="66" y="${134 + HD}">Our model: average observer (left end) to one-sided bound (right end)</text>
+<text class="ptitle" x="40" y="${168 + HD}">1. How far away can the dark spot on a 60 mm skin patch still be seen?</text>
+<text class="sub" x="40" y="${188 + HD}">Asked with the spot's size and contrast stated, for 20/20 vision in indoor light.</text>
 ${p1}
 <text class="ptitle" x="40" y="${P2_HEAD}">2. Does doubling the spot double the distance?</text>
 <text class="sub" x="40" y="${P2_HEAD + 20}">Ratio of the median answers. At fixed contrast, distance scales with size, so the ideal is 2.0.</text>
-<text class="sub" x="40" y="${P2_HEAD + 38}">Grey whisker: lowest to highest ratio over all 25 pairs of one answer per size.</text>
+<text class="sub" x="40" y="${P2_HEAD + 38}">${esc(`On average the medians doubled: ${fix(dbl.mean1to2, 2)} for 1 to 2 mm and ${fix(dbl.mean2to4, 2)} for 2 to 4 mm (the six ranged ${fix(dbl.medianLow)} to ${fix(dbl.medianHigh)}).`)}</text>
+<text class="sub" x="40" y="${P2_HEAD + 56}">${esc(`Grey whisker: lowest to highest ratio over all 25 pairs of one answer per size (${fix(dbl.pairLow)} to ${fix(dbl.pairHigh)}).`)}</text>
 ${p2}
 <text class="note" x="40" y="${H - 62}">Model: Watson &amp; Ahumada (2005) Standard A, validated on ModelFest observers (0.69 dB RMS), at 45 cd/m2 for 20/20 vision.</text>
 <text class="note" x="40" y="${H - 44}">Bound = the same model made 6 dB more sensitive (a sharper-than-average eye). Distances are not capped at 10 m here.</text>

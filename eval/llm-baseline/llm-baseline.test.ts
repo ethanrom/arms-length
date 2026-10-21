@@ -1,7 +1,12 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { RESEARCH_LABELS, renderChart, SITE_LABELS } from "./chart";
+import { doublingFacts } from "./doubling";
 import { diskTruth } from "./ours";
 import { diskColour, linearToSrgb, luminance, PATCH_PX, PX_PER_MM, renderPatchRaw, rulerSvg, SKIN_SRGB, srgbToLinear, weber } from "./patches";
 import { extractJsonObject, factorOutside, toMetres } from "./stats";
+import summary from "./results/summary.json";
+import type { Summary } from "./summary";
 
 describe("Test B patch generation", () => {
   it("transfer function round-trips and matches the sRGB reference points", () => {
@@ -68,5 +73,25 @@ describe("ground truth and reply parsing", () => {
     expect(factorOutside(3, 1, 2)).toBeCloseTo(1.5, 12);
     expect(factorOutside(0.5, 1, 2)).toBeCloseTo(2, 12);
     expect(factorOutside(1.5, 1, 2)).toBe(1);
+  });
+});
+
+describe("the chart shown on /how-it-works", () => {
+  const site = renderChart(summary as unknown as Summary, SITE_LABELS);
+
+  it("is the committed public copy and names no third-party model or platform", () => {
+    expect(readFileSync("public/charts/ai-comparison.svg", "utf8").replace(/\r\n/g, "\n")).toBe(site);
+    expect(site).not.toMatch(/Claude|Opus|Anthropic|Bedrock|Amazon/);
+    expect(renderChart(summary as unknown as Summary, RESEARCH_LABELS)).toContain("Claude Opus 5.5 on Amazon Bedrock");
+  });
+
+  it("quotes the doubling numbers from summary.json: roughly 2 on average, 1.0 to 4.3 for single pairs", () => {
+    const f = doublingFacts(summary);
+    expect(f.mean1to2).toBeCloseTo(1.98, 2);
+    expect(f.mean2to4).toBeCloseTo(1.79, 2);
+    expect(f.pairLow).toBeCloseTo(1.0, 1);
+    expect(f.pairHigh).toBeCloseTo(4.3, 1);
+    expect(site).toContain("ranged from 1.0x to 4.3x");
+    expect(site).not.toMatch(/not 2\.0x|broke/);
   });
 });

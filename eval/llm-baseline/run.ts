@@ -4,7 +4,7 @@
  *   npm run spike -- eval/llm-baseline/run.ts                 call the model for every uncached item, then write results
  *   npm run spike -- eval/llm-baseline/run.ts --limit=3       make at most 3 new calls (smoke test)
  *   npm run spike -- eval/llm-baseline/run.ts --only=B        only Test B (or A)
- *   npx tsx eval/llm-baseline/run.ts --offline                no network: rebuild summary.json, chart.svg, prompts.md from the cache
+ *   npx tsx eval/llm-baseline/run.ts --offline                no network: rebuild summary.json, chart.svg, ai-comparison.svg, prompts.md from the cache
  *   npx tsx eval/llm-baseline/run.ts --prompts                write prompts.md only
  *
  * Idempotent: every reply is cached under results/raw/ and an item with a cached reply is never called again. Budget:
@@ -17,11 +17,13 @@ import { callOnce, costOf, MAX_CALLS, MAX_COST_USD, spendSoFar } from "./bedrock
 import { patchSpecs, renderPatchPng, type PatchSpec } from "./patches";
 import { promptsMarkdown, testAPrompt, testBPrompt } from "./prompts";
 import { buildSummary } from "./summary";
-import { renderChart } from "./chart";
+import { renderChart, RESEARCH_LABELS, SITE_LABELS } from "./chart";
 
 export const PERSONAS = ["p1a", "p2b", "p3a", "p5a"] as const;
 export const RUNS = 5;
 const OUT = path.join(import.meta.dirname, "results");
+/** The copy /how-it-works shows. It carries a generic model label; the research chart in results/ names the model. */
+const SITE_CHART = path.join(import.meta.dirname, "../../public/charts/ai-comparison.svg");
 /** Worst case for one call at list price: ~3k input tokens and the full 4000 output tokens. Used to hold budget for calls in flight. */
 const WORST_CASE_USD = (3000 * 4 + 4000 * 20) / 1e6;
 const CONCURRENCY = 3;
@@ -127,10 +129,11 @@ async function main() {
 
   const summary = await buildSummary();
   fs.writeFileSync(path.join(OUT, "summary.json"), JSON.stringify(summary, null, 2) + "\n");
-  fs.writeFileSync(path.join(OUT, "chart.svg"), renderChart(summary));
+  fs.writeFileSync(path.join(OUT, "chart.svg"), renderChart(summary, RESEARCH_LABELS));
+  fs.writeFileSync(SITE_CHART, renderChart(summary, SITE_LABELS));
   fs.mkdirSync(path.join(OUT, "patches"), { recursive: true });
   for (const s of patchSpecs()) fs.writeFileSync(path.join(OUT, "patches", `${s.id}.png`), await renderPatchPng(s));
-  console.log("wrote summary.json, chart.svg, patches/ and prompts.md");
+  console.log("wrote summary.json, chart.svg, public/charts/ai-comparison.svg, patches/ and prompts.md");
 }
 
 main().catch((e) => {

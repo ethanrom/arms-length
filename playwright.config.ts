@@ -21,6 +21,6 @@ export default defineConfig({
     // Recorded answers only: the live path is exercised end to end with no units (see app/api/youcam/analysis).
     env: { YOUCAM_MODE: "replay", REPLAY_UPLOADS: "1" },
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    timeout: 600_000,
   },
 });

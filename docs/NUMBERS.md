@@ -364,7 +364,7 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 Slow tables (3.2, 3.3 and 6.1) are not recomputed by `npm test`. Instead `lib/vision/numbers.doc.test.ts` checks two hashes:
 
-- inputs: `63d2aa0e676af3f4`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
+- inputs: `f8249bbabafb360c`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
 - slow tables: `0616001dea3446d6`. The tables above as committed, so a hand edit differs.
 
 When either test fails, run `npx tsx scripts/docs/numbers.ts --write` and commit. `--check` recomputes everything, including the slow tables.

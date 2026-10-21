@@ -17,9 +17,8 @@ import {
   formatDistance,
   formatInterval,
   nominalFractionAt,
-  nominalMaxM,
+  isSoftArea,
   reachM,
-  ROOM_M,
   shareWord,
   TABLE_M,
 } from "@/lib/copy";
@@ -33,15 +32,6 @@ export const fadeLabelOf = (id: ConcernId): string => `${concernNoun(id)} ${conc
 /** Many-feature concerns (not area regions) carry a profile: the same rule lib/copy uses. */
 export function hasProfile(cv: ConcernVisibility): boolean {
   return cv.profile !== undefined && cv.targetCount >= 5 && CONCERNS[cv.concern].maskKind !== "region";
-}
-
-/**
- * Large soft areas state no distance: they carry far on every face (lib/copy/describe.ts decides the same way; kept in
- * step by the view-model test that compares the card headline with this flag).
- */
-export function isSoftArea(cv: ConcernVisibility): boolean {
-  if (cv.concern === "dark_circle" || cv.concern === "eye_bag") return true;
-  return cv.concern === "redness" && nominalMaxM(cv) >= ROOM_M;
 }
 
 /**

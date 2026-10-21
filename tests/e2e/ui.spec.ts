@@ -13,7 +13,8 @@ test.use({ reducedMotion: "reduce" });
 const STATIC_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/", heading: /25\s*cm/ },
   { path: "/try", heading: /Whose skin should/ },
-  { path: "/self-test", heading: /Don.t trust us/ },
+  { path: "/self-test", heading: /your own eyes/ },
+  { path: "/privacy", heading: /in plain words/ },
   { path: "/how-it-works", heading: /From a skin analysis/ },
   { path: "/for-brands", heading: /visibility layer/ },
 ];
@@ -26,3 +27,16 @@ for (const { path, heading } of STATIC_PAGES) {
     await expectNoAxeViolations(page);
   });
 }
+
+test.describe("with motion", () => {
+  test.use({ reducedMotion: "no-preference" });
+
+  test("the landing visual hands the slider over after its pass", async ({ page }) => {
+    await page.goto("/");
+    const slider = page.getByRole("slider", { name: /Step back from the mirror/ });
+    await expect(slider).toBeVisible();
+    await slider.focus();
+    await slider.press("End");
+    await expect(slider).toHaveAttribute("aria-valuetext", /6 metres/);
+  });
+});

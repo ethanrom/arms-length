@@ -10,6 +10,7 @@ import { describe, expect, test } from "vitest";
 import { allEvalBlocks, illustrativeDistances, loadReport } from "../../scripts/docs/eval-tables";
 import { ROOT, extractBlock } from "../../scripts/docs/blocks";
 import { allParamsBlocks, undocumentedVisionExports } from "../../scripts/docs/params-table";
+import { DOC_LISTS } from "../copy/banned";
 import { lintText } from "../copy/lint";
 import { luminanceGain } from "./castle";
 import { rawDistances, type TargetSpec } from "./visibility";
@@ -91,7 +92,7 @@ describe("docs pass the copy linter", () => {
     ["docs/EVAL.md", evalDoc],
   ] as const) {
     test(`${file} has no medical, shaming or trademark words`, () => {
-      expect(lintText(text).map((v) => `${v.list}: "${v.word}" at ${v.index}`)).toEqual([]);
+      expect(lintText(text, DOC_LISTS).map((v) => `${v.list}: "${v.word}" at ${v.index}`)).toEqual([]);
     });
   }
 });

@@ -85,11 +85,12 @@ body {
   font-optical-sizing: auto;
 }
 
+/* 14 px minimum: it labels fields and sections, so it is informative text, not decoration. */
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.875rem;
   line-height: 1.4;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -126,16 +127,25 @@ body {
 
 /* ---------- focus ---------- */
 
+/* A 2 px ink ring with a paper halo outside it, so it reads on paper, on photos and on the dark band. */
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
   border-radius: 2px;
+  box-shadow: 0 0 0 5px var(--paper);
 }
 
 .on-dark :focus-visible,
 .on-stage :focus-visible {
   outline-color: var(--paper);
   box-shadow: 0 0 0 5px var(--ink);
+}
+
+/* Text fields get a thicker ring than their own 1 px border. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline-width: 3px;
 }
 
 .skip-link {
@@ -161,14 +171,14 @@ body {
   justify-content: center;
   gap: 0.65rem;
   min-height: 3rem;
-  padding: 0 1.4rem;
+  padding: 0.7rem 1.4rem;
   border: 1px solid var(--ink);
   border-radius: 3px;
   font-size: 0.9375rem;
   font-weight: 500;
   letter-spacing: 0.005em;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.25;
+  text-align: center;
   cursor: pointer;
   transition:
     background-color 0.2s var(--ease-calm),
@@ -191,7 +201,7 @@ body {
 }
 .btn-sm {
   min-height: 2.5rem;
-  padding: 0 1rem;
+  padding: 0.5rem 1rem;
   font-size: 0.875rem;
 }
 .btn .arrow {
@@ -361,5 +371,27 @@ dialog.sheet::backdrop {
   }
   dialog.sheet[open] {
     animation-name: sheet-in-y;
+  }
+}
+
+/* ---------- forced colors (Windows high contrast): keep borders, rings and the focus outline in system colours ---------- */
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+    box-shadow: none;
+  }
+  .btn {
+    border: 2px solid ButtonText;
+  }
+  .btn-primary {
+    background: ButtonFace;
+    color: ButtonText;
+  }
+  .stage {
+    forced-color-adjust: none;
+  }
+  .skip-link {
+    border: 2px solid LinkText;
   }
 }

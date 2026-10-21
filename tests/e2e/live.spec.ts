@@ -15,22 +15,20 @@ async function expectNoAxeViolations(page: Page) {
 
 test("the status route says replay_only in replay mode", async ({ request }) => {
   const res = await request.get("/api/youcam/status");
-  expect(await res.json()).toEqual({ live: false, reason: "replay_only" });
+  expect(await res.json()).toEqual({ live: false, reason: "replay_only", uploadsAllowed: true });
 });
 
-test("Check mine: gate, upload, results from a replayed analysis, then the lightest touch", async ({ page }) => {
+test("Use my photo: gate, upload, results from a replayed analysis, then the lightest touch", async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto("/try");
   await expect(page.getByLabel(/Access code/)).toBeVisible();
-  await page.getByRole("button", { name: "Check mine" }).click();
+  await page.getByRole("checkbox", { name: /I am 18 or over/ }).check();
+  await page.getByRole("button", { name: "Use my photo" }).click();
   await expect(page).toHaveURL(/\/try\/live$/);
 
-  // Before any camera prompt: the consent text, and one plain checkbox for age.
-  await expect(page.getByRole("heading", { name: "Before you add a photo" })).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(/deleted from YouCam when you leave this page. We don.t store your photo. YouCam may keep the simulated picture for up to 24 hours/).first()).toBeVisible();
-  await expect(page.locator('input[type="file"]')).toHaveCount(0);
-  await expectNoAxeViolations(page);
-  await page.getByLabel("I'm 18 or older").check();
+  // /try already asked for the 18+ confirmation, so this page goes straight to the capture flow, with the consent text.
+  await expect(page.getByRole("heading", { name: "Before you add a photo" })).toHaveCount(0);
+  await expect(page.getByText(/We ask YouCam to delete your photo and its results when you leave this page. We don.t store your photo/).first()).toBeVisible({ timeout: 30_000 });
 
   // The capture flow, with the optional photo upload.
   await expect(page.getByRole("heading", { name: /Add a photo/ })).toBeVisible({ timeout: 30_000 });
@@ -73,5 +71,18 @@ test("when uploads are turned away, the camera step is replaced by a calm card b
   await expect(page.getByRole("link", { name: /Synthetic face [A-D]/ })).toHaveCount(4);
   await expect(page.getByLabel("I'm 18 or older")).toHaveCount(0);
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expectNoAxeViolations(page);
+});
+
+test("opened directly, the live page asks for the 18+ confirmation before any camera prompt", async ({ page }) => {
+  await page.goto("/try/live");
+  await expect(page.getByRole("heading", { name: "Before you add a photo" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/We ask YouCam to delete your photo and its results when you leave this page. We don.t store your photo/).first()).toBeVisible();
+  await expect(page.getByText(/One exception: YouCam can.t delete the Skin Simulation picture early/).first()).toBeVisible();
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expectNoAxeViolations(page);
+  await page.getByLabel("I'm 18 or older").check();
+  await expect(page.getByRole("heading", { name: /Add a photo/ })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('input[type="file"]')).toHaveCount(1);
   await expectNoAxeViolations(page);
 });

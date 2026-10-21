@@ -27,7 +27,7 @@ describe("app/api/youcam routes (replay, no network)", () => {
   test("status in replay mode says replay_only, whatever the code", async () => {
     for (const headers of [{}, { "x-access-code": "nope" }, { "x-access-code": "judge-alpha" }] as Record<string, string>[]) {
       const res = await status(new Request("http://localhost/api/youcam/status", { headers }));
-      expect(await res.json()).toEqual({ live: false, reason: "replay_only" } satisfies StatusResponse);
+      expect(await res.json()).toEqual({ live: false, reason: "replay_only", uploadsAllowed: false } satisfies StatusResponse);
       expect(res.headers.get("cache-control")).toBe("no-store");
     }
   });
@@ -45,15 +45,15 @@ describe("app/api/youcam routes (replay, no network)", () => {
     vi.stubEnv("YOUCAM_MODE", "live");
     vi.stubEnv("YOUCAM_API_KEY", "test-key-not-real");
     const none = await status(new Request("http://localhost/api/youcam/status"));
-    expect(await none.json()).toEqual({ live: false, reason: "no_code" } satisfies StatusResponse);
+    expect(await none.json()).toEqual({ live: false, reason: "no_code", uploadsAllowed: false } satisfies StatusResponse);
     expect(none.headers.get("cache-control")).toBe("no-store");
 
     const wrong = await status(new Request("http://localhost/api/youcam/status", { headers: { "x-access-code": "nope" } }));
-    expect(await wrong.json()).toEqual({ live: false, reason: "bad_code" });
+    expect(await wrong.json()).toEqual({ live: false, reason: "bad_code", uploadsAllowed: false });
 
     vi.stubEnv("KILL_SWITCH", "1");
     const valid = await status(new Request("http://localhost/api/youcam/status", { headers: { "x-access-code": "judge-alpha" } }));
-    expect(await valid.json()).toEqual({ live: false, reason: "kill_switch" });
+    expect(await valid.json()).toEqual({ live: false, reason: "kill_switch", uploadsAllowed: false });
   });
 
   test("persona analysis, makeup and simulation follow lib/contracts/api.ts", async () => {

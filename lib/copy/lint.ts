@@ -3,11 +3,10 @@
  * `lintText` is pure and safe anywhere. `lintFiles` reads the disk (Node only); it is for CI tests and is
  * not re-exported from `lib/copy/index.ts`, so client bundles never see it.
  *
- * Two strengths: UI copy gets every list (`UI_LISTS`); docs get the softer set (`DOC_LISTS`), because a doc may name
- * YouCam's own concern names or "refine" a number, though it may not make a claim. Until the old names are gone from
- * app/ and lib/mock/, the default for both functions is the core set; ask for `UI_LISTS` where it matters.
+ * Two strengths: UI copy gets every list (`UI_LISTS`, the default of both functions); docs get the softer set
+ * (`DOC_LISTS`), because a doc may name YouCam's own concern names or "refine" a number, though it may not make a claim.
  */
-import { BANNED_LISTS, CORE_LISTS, DOC_LISTS, type BannedList } from "./banned";
+import { BANNED_LISTS, DOC_LISTS, UI_LISTS, type BannedList } from "./banned";
 
 export interface Violation {
   /** The banned entry that matched, lowercase as listed (e.g. "flaw"), not the text's own casing. */
@@ -36,11 +35,10 @@ const PATTERNS = (Object.entries(BANNED_LISTS) as [BannedList, readonly string[]
 );
 
 /**
- * `lists` defaults to `CORE_LISTS`: medical, shaming, trademark and claims. Pass `UI_LISTS` for text a user reads on screen,
- * which adds the old concern names ("age spots", "acne marks") and the "refine" verbs.
- * TODO(integrator): flip the default to `UI_LISTS` with `lintFiles` once the pending renames are done (see lintFiles).
+ * `lists` defaults to `UI_LISTS`, the text a user reads on screen: medical, shaming, trademark and claims words, plus the
+ * old concern names ("age spots", "acne marks") and the "refine" verbs. Pass `DOC_LISTS` (the first four) for documentation.
  */
-export function lintText(text: string, lists: readonly BannedList[] = CORE_LISTS): Violation[] {
+export function lintText(text: string, lists: readonly BannedList[] = UI_LISTS): Violation[] {
   const out: Violation[] = [];
   for (const { word, list, re } of PATTERNS) {
     if (!lists.includes(list)) continue;
@@ -59,10 +57,7 @@ export interface LintFilesOptions {
   cwd?: string;
   /** Path substrings to skip (forward slashes). Defaults skip dependencies, build output, tests and the word lists. */
   ignore?: string[];
-  /**
-   * Which lists to check. Defaults to `CORE_LISTS`. TODO(integrator): make the default `UI_LISTS` once the last "age spots" and
-   * "acne marks" strings in app/ and lib/mock/ are renamed (pass `UI_LISTS` to enforce it now); use `DOC_LISTS` for docs.
-   */
+  /** Which lists to check. Defaults to `UI_LISTS`; use `DOC_LISTS` for docs. */
   lists?: readonly BannedList[];
 }
 
@@ -174,7 +169,7 @@ export async function lintFiles(globs: readonly string[] = DEFAULT_COPY_GLOBS, o
         : [{ text, offset: 0 }];
     const found = new Map<string, FileViolation>();
     for (const seg of segments) {
-      for (const v of lintText(seg.text, options.lists ?? CORE_LISTS)) {
+      for (const v of lintText(seg.text, options.lists ?? UI_LISTS)) {
         const index = seg.offset + v.index;
         const before = text.slice(0, index);
         found.set(`${index}:${v.word}`, {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { CaptureFlow } from "@/components/capture/CaptureFlow";
+import { isAdultConfirmed } from "@/components/try/consent";
 import { ResultsExperience } from "@/components/results/ResultsExperience";
 import type { CaptureResult } from "@/lib/capture/types";
 import type { ConcernId } from "@/lib/contracts";
@@ -25,6 +26,8 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
   const [gate, setGate] = useState<Gate>({ kind: "checking" });
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
   const [adult, setAdult] = useState(false);
+  // /try asks for the 18+ confirmation before it sends anyone here; it keeps the answer for this tab, so ask only if it is missing.
+  const [needsAgeGate, setNeedsAgeGate] = useState(true);
   const session = useRef<LiveSession | null>(null);
 
   useEffect(() => {
@@ -32,6 +35,10 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
     const code = window.sessionStorage.getItem(ACCESS_STORAGE_KEY) || null;
     checkAccess(code).then((access: Access) => {
       if (cancelled) return;
+      if (isAdultConfirmed()) {
+        setAdult(true);
+        setNeedsAgeGate(false);
+      }
       setGate(access.allowed ? { kind: "ok", replay: access.replay, code } : { kind: "denied", message: access.message });
     });
     return () => {
@@ -120,9 +127,9 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
               </p>
             </div>
             <div className="border border-rule bg-white p-5 sm:p-8">
-              <AgeGate adult={adult} onChange={setAdult} />
+              {needsAgeGate && <AgeGate adult={adult} onChange={setAdult} />}
               {adult && (
-                <div className="mt-8 border-t border-rule pt-8">
+                <div className={needsAgeGate ? "mt-8 border-t border-rule pt-8" : ""}>
                   <CaptureFlow onCapture={begin} />
                 </div>
               )}

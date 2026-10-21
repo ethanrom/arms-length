@@ -12,13 +12,14 @@ import {
   boundFractionAt,
   CONVERSATION_M,
   formatDistance,
+  isSoftArea,
   MARK_SAFETY_LINE,
   RELIEF_SHARE,
   ROOM_M,
   safetyLineFor,
   TABLE_M,
 } from "@/lib/copy";
-import { hasProfile, isSoftArea, titleOf } from "./copy";
+import { hasProfile, titleOf } from "./copy";
 
 export type ReliefAnchor = "conversation" | "table" | "room";
 

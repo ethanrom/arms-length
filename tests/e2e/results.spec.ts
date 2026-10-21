@@ -246,7 +246,7 @@ test("keyboard only: skip link, a persona card, a concern card and the receipt s
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
 
   // Reach the first demo face and open it.
-  await page.getByRole("link", { name: /Synthetic face A/ }).focus();
+  await page.getByRole("link", { name: /Deep brown skin, about 42/ }).focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/try\/p2b$/);
   await ready(page);

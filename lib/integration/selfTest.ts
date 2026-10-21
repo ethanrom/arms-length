@@ -50,7 +50,7 @@ export function selfTestSetup(): { target: SelfTestTarget; prediction: SelfTestP
   const bound = formatDistance(p.boundM);
   return {
     target: {
-      label: `an age spot, ${SELF_TEST_DIAMETER_MM} mm across`,
+      label: `a dark spot, ${SELF_TEST_DIAMETER_MM} mm across`,
       diameterMm: SELF_TEST_DIAMETER_MM,
       contrast: Math.abs(p.achievedContrast),
       fieldSrgb: MID_GREY_SRGB,

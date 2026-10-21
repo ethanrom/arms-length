@@ -193,9 +193,9 @@ describe("buildResultsData", () => {
   test("an enlarged photo, a standard-detail analysis and replay mode each say so", () => {
     const upscaled = buildResultsData({ ...p2b, source: "live", capture: { upscaled: true, upscale: 1.9, engine: "hd" } });
     expect(upscaled.notices.join(" ")).toMatch(/enlarged/);
-    expect(upscaled.notices.join(" ")).toMatch(/deleted from YouCam when you leave this page/);
+    expect(upscaled.notices.join(" ")).toMatch(/ask YouCam to delete your photo and its results when you leave this page/);
     expect(upscaled.notices.join(" ")).toMatch(/We don't store your photo/);
-    expect(upscaled.notices.join(" ")).toMatch(/simulated picture for up to 24 hours/);
+    expect(upscaled.notices.join(" ")).toMatch(/Skin Simulation picture early/);
     const sd = buildResultsData({ ...p2b, source: "live", capture: { upscaled: false, engine: "sd" } });
     expect(sd.notices.join(" ")).toMatch(/pores and breakouts get no distance/);
     expect(buildResultsData({ ...p2b, source: "replay" }).notices.join(" ")).toMatch(/Replay mode/);

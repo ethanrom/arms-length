@@ -231,7 +231,7 @@ function Reserved({ message, faces, onCode }: { message: string; faces: DemoFace
             <input
               id={inputId}
               ref={field}
-              type="text"
+              type="password"
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}

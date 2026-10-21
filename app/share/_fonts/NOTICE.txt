@@ -1,0 +1,7 @@
+Fonts used to draw the share card images (next/og, Satori), both under the SIL Open Font License 1.1.
+
+Newsreader-Regular.ttf, Newsreader-Italic.ttf: Newsreader by Production Type, instanced at wght 400 / opsz 60 from the
+variable fonts and subset to Latin with fontTools. Licence text: OFL.txt.
+
+Geist-Regular.ttf: Geist by Vercel, the same file Next.js ships as the default ImageResponse font
+(node_modules/next/dist/compiled/@vercel/og/Geist-Regular.ttf), copied so a custom font list can still include it.

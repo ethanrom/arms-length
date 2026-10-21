@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LiveSessionView } from "@/components/live/LiveSessionView";
+import { DEMO_IDS, loadBundle } from "@/lib/integration/demo";
 
 export const metadata: Metadata = {
   title: "Check mine",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function LivePage() {
-  return <LiveSessionView />;
+  const faces = DEMO_IDS.flatMap((id) => {
+    const bundle = loadBundle(id);
+    return bundle ? [{ id, label: bundle.label }] : [];
+  });
+  return <LiveSessionView faces={faces} />;
 }

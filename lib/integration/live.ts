@@ -58,7 +58,7 @@ export interface Access {
   message: string;
 }
 
-const RESERVED = "Live analysis is reserved for judges. Try a demo face.";
+const RESERVED = "Live analysis is reserved for judges with an access code. Try a demo face.";
 
 const REASONS: Record<NonNullable<StatusResponse["reason"]>, string> = {
   no_code: RESERVED,
@@ -80,7 +80,10 @@ export async function checkAccess(code: string | null, fetcher: typeof fetch = f
     return { allowed: false, replay: false, message: "We couldn't reach the analysis service. Check your connection, or try a demo face." };
   }
   if (status.live) return { allowed: true, replay: false, message: "" };
-  if (status.reason === "replay_only") return { allowed: true, replay: true, message: "" };
+  // A recorded-faces deployment turns uploads away unless it was started for tests: say so before any camera prompt.
+  if (status.reason === "replay_only") {
+    return status.uploadsAllowed === false ? { allowed: false, replay: true, message: RESERVED } : { allowed: true, replay: true, message: "" };
+  }
   return { allowed: false, replay: false, message: REASONS[status.reason ?? "no_code"] ?? RESERVED };
 }
 
@@ -323,7 +326,7 @@ export function createLiveSession({ accessCode }: LiveOptions): LiveSession {
           label: "Your photo",
           description: "",
           image: url(photoBlob),
-          alt: "Your photo, as it was analysed.",
+          alt: source === "live" ? "Your photo" : "A synthetic stand-in portrait, replayed in place of your photo",
           stageGrey: p.stageGrey,
           frame: p.analysis.frame,
           analysis: p.analysis,

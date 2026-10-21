@@ -46,6 +46,7 @@ export function AnnotatedFace({ src, alt, frame, view, crop, sizes = "(min-width
   const regions = view?.targets.filter((t) => !isFeature(t)) ?? [];
   // Stroke widths are in px thanks to non-scaling strokes; sizes are in frame px.
   const unit = box.w / 700;
+  const dense = (view?.targets.length ?? 0) > 60;
 
   return (
     <div
@@ -105,6 +106,14 @@ export function AnnotatedFace({ src, alt, frame, view, crop, sizes = "(min-width
                 <g key={t.id} opacity={top ? 1 : 0.7}>
                   <rect x={t.bbox.x} y={t.bbox.y} width={t.bbox.w} height={t.bbox.h} rx={8 * unit} fill="none" stroke="#161513" strokeOpacity="0.55" strokeWidth="4.5" vectorEffect="non-scaling-stroke" />
                   <rect x={t.bbox.x} y={t.bbox.y} width={t.bbox.w} height={t.bbox.h} rx={8 * unit} fill="none" stroke="#f5f3ef" strokeWidth="1.8" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />
+                </g>
+              );
+            }
+            if (dense && !top) {
+              // Hundreds of rings would hide the face; small dots show where they are.
+              return (
+                <g key={t.id}>
+                  <circle cx={t.centroid.x} cy={t.centroid.y} r={3.4 * unit} fill="#f5f3ef" fillOpacity="0.85" stroke="#161513" strokeOpacity="0.6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                 </g>
               );
             }

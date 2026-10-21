@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useMemo, type CSSProperties } from "react";
 import { ConcernExplorer } from "@/components/concerns/ConcernExplorer";
 import { MakeItDisappear } from "@/components/disappear/MakeItDisappear";
-import { ShareCardPreview } from "@/components/share/ShareCardPreview";
+import { ShareStudio } from "@/components/share/ShareStudio";
 import { StepBack } from "@/components/step-back/StepBack";
-import { MaskStripView } from "./MaskStripView";
 import { Section } from "@/components/ui/Section";
 import { WorthItReveal } from "@/components/whatif/WorthItReveal";
-import { deriveConcernViews } from "./derive";
 import type { ConcernId } from "@/lib/contracts";
+import { engineBadge } from "@/lib/integration/copy";
+import { deriveConcernViews } from "./derive";
+import { EngineStrip } from "./EngineStrip";
+import { MaskDisclosure } from "./MaskDisclosure";
 import type { ResultsData } from "./types";
 
 interface ResultsExperienceProps {
@@ -19,90 +21,38 @@ interface ResultsExperienceProps {
   onRunCoverage?: (concern: ConcernId) => void;
   /** Where "back" goes: the face chooser for demo faces, the start of the flow for a live session. */
   back?: { href: string; label: string };
+  /** Live sessions: YouCam units this session has used so far, for the engine strip. */
+  unitsCharged?: number;
 }
 
-export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", label: "Choose another face" } }: ResultsExperienceProps) {
+/**
+ * The results page. The face and the Step back slider come first, the rest follows in the order a visitor wants it:
+ * the YouCam credit, what others see (relief first, with receipts), the lightest touch, "Worth it?", and the share card.
+ */
+export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", label: "Choose another face" }, unitsCharged }: ResultsExperienceProps) {
   const views = useMemo(() => deriveConcernViews(data), [data]);
-  const { persona, frame, alt, measurements, report, anchors } = data;
+  const { persona, frame, measurements, report, anchors } = data;
 
   const chapters = [
-    { id: "step-back", label: "Step back" },
     { id: "what-others-see", label: "What others see" },
     ...(data.coverage ? [{ id: "make-it-disappear", label: data.coverage.title }] : []),
     ...(data.worthIt ? [{ id: "worth-it", label: "Worth it?" }] : []),
     { id: "share", label: "Share" },
   ];
+  const num = (id: string) => String(chapters.findIndex((c) => c.id === id) + 1).padStart(2, "0");
 
   return (
     <main id="main" tabIndex={-1} className="outline-none" style={{ "--stage": data.stageGrey } as CSSProperties}>
-      <header className="page pb-6 pt-5 md:pb-8 md:pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2">
-          <Link href={back.href} className="link inline-flex min-h-11 items-center gap-2 text-[0.875rem] text-muted hover:text-ink">
-            <span aria-hidden="true">&larr;</span> {back.label}
-          </Link>
-          <nav aria-label="On this page" className="-mx-5 w-[calc(100%+2.5rem)] overflow-x-auto px-5 sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
-            <ol className="flex gap-x-6 whitespace-nowrap sm:flex-wrap font-mono text-[0.6875rem] uppercase tracking-[0.1em]">
-              {chapters.map((c, i) => (
-                <li key={c.id}>
-                  <a href={`#${c.id}`} className="link inline-flex min-h-9 items-center gap-2 text-ink-soft hover:text-ink">
-                    <span className="num text-muted">{String(i + 1).padStart(2, "0")}</span>
-                    {c.label}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-        </div>
-        <div className="mt-4 grid gap-x-12 gap-y-4 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-end">
-          <div>
-            <p className="eyebrow">{persona.label}</p>
-            <h1 className="display mt-3 text-[clamp(2.25rem,1.2rem+3.6vw,4.25rem)]">
-              What others see of <em className="font-normal italic">this face</em>
-            </h1>
-          </div>
-          <div className="md:justify-self-end">
-            <p className="serif mb-3 text-[1.375rem] italic leading-snug" style={{ fontWeight: 380 }}>
-              {data.tagline}
-            </p>
-            <p className="max-w-[30rem] text-[1rem] leading-relaxed text-ink-soft">{persona.description}</p>
-            <p className="mt-2 max-w-[30rem] text-[0.8125rem] leading-relaxed text-muted">{data.provenance}</p>
-          </div>
-        </div>
-        <p className="serif mt-6 max-w-3xl text-[clamp(1.25rem,1rem+1vw,1.75rem)] leading-snug" style={{ fontWeight: 380 }}>
-          {data.summary}
-        </p>
-        <p className="mt-3 max-w-3xl text-[0.8125rem] leading-relaxed text-muted">
-          {data.disclaimers.estimate}
-          {data.disclaimers.synthetic ? ` ${data.disclaimers.synthetic}` : ""}
-        </p>
-        {data.notices.length > 0 && (
-          <ul className="mt-4 max-w-3xl space-y-1 border-l-2 border-ink pl-4 text-[0.875rem] leading-relaxed text-ink-soft" aria-label="Notes about this reading">
-            {data.notices.map((n) => (
-              <li key={n}>{n}</li>
-            ))}
-          </ul>
-        )}
-      </header>
-
-      <div className="page pb-8 md:pb-10">
-        <MaskStripView strip={data.maskStrip} compact />
+      <div className="page pt-2">
+        <Link href={back.href} className="link inline-flex min-h-10 items-center gap-2 text-[0.9375rem] text-ink-soft hover:text-ink">
+          <span aria-hidden="true">&larr;</span> {back.label}
+        </Link>
       </div>
 
-      <Section
-        id="step-back"
-        index="01"
-        eyebrow="From the mirror to across the room"
-        title={
-          <>
-            Step <em className="font-normal italic">back</em>
-          </>
-        }
-        lede="Slide away from the mirror. The face is redrawn as an observer at each distance sees it."
-        compact
-      >
+      <section id="step-back" aria-label="Step back from the mirror" className="page scroll-mt-4 pb-8 pt-1 md:pb-10">
         <StepBack
           src={persona.image}
-          alt={alt}
+          alt={data.alt}
           frame={frame}
           scale={measurements.scale}
           viewing={report.viewing}
@@ -111,20 +61,67 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
           statusLines={data.statusLines}
           rendererNote={data.rendererNote}
           heroLabel={data.heroLabel}
+          estimate={data.disclaimers.estimate}
+          validation={data.engine.validation}
+          loupe={data.loupe}
         />
-      </Section>
+      </section>
+
+      <EngineStrip engine={data.engine} badge={engineBadge(data.source, unitsCharged)} live={data.source === "live"} />
+
+      <header className="page py-10 md:py-14">
+        <div className="grid gap-x-12 gap-y-4 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-end">
+          <div>
+            <p className="eyebrow !text-[0.875rem]">{persona.label}</p>
+            <h1 className="display mt-3 text-[clamp(2.25rem,1.3rem+3vw,3.75rem)]">
+              What others see of <em className="font-normal italic">{data.ownPhoto ? "your skin" : "this face"}</em>
+            </h1>
+          </div>
+          <div className="md:justify-self-end">
+            {persona.description && <p className="max-w-[30rem] text-[1rem] leading-relaxed text-ink-soft">{persona.description}</p>}
+            <p className={`max-w-[30rem] text-[0.875rem] leading-relaxed text-ink-soft ${persona.description ? "mt-2" : ""}`}>{data.provenance}</p>
+          </div>
+        </div>
+        <p className="serif mt-6 max-w-3xl text-[clamp(1.25rem,1rem+1vw,1.75rem)] leading-snug" style={{ fontWeight: 380 }}>
+          {data.summary}
+        </p>
+        {data.disclaimers.synthetic && <p className="mt-3 max-w-3xl text-[0.875rem] leading-relaxed text-ink-soft">{data.disclaimers.synthetic}</p>}
+        {data.notices.length > 0 && (
+          <ul className="mt-4 max-w-3xl space-y-1 border-l-2 border-ink pl-4 text-[0.9375rem] leading-relaxed text-ink-soft" aria-label="Notes about this reading">
+            {data.notices.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-8">
+          <MaskDisclosure strip={data.maskStrip} />
+        </div>
+
+        <nav aria-label="On this page" className="mt-8">
+          <ol className="flex flex-wrap gap-x-6 gap-y-1 text-[0.9375rem]">
+            {chapters.map((c, i) => (
+              <li key={c.id}>
+                <a href={`#${c.id}`} className="link inline-flex min-h-10 items-center gap-2 text-ink-soft hover:text-ink">
+                  <span className="num text-ink-soft">{String(i + 1).padStart(2, "0")}</span>
+                  {c.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      </header>
 
       <Section
         id="what-others-see"
-        index="02"
+        index={num("what-others-see")}
         eyebrow="Relief first"
         title="What others see"
-        lede="Each concern gets a distance, not a grade. For one area, a bar shows where it stops being visible. For concerns with many marks, a curve shows how many are still detectable, on the same scale as the slider."
+        lede="Every concern gets a distance, not a grade. Open a card for where it sits on the face, the chart behind it, and the receipt."
       >
         <ConcernExplorer
           views={views}
           src={persona.image}
-          alt={alt}
           frame={frame}
           anchors={anchors}
           outOfScope={data.outOfScope}
@@ -138,7 +135,7 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
       {data.coverage && (
         <Section
           id="make-it-disappear"
-          index="03"
+          index={num("make-it-disappear")}
           eyebrow="Checked on a virtual try-on"
           title={
             <>
@@ -147,66 +144,53 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
           }
           lede={data.coverage.lede}
         >
-          <MakeItDisappear
-            coverage={data.coverage}
-            views={views}
-            src={persona.image}
-            frame={frame}
-            scale={measurements.scale}
-            viewing={report.viewing}
-            onRun={onRunCoverage}
-          />
+          <MakeItDisappear coverage={data.coverage} src={persona.image} frame={frame} scale={measurements.scale} viewing={report.viewing} onRun={onRunCoverage} />
         </Section>
       )}
 
       {data.worthIt && (
         <Section
           id="worth-it"
-          index={data.coverage ? "04" : "03"}
-          eyebrow={data.worthIt.credit.slice(1, -1)}
+          index={num("worth-it")}
+          eyebrow="YouCam Skin Simulation"
           title={
             <>
               Worth <em className="font-normal italic">it?</em>
             </>
           }
         >
-          <WorthItReveal worthIt={data.worthIt} src={persona.image} alt={alt} frame={frame} anchors={anchors} disclaimer={data.disclaimers.simulation} />
+          <WorthItReveal worthIt={data.worthIt} src={persona.image} frame={frame} anchors={anchors} disclaimer={data.disclaimers.simulation} />
         </Section>
       )}
 
       <Section
         id="share"
-        index={String(chapters.length).padStart(2, "0")}
+        index={num("share")}
         eyebrow="The comforting ones travel well"
         title="Share what others see"
-        lede="Three lines and a face, in the same words as above."
+        lede="Choose the lines. The card has no face unless you add a synthetic one, and it says who it is for."
       >
-        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-16">
-          <ShareCardPreview data={data.share} imageSrc={persona.image} />
-          <div className="max-w-sm">
-            <p className="eyebrow">Keep going</p>
-            <ul className="mt-4 divide-y divide-rule border-y border-rule text-[0.9375rem]">
-              <li>
-                <Link href="/try" className="flex min-h-12 items-center justify-between">
-                  Try another face <span aria-hidden="true">&rarr;</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/how-it-works" className="flex min-h-12 items-center justify-between">
-                  How the distances are worked out <span aria-hidden="true">&rarr;</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <ShareStudio share={data.share} />
+        <ul className="mt-12 max-w-sm divide-y divide-rule border-y border-rule text-[0.9375rem]">
+          <li>
+            <Link href="/try" className="flex min-h-12 items-center justify-between">
+              Try another face <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/how-it-works" className="flex min-h-12 items-center justify-between">
+              How the distances are worked out <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </li>
+        </ul>
       </Section>
 
       <section aria-labelledby="test-title" className="on-dark bg-ink text-paper">
         <div className="page flex flex-col items-start gap-8 py-16 md:flex-row md:items-end md:justify-between md:py-24">
           <div>
-            <p className="eyebrow !text-paper/70">Self-test</p>
+            <p className="eyebrow !text-[0.875rem] !text-paper/80">Self-test</p>
             <h2 id="test-title" className="display mt-4 max-w-3xl text-[clamp(2.25rem,1.2rem+3.8vw,4.75rem)]">
-              Don&rsquo;t trust us. <em className="font-normal italic">Test it</em> with your own eyes.
+              Check it <em className="font-normal italic">with your own eyes.</em>
             </h2>
           </div>
           <Link href="/self-test" className="btn border-paper bg-paper text-ink hover:bg-white">

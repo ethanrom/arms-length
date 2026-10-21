@@ -17,9 +17,8 @@ import {
   formatDistance,
   formatInterval,
   nominalFractionAt,
-  nominalMaxM,
+  isSoftArea,
   reachM,
-  ROOM_M,
   shareWord,
   TABLE_M,
 } from "@/lib/copy";
@@ -33,15 +32,6 @@ export const fadeLabelOf = (id: ConcernId): string => `${concernNoun(id)} ${conc
 /** Many-feature concerns (not area regions) carry a profile: the same rule lib/copy uses. */
 export function hasProfile(cv: ConcernVisibility): boolean {
   return cv.profile !== undefined && cv.targetCount >= 5 && CONCERNS[cv.concern].maskKind !== "region";
-}
-
-/**
- * Large soft areas state no distance: they carry far on every face (lib/copy/describe.ts decides the same way; kept in
- * step by the view-model test that compares the card headline with this flag).
- */
-export function isSoftArea(cv: ConcernVisibility): boolean {
-  if (cv.concern === "dark_circle" || cv.concern === "eye_bag") return true;
-  return cv.concern === "redness" && nominalMaxM(cv) >= ROOM_M;
 }
 
 /**
@@ -152,11 +142,39 @@ export const COVERAGE_LEDE = (targetM: number) =>
 // page furniture
 // ---------------------------------------------------------------------------------------------------
 
+/** Sits on the engine strip under the hero, not in it (expert panel triage, item 7). */
 export const TAGLINE = "YouCam's AI finds it. Vision science measures it.";
-export const HERO_LABEL = "Your photo, nothing redrawn. Filtered by a model of human vision at this distance.";
+
+/** What is and is not drawn on the hero, said once under the face. The photo is "Your photo" only when it is one. */
+export const heroLabel = (own: boolean) =>
+  `${own ? "Your photo" : "The photo"}, nothing redrawn, filtered by a model of human eyesight at this distance.`;
 export const RENDERER_NOTE = "Drawn by the same model that gives the numbers: detail below a typical sharp-eyed person's threshold fades.";
 
-export const WORTH_IT_LEDE = `These are pictures from YouCam Skin Simulation at half strength. Each line says how far away a typical person could still tell the difference, so you can see which changes others could notice and which only the mirror would. ${DISCLAIMERS.simulation}`;
+export const WORTH_IT_LEDE = `These are pictures from YouCam Skin Simulation, cropped to the part of the face each change would touch. Each line says how far away a typical person could still tell the difference, so you can see which changes others could notice and which only the mirror would. ${DISCLAIMERS.simulation}`;
+
+/** Burned into every share card and said under the preview: who the numbers are for, and that they are an estimate. */
+export const SHARE_QUALIFIER = "For a typical sharp-eyed person looking right at it, in indoor light. An estimate.";
+export const SYNTHETIC_TAG = "Synthetic face (AI-generated)";
+
+// ---------------------------------------------------------------------------------------------------
+// the YouCam engine strip and the validation badge
+// ---------------------------------------------------------------------------------------------------
+
+export const ENGINE_TITLE = "Built on YouCam";
+export const ENGINE_PARTS = ["HD Skin Analysis", "Skin Simulation", "Makeup VTO"] as const;
+/** One session on a live photo: 16 for the HD analysis, 6 for the Skin Simulation call, up to 4 for the try-on renders. */
+export const ENGINE_UNITS = "16 + 6 + up to 4 units per session";
+
+/** The badge beside the engine strip: where these results came from, and what they cost. */
+export function engineBadge(source: "demo" | "replay" | "live", unitsCharged = 0): string {
+  if (source === "live") return `Live (this session: ${unitsCharged} ${unitsCharged === 1 ? "unit" : "units"})`;
+  if (source === "replay") return "Replay of a recording (0 units)";
+  return "Recorded analysis (demo, 0 units)";
+}
+
+/** Numbers from docs/EVAL.md: 0.69 dB RMS over 41 ModelFest test patterns, measured on 16 observers. */
+export const VALIDATION_BADGE = "Checked against a published eye study: ModelFest, 16 observers, 0.69 dB error";
+export const VALIDATION_HREF = "/how-it-works#validation";
 
 /** Labels on the Step back axis: the anchors that fit the slider's range, with a short form for narrow screens. */
 const TAPE_IDS = ["mirror", "selfie", "conversation", "across_table", "across_room"] as const;
@@ -168,8 +186,11 @@ const SHORT: Record<(typeof TAPE_IDS)[number], string> = {
   across_room: "Room",
 };
 
+/** The names on the buttons beside the slider. */
+const LABEL: Partial<Record<(typeof TAPE_IDS)[number], string>> = { selfie: "Selfie" };
+
 export const TAPE_ANCHORS: { distanceM: number; label: string; short: string }[] = TAPE_IDS.map((id) => {
   const a = DISTANCE_ANCHORS.find((x) => x.id === id)!;
-  return { distanceM: a.m, label: a.label, short: SHORT[id] };
+  return { distanceM: a.m, label: LABEL[id] ?? a.label, short: SHORT[id] };
 });
 

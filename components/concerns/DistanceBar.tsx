@@ -5,7 +5,7 @@ interface DistanceBarProps {
   maxM: number;
   /** Plausible range from the scale uncertainty, drawn as a whisker. */
   intervalM: [number, number];
-  /** Out of sight within conversation distance: drawn hollow. */
+  /** Out of sight within conversation distance: drawn solid and short; what carries far is a hairline outline. */
   relief: boolean;
   /** A second marker for comparisons (the what-if result), drawn as a ghost. */
   ghostM?: number;
@@ -14,13 +14,16 @@ interface DistanceBarProps {
   axis?: LogAxis;
   /** Overrides the spoken description. */
   description?: string;
+  /** The caller describes the bar in a caption and a table (a `ChartFigure`): hide it from assistive tech. */
+  decorative?: boolean;
 }
 
 /**
- * A compact distance bar on the shared log axis. Visible concerns get a solid bar, concerns that vanish early a
- * hollow one; the whisker shows the plausible range. Colour is never used to say good or bad.
+ * A compact distance bar on the shared log axis. The weight goes to the good news: a concern that vanishes early gets a
+ * solid bar, one that carries far a hairline outline; the whisker shows the plausible range. Colour is never used to say
+ * good or bad, and every part has a border or a system colour so it survives forced-colors mode.
  */
-export function DistanceBar({ maxM, intervalM, relief, ghostM, tickM = [], axis = DEFAULT_AXIS, description }: DistanceBarProps) {
+export function DistanceBar({ maxM, intervalM, relief, ghostM, tickM = [], axis = DEFAULT_AXIS, description, decorative }: DistanceBarProps) {
   const x = (d: number) => percent(toUnit(d, axis) * 100);
   const [lo, hi] = intervalM;
   const label =
@@ -28,15 +31,15 @@ export function DistanceBar({ maxM, intervalM, relief, ghostM, tickM = [], axis 
     `${relief ? "Out of sight beyond" : "Visible up to"} ${spokenDistance(maxM)}. Plausible range ${spokenDistance(lo)} to ${spokenDistance(hi)}.`;
 
   return (
-    <div role="img" aria-label={label} className="relative h-[2.6rem] w-full">
-      <div className="absolute inset-x-0 top-[0.62rem] h-px bg-rule-strong" />
+    <div {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": label })} className="relative h-[3rem] w-full">
+      <div className="absolute inset-x-0 top-[0.62rem] h-px bg-[#8a867c] forced-colors:bg-[GrayText]" />
       {tickM.map((t) => (
-        <span key={t} className="absolute top-[0.35rem] h-[0.55rem] w-px bg-rule-strong" style={{ left: x(t) }} />
+        <span key={t} className="absolute top-[0.35rem] h-[0.55rem] w-px bg-[#8a867c] forced-colors:bg-[GrayText]" style={{ left: x(t) }} />
       ))}
 
       {/* the bar */}
       <div
-        className={`absolute left-0 top-[0.37rem] h-[0.5rem] ${relief ? "border border-ink bg-transparent" : "bg-ink"}`}
+        className={`absolute left-0 top-[0.37rem] h-[0.5rem] border border-ink ${relief ? "bg-ink forced-colors:bg-[CanvasText]" : "bg-transparent"}`}
         style={{ width: x(maxM) }}
       />
       {ghostM !== undefined && (
@@ -46,15 +49,15 @@ export function DistanceBar({ maxM, intervalM, relief, ghostM, tickM = [], axis 
         />
       )}
       <span
-        className={`absolute top-[0.62rem] block h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-ink ${relief ? "bg-paper" : "bg-ink shadow-[0_0_0_2px_var(--paper)]"}`}
+        className={`absolute top-[0.62rem] block h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-ink ${relief ? "bg-ink shadow-[0_0_0_2px_var(--paper)] forced-colors:bg-[CanvasText]" : "bg-paper forced-colors:bg-[Canvas]"}`}
         style={{ left: x(maxM) }}
       />
 
       {/* whisker */}
-      <div className="absolute top-[1.55rem] h-px bg-ink/70" style={{ left: x(lo), width: `calc(${x(hi)} - ${x(lo)})` }} />
-      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70" style={{ left: x(lo) }} />
-      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70" style={{ left: x(hi) }} />
-      <span className="num absolute top-[1.9rem] -translate-x-1/2 whitespace-nowrap font-mono text-[0.625rem] leading-none text-muted" style={{ left: x(maxM) }}>
+      <div className="absolute top-[1.55rem] h-px bg-ink/70 forced-colors:bg-[CanvasText]" style={{ left: x(lo), width: `calc(${x(hi)} - ${x(lo)})` }} />
+      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70 forced-colors:bg-[CanvasText]" style={{ left: x(lo) }} />
+      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70 forced-colors:bg-[CanvasText]" style={{ left: x(hi) }} />
+      <span className="num absolute top-[1.85rem] -translate-x-1/2 whitespace-nowrap font-mono text-[0.875rem] leading-none text-ink-soft" style={{ left: x(maxM) }}>
         {formatDistance(maxM)}
       </span>
     </div>
@@ -72,7 +75,7 @@ export function DistanceAxisHeader({
   // Skip the selfie anchor here: 5 cm from the mirror, it would sit on top of it.
   const shown = anchors.filter((a, i) => i === 0 || toUnit(a.distanceM, axis) - toUnit(anchors[0].distanceM, axis) > 0.12);
   return (
-    <div aria-hidden="true" className="relative h-9 w-full">
+    <div aria-hidden="true" className="relative h-11 w-full">
       {shown.map((a) => {
         const u = toUnit(a.distanceM, axis);
         const align = u < 0.08 ? "left" : u > 0.9 ? "right" : "center";
@@ -86,10 +89,8 @@ export function DistanceAxisHeader({
               textAlign: align,
             }}
           >
-            <span className="num block font-mono text-[0.6875rem] leading-none">{formatDistance(a.distanceM)}</span>
-            <span className="mt-1 block text-[0.6875rem] leading-none text-muted">
-              {a.short}
-            </span>
+            <span className="num block font-mono text-[0.875rem] leading-none">{formatDistance(a.distanceM)}</span>
+            <span className="mt-1 block text-[0.875rem] leading-none text-ink-soft">{a.short}</span>
           </div>
         );
       })}

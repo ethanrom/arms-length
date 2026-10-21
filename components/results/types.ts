@@ -4,6 +4,7 @@
  * lib/copy (and lib/integration/copy.ts). Components never write results strings themselves.
  */
 import type {
+  Box,
   ConcernId,
   CoveragePlan,
   Measurements,
@@ -66,14 +67,19 @@ export interface ConcernCopy {
   tone: "relief" | "visible";
   /** The kind sentence leading the card. */
   headline: string;
-  /** One line under it, with the numbers (YouCam's own score is the last sentence). */
+  /** One line under it. The mark-safety line and the coverage hook are separate fields, so a layout can set them apart. */
   detail: string;
   /** The chip on the card: "Half out of sight by 1.5 m", "A large, soft area". */
   keyLine: string;
   /** A large soft area: no distance, bar or curve is drawn for it (lib/copy decides the same way). */
   soft: boolean;
-  /** The mark-safety line (dark spots, breakouts); `detail` already ends with it. */
+  /** The mark-safety line (dark spots, breakouts): shown on the card and in the receipt, never dropped. */
   safety?: string;
+  /**
+   * Points at "The lightest touch". Present only when that section has an option for this concern (a lever exists and,
+   * for a demo face, a try-on was recorded), so the card never promises a step that is not on the page.
+   */
+  hook?: string;
   /** What the concern is, then what the number means, in plain words (the "i"). */
   explainer: string;
   /** Confidence statement with the reason. */
@@ -97,8 +103,10 @@ export interface CoverageOption {
   /** The lever without its value, for a caption next to the big number: "foundation coverage". */
   leverName: string | null;
   detail: string;
-  /** Shown as the "after" face, aligned to the photo; null when nothing is rendered. */
+  /** The try-on render, aligned to the photo; shown only as a local crop. Null when nothing is rendered. */
   afterImage: string | null;
+  /** The part of the face the crop shows, in frame px. */
+  crop: Box;
   /** idle: waiting for "Make it disappear"; running: renders in progress; error: failed (see detail). */
   state: "ready" | "idle" | "running" | "error";
 }
@@ -123,8 +131,10 @@ export interface WorthItItem {
   soft: boolean;
   /** Where a typical sharp-eyed person stops seeing the difference, metres (for the bar). */
   typicalM: number;
-  /** Shown as the improved face: the group's half-strength simulation, aligned to the photo. */
+  /** The group's simulation render, aligned to the photo; shown only as a local crop, never as a whole face. */
   afterImage: string;
+  /** The part of the face the crop shows, in frame px. */
+  crop: Box;
 }
 
 export interface WorthItView {
@@ -150,11 +160,42 @@ export interface ShareLine {
   tone: "relief" | "visible";
 }
 
+/** One relief sentence the visitor can put on a share card ("Pores: out of sight across a table"). */
+export interface ShareChoice {
+  /** The line as a URL token (lib/integration/shareLines.ts): the card is drawn from these, never from free text. */
+  token: string;
+  concern: ConcernId;
+  text: string;
+  distanceM: number;
+}
+
 export interface ShareData {
   title: string; // "What others see"
   subtitle: string; // "A synthetic face, seen from a distance"
+  /** A relief / middle / most-visible pick: the older three-line summary (the brands kiosk mock shows it). */
   lines: ShareLine[];
   footnote: string;
+  /** The relief sentences to choose from for the card, best news first. */
+  choices: ShareChoice[];
+  /** Tokens on the card to begin with (up to three). */
+  defaults: string[];
+  /** Which card route draws the images: a demo face's id, or "live" for a visitor's own photo (never a face). */
+  cardKey: string;
+  /** Only demo faces can appear on a card, and only when asked; an own photo never can. */
+  faceAllowed: boolean;
+  /** Burned into every card. */
+  qualifier: string;
+  /** Burned in for synthetic faces: "Synthetic face (AI-generated)". */
+  tag: string | null;
+}
+
+/** The "Built on YouCam" strip under the hero, and the badge for the study the model was checked against. */
+export interface EngineStrip {
+  title: string;
+  parts: string[];
+  units: string;
+  tagline: string;
+  validation: { text: string; href: string };
 }
 
 export interface ResultsData {
@@ -167,6 +208,8 @@ export interface ResultsData {
   stageGrey: string;
   measurements: Measurements;
   report: VisibilityReport;
+  /** A visitor's own photo (live session): no face on a share card, "Your photo" as its alt text. */
+  ownPhoto: boolean;
   /** In display order: relief first, from lib/copy. */
   concerns: ConcernCopy[];
   outOfScope: OutOfScopeNote[];
@@ -182,7 +225,11 @@ export interface ResultsData {
   receipts: ReceiptEntry[];
   /** YouCam's own masks, the starting input. */
   maskStrip: MaskStrip;
-  /** One line under the title: "YouCam's AI finds it. Vision science measures it." */
+  /** The YouCam engine strip, with units per session and the validation badge. */
+  engine: EngineStrip;
+  /** The cheek and nose patch the Step back loupe magnifies, in frame px. */
+  loupe: Box;
+  /** The sponsor line; it lives on the engine strip, not in the hero. */
   tagline: string;
   /** Label on the Step back hero: what is and is not drawn. */
   heroLabel: string;
@@ -191,7 +238,7 @@ export interface ResultsData {
   /** Things worth knowing about this reading (an enlarged photo, a smaller analysis, replay mode). */
   notices: string[];
   /** Fixed lines from lib/copy (DISCLAIMERS), shown where the claim is made. */
-  disclaimers: { estimate: string; synthetic: string | null; simulation: string; tryOn: string; notHealth: string };
+  disclaimers: { estimate: string; synthetic: string | null; simulation: string; tryOn: string; notHealth: string; mark: string };
   /** Honest status lines for the analysing state. */
   statusLines: string[];
   /** Small print under the Step back hero: says which renderer drew it. */

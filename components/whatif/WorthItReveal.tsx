@@ -1,14 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import { useId, useState } from "react";
 import { DistanceAxisHeader, DistanceBar } from "@/components/concerns/DistanceBar";
 import type { DistanceAnchor, WorthItView } from "@/components/results/types";
+import { CropCanvas, usePhotoImage } from "@/components/step-back/CropCanvas";
 
 interface WorthItRevealProps {
   worthIt: WorthItView;
   src: string;
-  alt: string;
   frame: { width: number; height: number };
   anchors: DistanceAnchor[];
   /** DISCLAIMERS.simulation, from lib/copy. */
@@ -16,38 +15,40 @@ interface WorthItRevealProps {
 }
 
 /**
- * "Worth it?": for each concern, how far away someone could still tell the difference a half-strength improvement
- * makes (lib/vision/worthIt.ts), with the YouCam Skin Simulation it came from as a before/after.
+ * "Worth it?": for each concern, how far away someone could still tell the difference a YouCam Skin Simulation makes
+ * (lib/vision/worthIt.ts). The picture is a local crop of the part of the face the change would touch, today beside the
+ * simulation, with "Simulation" painted into the corner of the image. Never a whole-face "after".
  */
-export function WorthItReveal({ worthIt, src, alt, frame, anchors, disclaimer }: WorthItRevealProps) {
+export function WorthItReveal({ worthIt, src, frame, anchors, disclaimer }: WorthItRevealProps) {
   const [picked, setPicked] = useState<string | null>(null);
-  const [pos, setPos] = useState(50);
   const groupId = useId();
   const items = worthIt.items;
   const selected = items.find((i) => i.concern === picked) ?? items[0];
-  const aspect = frame.width / frame.height;
   const tickM = anchors.map((a) => a.distanceM);
+  const before = usePhotoImage(src);
+  const after = usePhotoImage(selected?.afterImage ?? null);
 
   if (worthIt.state !== "ready" || !selected) {
     return (
       <div role="status" aria-live="polite" className="max-w-[36rem]">
         <p className="serif text-[clamp(1.5rem,1.2rem+1.2vw,2.25rem)] leading-snug" style={{ fontWeight: 360 }}>
-          {worthIt.state === "error" ? "The improvement views could not be drawn." : "Working out what a half-strength change would show."}
+          {worthIt.state === "error" ? "The simulation couldn't be drawn." : "Drawing the simulation."}
         </p>
-        <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted">
+        <p className="mt-4 text-[1rem] leading-relaxed text-ink-soft">
           {worthIt.message ??
             (worthIt.state === "error"
               ? "The numbers above are unaffected."
-              : "YouCam Skin Simulation draws two improved versions of this face (4 units each). It takes about ten seconds and the results above stay as they are.")}
+              : "YouCam Skin Simulation draws one picture per concern. It takes about ten seconds and the results above stay as they are.")}
         </p>
       </div>
     );
   }
 
+  const title = selected.title.toLowerCase();
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-16">
       <div className="order-2 lg:order-1">
-        <p className="max-w-[34rem] text-[0.9375rem] leading-relaxed text-ink-soft">{worthIt.lede}</p>
+        <p className="max-w-[34rem] text-[1rem] leading-relaxed text-ink-soft">{worthIt.lede}</p>
 
         <div className="mt-8 hidden border-t border-rule pt-5 sm:block">
           <DistanceAxisHeader anchors={anchors} />
@@ -61,11 +62,11 @@ export function WorthItReveal({ worthIt, src, alt, frame, anchors, disclaimer }:
                 <input type="radio" name={groupId} className="peer sr-only" checked={active} onChange={() => setPicked(item.concern)} />
                 <span className="block py-5 transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-ink">
                   <span className="flex items-center gap-3">
-                    <span aria-hidden="true" className={`block h-2.5 w-2.5 shrink-0 rounded-full border border-ink ${active ? "bg-ink" : "bg-transparent"}`} />
-                    <span className="eyebrow !text-ink-soft">{item.title}</span>
-                    <span className="eyebrow ml-auto">{active ? "Comparing" : "Compare"}</span>
+                    <span aria-hidden="true" className={`block h-2.5 w-2.5 shrink-0 rounded-full border border-ink ${active ? "bg-ink forced-colors:bg-[CanvasText]" : "bg-transparent"}`} />
+                    <span className="eyebrow !text-[0.875rem] !text-ink-soft">{item.title}</span>
+                    <span className="eyebrow ml-auto !text-[0.875rem]">{active ? "Comparing" : "Compare"}</span>
                   </span>
-                  <span className="serif mt-3 block text-[clamp(1.25rem,1.05rem+0.8vw,1.625rem)] leading-[1.2]" style={{ fontWeight: 380 }}>
+                  <span className="serif mt-3 block text-[clamp(1.25rem,1.05rem+0.8vw,1.625rem)] leading-[1.2]" style={{ fontWeight: 400 }}>
                     {item.headline}
                   </span>
                   {/* A large soft area states no distance. */}
@@ -80,7 +81,7 @@ export function WorthItReveal({ worthIt, src, alt, frame, anchors, disclaimer }:
                       />
                     </span>
                   )}
-                  {active && <span className="mt-2 block max-w-[34rem] text-[0.9375rem] leading-relaxed text-muted">{item.detail}</span>}
+                  {active && <span className="mt-2 block max-w-[34rem] text-[1rem] leading-relaxed text-ink-soft">{item.detail}</span>}
                 </span>
               </label>
             );
@@ -89,40 +90,24 @@ export function WorthItReveal({ worthIt, src, alt, frame, anchors, disclaimer }:
       </div>
 
       <figure className="order-1 lg:order-2">
-        <div className="stage on-stage relative flex items-center justify-center overflow-hidden [--stage-h:min(72svh,720px)]">
-          <div className="relative" style={{ aspectRatio: `${frame.width} / ${frame.height}`, width: `min(100%, calc(var(--stage-h) * ${aspect}))` }}>
-            <Image src={src} alt={alt} width={frame.width} height={frame.height} unoptimized sizes="(min-width: 1024px) 45vw, 100vw" className="absolute inset-0 h-full w-full" />
-            <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
-              <Image src={selected.afterImage} alt="" width={frame.width} height={frame.height} unoptimized sizes="(min-width: 1024px) 45vw, 100vw" className="absolute inset-0 h-full w-full" />
-            </div>
-
-            <span className="pointer-events-none absolute left-3 top-3 border border-ink/15 bg-paper px-2.5 py-1.5 text-[0.75rem] leading-none">{worthIt.afterLabel}</span>
-            <span className="pointer-events-none absolute right-3 top-3 border border-ink/15 bg-paper px-2.5 py-1.5 text-[0.75rem] leading-none">{worthIt.beforeLabel}</span>
-
-            {/* divider */}
-            <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-paper shadow-[0_0_0_1px_var(--ink)]" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
-              <span className="reveal-knob absolute left-1/2 top-1/2 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-ink bg-paper">
-                <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
-                  <path d="M5 1L1 5l4 4M11 1l4 4-4 4" stroke="#161513" strokeWidth="1.3" />
-                </svg>
-              </span>
-            </div>
-            <input
-              type="range"
-              className="tape-range peer"
-              min={0}
-              max={100}
-              step={1}
-              value={pos}
-              onChange={(e) => setPos(Number(e.target.value))}
-              aria-label={`Compare: ${worthIt.afterLabel.toLowerCase()} on the left, ${worthIt.beforeLabel.toLowerCase()} on the right`}
-              aria-valuetext={`${pos} percent ${worthIt.afterLabel.toLowerCase()}`}
+        <div className="grid gap-px bg-[#8a867c] sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div className="bg-paper">
+            <CropCanvas image={before} frame={frame} crop={selected.crop} ariaLabel={`Close-up of the photo around the ${title}, as it is today.`} />
+            <p className="px-3 py-2.5 text-[0.875rem] leading-snug">{worthIt.beforeLabel}</p>
+          </div>
+          <div className="bg-paper">
+            <CropCanvas
+              image={after}
+              frame={frame}
+              crop={selected.crop}
+              label="Simulation"
+              ariaLabel={`The same close-up in a YouCam Skin Simulation, with the ${title} changed. Simulation.`}
             />
-            <span className="pointer-events-none absolute inset-0 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-4px] peer-focus-visible:outline-paper" />
+            <p className="px-3 py-2.5 text-[0.875rem] leading-snug">{worthIt.afterLabel}</p>
           </div>
         </div>
-        <figcaption className="mt-3 text-[0.8125rem] leading-relaxed text-muted">
-          Drag to compare. {disclaimer}
+        <figcaption className="mt-3 text-[0.875rem] leading-relaxed text-ink-soft">
+          YouCam Skin Simulation. A close-up of one part of the face, not the whole face. {disclaimer}
         </figcaption>
       </figure>
     </div>

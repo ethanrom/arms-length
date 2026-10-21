@@ -51,7 +51,10 @@ describe("buildResultsData", () => {
       const cv = p2b.report.concerns.find((x) => x.concern === c.concern)!;
       const described = describeConcern(cv);
       expect(c.headline).toBe(described.headline);
-      expect(c.detail).toBe(described.detail);
+      // The coverage hook and the mark-safety line moved out of the detail into fields of their own.
+      expect(described.detail.startsWith(c.detail)).toBe(true);
+      expect(c.detail).not.toMatch(/lightest touch|ask a doctor or pharmacist/);
+      expect(c.safety).toBe(described.safety);
       expect(c.tone).toBe(described.tone);
     }
   });
@@ -94,12 +97,13 @@ describe("buildResultsData", () => {
     expect(data.share.lines.length).toBe(3);
   });
 
-  test("Worth it? lists every improved concern with the half-strength credit and a simulation image", () => {
+  test("Worth it? lists every improved concern with the YouCam Skin Simulation credit and a simulation image", () => {
     const view = buildResultsData(p2b).worthIt!;
     expect(view.state).toBe("ready");
     expect(view.items.map((i) => i.concern).sort()).toEqual(["acne", "age_spot", "dark_circle", "eye_bag", "pore", "wrinkle"]);
     for (const item of view.items) {
-      expect(item.detail).toContain("YouCam Skin Simulation, half strength");
+      expect(item.detail).toContain("YouCam Skin Simulation");
+      expect(`${item.headline} ${item.detail}`).not.toMatch(/half strength/i);
       expect(item.afterImage).toMatch(/^\/demo\/p2b\/sim-[ab]\.jpg$/);
       const w = p2b.worthIt.find((x) => x.concern === item.concern)!;
       expect(item.headline).toBe(describeWorthIt(worthItInput(w)).headline);
@@ -122,6 +126,43 @@ describe("buildResultsData", () => {
         expect(o.leverLabel).toMatch(/^foundation coverage \d+%$/);
       }
     }
+  });
+
+  test("the coverage hook shows only where the lightest touch has an option for that concern", () => {
+    const withHooks = buildResultsData(p2b);
+    const hooked = withHooks.concerns.filter((c) => c.hook);
+    expect(hooked.length).toBeGreaterThan(0);
+    for (const c of hooked) expect(withHooks.coverage!.options.some((o) => o.concern === c.concern)).toBe(true);
+    // p5a has no recorded try-ons, so nothing points at a section that is not there.
+    expect(buildResultsData(loadBundle("p5a")!).concerns.some((c) => c.hook)).toBe(false);
+  });
+
+  test("dark spots and breakouts keep the mark-safety line as a field of their own", () => {
+    for (const [, bundle] of bundles) {
+      for (const c of buildResultsData(bundle).concerns) {
+        expect(Boolean(c.safety), `${bundle.id} ${c.concern}`).toBe(c.concern === "age_spot" || c.concern === "acne");
+      }
+    }
+  });
+
+  test("share cards are face-less relief lines from a closed vocabulary; an own photo never gets a face", () => {
+    for (const [, bundle] of bundles) {
+      const { share } = buildResultsData(bundle);
+      expect(share.cardKey).toBe(bundle.id);
+      expect(share.faceAllowed).toBe(true);
+      expect(share.tag).toBe("Synthetic face (AI-generated)");
+      expect(share.defaults.length).toBeLessThanOrEqual(3);
+      for (const c of share.choices) {
+        expect(c.text, c.text).toMatch(/^[A-Za-z -]+: (mostly )?out of sight (at conversation distance|across a table|across a room|beyond [\d.]+ ?c?m)$/);
+        expect(lintText(c.text)).toEqual([]);
+      }
+    }
+    const live = buildResultsData({ ...p2b, source: "live" });
+    expect(live.share.cardKey).toBe("live");
+    expect(live.share.faceAllowed).toBe(false);
+    expect(live.share.tag).toBeNull();
+    expect(live.alt).toBe("Your photo");
+    expect(live.ownPhoto).toBe(true);
   });
 
   test("a face without recorded renders has no coverage section; receipts exist for every concern", () => {
@@ -152,9 +193,9 @@ describe("buildResultsData", () => {
   test("an enlarged photo, a standard-detail analysis and replay mode each say so", () => {
     const upscaled = buildResultsData({ ...p2b, source: "live", capture: { upscaled: true, upscale: 1.9, engine: "hd" } });
     expect(upscaled.notices.join(" ")).toMatch(/enlarged/);
-    expect(upscaled.notices.join(" ")).toMatch(/deleted from YouCam when you leave this page/);
+    expect(upscaled.notices.join(" ")).toMatch(/ask YouCam to delete your photo and its results when you leave this page/);
     expect(upscaled.notices.join(" ")).toMatch(/We don't store your photo/);
-    expect(upscaled.notices.join(" ")).toMatch(/Skin Simulation early/);
+    expect(upscaled.notices.join(" ")).toMatch(/Skin Simulation picture early/);
     const sd = buildResultsData({ ...p2b, source: "live", capture: { upscaled: false, engine: "sd" } });
     expect(sd.notices.join(" ")).toMatch(/pores and breakouts get no distance/);
     expect(buildResultsData({ ...p2b, source: "replay" }).notices.join(" ")).toMatch(/Replay mode/);

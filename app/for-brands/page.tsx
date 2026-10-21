@@ -187,7 +187,7 @@ export default function ForBrandsPage() {
                   <tr key={c.session} className="border-b border-rule align-top">
                     <th scope="row" className="serif py-4 pr-6 text-[1.25rem] font-normal">{c.session}</th>
                     <td className="py-4 pr-6 text-ink-soft">{c.calls}</td>
-                    <td className="num py-4 pr-6 font-mono text-[1.0625rem] text-ink">{c.units}</td>
+                    <td className="num whitespace-nowrap py-4 pr-6 font-mono text-[1.0625rem] text-ink">{c.units}</td>
                     <td className="py-4 text-[0.9375rem] text-ink-soft">{c.note}</td>
                   </tr>
                 ))}

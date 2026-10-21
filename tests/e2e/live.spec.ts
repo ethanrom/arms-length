@@ -57,8 +57,9 @@ test("Use my photo: gate, upload, results from a replayed analysis, then the lig
   const cover = page.locator("#make-it-disappear");
   await expect(cover.getByRole("button", { name: "Find the lightest touch" })).toBeVisible();
   await cover.getByRole("button", { name: "Find the lightest touch" }).click();
-  await expect(cover.getByText(/Honest answer|Checked on a virtual try-on/).first()).toBeVisible({ timeout: 120_000 });
-  await expect(cover.getByText(/Most of the effect comes at|layer is enough|Already out of sight|Makeup didn't change/).first()).toBeVisible();
+  // "Checked on a virtual try-on" is also the section's eyebrow, so wait on the search's own result instead.
+  await expect(cover.getByText(/Most of the effect comes at|layer is enough|Already out of sight|Makeup didn't change/).first()).toBeVisible({ timeout: 120_000 });
+  await expect(cover.getByText(/Honest answer|Checked on a virtual try-on/).first()).toBeVisible();
   await expect(cover.getByRole("img", { name: /Virtual try-on\.$/ }).first()).toBeVisible({ timeout: 60_000 });
   await expectNoAxeViolations(page);
 });

@@ -1,4 +1,7 @@
 /**
+ * DEV-ONLY, uses local paths: the default spike-data folder below lives in the gitignored internal/ of the main checkout.
+ * Nothing in the app, the tests or the deploy runs this.
+ *
  * Free, local: turns the recorder's raw downloads (scripts/personas/work/) into fixtures/youcam/<persona>/ files, in the
  * layout documented in fixtures/youcam/README.md. Adds files only: an existing file is never overwritten (a byte-different
  * one stops the run). Task ids, file ids and signed URLs are dropped.

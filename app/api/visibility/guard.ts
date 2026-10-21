@@ -1,5 +1,6 @@
 // Request guards for POST /api/visibility: where masks may be fetched from, per-IP rate limit, concurrency cap.
 // All in-memory and best effort: on a serverless host every instance counts separately.
+import { clientIp, createLimiter } from "@/lib/youcam/ratelimit";
 import { VisibilityError } from "./errors";
 
 /**
@@ -61,29 +62,15 @@ export async function fetchMask(url: string, fetchImpl: typeof fetch = fetch): P
   return Buffer.concat(chunks);
 }
 
-// Per-IP fixed window.
+// Per-IP fixed window (shared limiter, lib/youcam/ratelimit.ts).
 export const RATE_LIMIT = { max: 20, windowMs: 10 * 60_000 } as const;
-const MAX_TRACKED_IPS = 10_000;
-const windows = new Map<string, { count: number; resetAt: number }>();
+const limiter = createLimiter(RATE_LIMIT);
 
-/** Client address as the host reports it. Spoofable off Vercel, hence "best effort". */
-export function clientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
-}
+export { clientIp };
 
 export function checkRateLimit(ip: string, now = Date.now()): void {
-  if (windows.size >= MAX_TRACKED_IPS) {
-    for (const [key, w] of windows) if (w.resetAt <= now) windows.delete(key);
-    if (windows.size >= MAX_TRACKED_IPS) windows.delete(windows.keys().next().value as string);
-  }
-  const current = windows.get(ip);
-  if (!current || current.resetAt <= now) {
-    windows.set(ip, { count: 1, resetAt: now + RATE_LIMIT.windowMs });
-    return;
-  }
-  if (current.count >= RATE_LIMIT.max) {
-    const wait = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+  const wait = limiter.hit(ip, now);
+  if (wait > 0) {
     throw new VisibilityError(
       "rate_limited",
       `That's more than ${RATE_LIMIT.max} requests in ${RATE_LIMIT.windowMs / 60_000} minutes from one address. Please wait ${wait} seconds and try again.`,
@@ -91,11 +78,10 @@ export function checkRateLimit(ip: string, now = Date.now()): void {
       { "Retry-After": String(wait) },
     );
   }
-  current.count++;
 }
 
 export function resetRateLimit(): void {
-  windows.clear();
+  limiter.reset();
 }
 
 // Each request decodes up to ~25 masks and runs the full model: keep the number running at once small.

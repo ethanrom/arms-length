@@ -53,6 +53,8 @@ export type RenderResponse = RenderResult;
 export interface StatusResponse {
   live: boolean; // live analysis available for this access code
   reason?: "no_code" | "bad_code" | "budget_floor" | "kill_switch" | "daily_cap" | "replay_only";
+  /** Whether a photo upload will be accepted right now (live, or replay with REPLAY_UPLOADS=1). Gate the capture UI on it. */
+  uploadsAllowed?: boolean;
 }
 
 /** POST /api/visibility: the drop-in layer on top of any YouCam Skin Analysis result. */

@@ -1,4 +1,7 @@
 /**
+ * DEV-ONLY, uses local paths: writes into the gitignored internal/ folder of the main checkout (OUT_DIR below).
+ * Nothing in the app, the tests or the deploy runs this.
+ *
  * Eyeball check for lib/skin: runs measureAnalysis on a recorded fixture persona and writes an overlay PNG
  * plus a JSON summary.
  *

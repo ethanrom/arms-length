@@ -15,8 +15,6 @@ type FormatId = (typeof FORMATS)[number]["id"];
 
 interface ShareStudioProps {
   share: ShareData;
-  /** A visitor's own photo: say plainly that it never goes on a card. */
-  ownPhoto: boolean;
 }
 
 /**
@@ -24,7 +22,7 @@ interface ShareStudioProps {
  * stored), with the qualifier and, for synthetic faces, "Synthetic face (AI-generated)" painted into the picture. A demo
  * face can be added; an own photo never can.
  */
-export function ShareStudio({ share, ownPhoto }: ShareStudioProps) {
+export function ShareStudio({ share }: ShareStudioProps) {
   const [selected, setSelected] = useState<string[]>(share.defaults);
   const [format, setFormat] = useState<FormatId>("4x5");
   const [face, setFace] = useState(false);
@@ -95,7 +93,7 @@ export function ShareStudio({ share, ownPhoto }: ShareStudioProps) {
             {FORMATS.map((f) => (
               <label key={f.id} className="relative cursor-pointer">
                 <input type="radio" name={formatId} className="peer sr-only" checked={format === f.id} onChange={() => setFormat(f.id)} />
-                <span className="flex min-h-11 items-center border-l border-ink px-5 text-[0.9375rem] first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:bg-[Highlight] forced-colors:peer-checked:text-[HighlightText]">
+                <span className="flex min-h-11 items-center border-l border-ink px-5 text-[0.9375rem] first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
                   {f.label}
                 </span>
               </label>
@@ -112,7 +110,7 @@ export function ShareStudio({ share, ownPhoto }: ShareStudioProps) {
             <span className="text-[1rem]">Include the synthetic face</span>
           </label>
         ) : (
-          ownPhoto && <p className="mt-6 max-w-[30rem] text-[0.875rem] leading-relaxed text-ink-soft">Your photo is never put on a card, and nothing about it is stored to draw one.</p>
+          <p className="mt-6 max-w-[30rem] text-[0.875rem] leading-relaxed text-ink-soft">Your photo is never put on a card, and nothing about it is stored to draw one.</p>
         )}
         {markChosen && <p className="mt-4 max-w-[30rem] border-l-2 border-ink pl-3 text-[0.875rem] leading-relaxed text-ink-soft">{MARK_SAFETY_LINE} It goes on the card too.</p>}
 

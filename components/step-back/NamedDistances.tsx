@@ -21,7 +21,7 @@ export function NamedDistances({ anchors, value, onPick, className }: NamedDista
             type="button"
             aria-pressed={on}
             onClick={() => onPick(a.distanceM)}
-            className={`inline-flex min-h-10 items-center border border-ink px-3.5 text-[0.875rem] leading-none transition-colors sm:min-h-11 sm:px-4 ${on ? "bg-ink text-paper forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]" : "hover:bg-ink/5"}`}
+            className={`inline-flex min-h-10 items-center border border-ink px-3.5 text-[0.875rem] leading-none transition-colors sm:min-h-11 sm:px-4 ${on ? "bg-ink text-paper forced-colors:border-4 forced-colors:font-semibold forced-colors:underline" : "hover:bg-ink/5"}`}
           >
             {a.label}
           </button>

@@ -120,9 +120,9 @@ describe("receipts on a recorded face", () => {
 describe("locationInPhoto", () => {
   test("names the part of the picture an outline sits in", () => {
     const frame = { width: 1000, height: 1000 };
-    expect(locationInPhoto({ x: 100, y: 100, w: 50, h: 50 }, frame)).toBe("the upper left of the photo");
-    expect(locationInPhoto({ x: 800, y: 800, w: 50, h: 50 }, frame)).toBe("the lower right of the photo");
-    expect(locationInPhoto({ x: 475, y: 475, w: 50, h: 50 }, frame)).toBe("the middle of the photo");
-    expect(locationInPhoto({ x: 100, y: 475, w: 50, h: 50 }, frame)).toBe("the left of the photo");
+    expect(locationInPhoto({ x: 100, y: 100, w: 50, h: 50 }, frame)).toBe("in the upper left of the photo");
+    expect(locationInPhoto({ x: 800, y: 800, w: 50, h: 50 }, frame)).toBe("in the lower right of the photo");
+    expect(locationInPhoto({ x: 475, y: 475, w: 50, h: 50 }, frame)).toBe("in the middle of the photo");
+    expect(locationInPhoto({ x: 100, y: 475, w: 50, h: 50 }, frame)).toBe("on the left side of the photo");
   });
 });

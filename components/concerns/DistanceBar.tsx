@@ -32,9 +32,9 @@ export function DistanceBar({ maxM, intervalM, relief, ghostM, tickM = [], axis 
 
   return (
     <div {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": label })} className="relative h-[3rem] w-full">
-      <div className="absolute inset-x-0 top-[0.62rem] h-px bg-[#8a867c]" />
+      <div className="absolute inset-x-0 top-[0.62rem] h-px bg-[#8a867c] forced-colors:bg-[GrayText]" />
       {tickM.map((t) => (
-        <span key={t} className="absolute top-[0.35rem] h-[0.55rem] w-px bg-[#8a867c]" style={{ left: x(t) }} />
+        <span key={t} className="absolute top-[0.35rem] h-[0.55rem] w-px bg-[#8a867c] forced-colors:bg-[GrayText]" style={{ left: x(t) }} />
       ))}
 
       {/* the bar */}
@@ -54,9 +54,9 @@ export function DistanceBar({ maxM, intervalM, relief, ghostM, tickM = [], axis 
       />
 
       {/* whisker */}
-      <div className="absolute top-[1.55rem] h-px bg-ink/70" style={{ left: x(lo), width: `calc(${x(hi)} - ${x(lo)})` }} />
-      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70" style={{ left: x(lo) }} />
-      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70" style={{ left: x(hi) }} />
+      <div className="absolute top-[1.55rem] h-px bg-ink/70 forced-colors:bg-[CanvasText]" style={{ left: x(lo), width: `calc(${x(hi)} - ${x(lo)})` }} />
+      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70 forced-colors:bg-[CanvasText]" style={{ left: x(lo) }} />
+      <span className="absolute top-[1.35rem] h-[0.45rem] w-px bg-ink/70 forced-colors:bg-[CanvasText]" style={{ left: x(hi) }} />
       <span className="num absolute top-[1.85rem] -translate-x-1/2 whitespace-nowrap font-mono text-[0.875rem] leading-none text-ink-soft" style={{ left: x(maxM) }}>
         {formatDistance(maxM)}
       </span>

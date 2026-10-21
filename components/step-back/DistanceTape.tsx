@@ -94,7 +94,7 @@ export function DistanceTape({
                 {m.label}
               </span>
               <span
-                className="absolute w-px bg-[#8a867c]"
+                className="absolute w-px bg-[#8a867c] forced-colors:bg-[GrayText]"
                 style={{ left: left(m.distanceM), top: labelTop + 18, height: `calc(var(--marks-h) + ${BASE}px - ${labelTop + 18}px)` }}
               />
             </div>
@@ -104,14 +104,14 @@ export function DistanceTape({
 
       {/* tape */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0" style={{ top: zoneTop(0), height: ZONE }}>
-        <div className="absolute inset-x-0 h-px bg-[#8a867c]" style={{ top: BASE }} />
-        <div className="absolute left-0 bg-ink" style={{ top: BASE - 1, height: 2, width: percent(u * 100) }} />
+        <div className="absolute inset-x-0 h-px bg-[#8a867c] forced-colors:bg-[GrayText]" style={{ top: BASE }} />
+        <div className="absolute left-0 bg-ink forced-colors:bg-[CanvasText]" style={{ top: BASE - 1, height: 2, width: percent(u * 100) }} />
         {MINOR_TICKS.map((t) => {
           const major = anchors.some((a) => Math.abs(Math.log(a.distanceM / t)) < 1e-6);
           return (
             <span
               key={t}
-              className={`absolute w-px ${major ? "bg-ink" : "bg-[#8a867c]"}`}
+              className={`absolute w-px ${major ? "bg-ink forced-colors:bg-[CanvasText]" : "bg-[#8a867c] forced-colors:bg-[GrayText]"}`}
               style={{ left: left(t), top: major ? BASE - 14 : BASE - 6, height: major ? 28 : 12 }}
             />
           );
@@ -119,7 +119,7 @@ export function DistanceTape({
         {sortedMarks.map((m) => (
           <span
             key={m.id}
-            className={`absolute block h-[9px] w-[9px] rounded-full border border-ink transition-colors duration-300 ${value >= m.distanceM ? "bg-paper" : "bg-ink"}`}
+            className={`absolute block h-[9px] w-[9px] rounded-full border border-ink transition-colors duration-300 ${value >= m.distanceM ? "bg-paper" : "bg-ink forced-colors:bg-[CanvasText]"}`}
             style={{ left: left(m.distanceM), top: BASE, transform: "translate(-50%, -50%)" }}
           />
         ))}
@@ -129,8 +129,8 @@ export function DistanceTape({
           className="absolute flex flex-col items-center"
           style={{ left: percent(u * 100), top: 2, height: ZONE - 4, transform: "translateX(-50%)" }}
         >
-          <span className="tape-knob block h-4 w-4 rounded-full border-2 border-paper bg-ink shadow-[0_0_0_1px_var(--ink)]" />
-          <span className="block w-0.5 grow bg-ink" />
+          <span className="tape-knob block h-4 w-4 rounded-full border-2 border-paper bg-ink forced-colors:bg-[CanvasText] shadow-[0_0_0_1px_var(--ink)]" />
+          <span className="block w-0.5 grow bg-ink forced-colors:bg-[CanvasText]" />
         </div>
       </div>
 
@@ -187,7 +187,7 @@ export function DistanceTape({
             return (
               <div key={a.label}>
                 <span
-                  className="absolute w-px bg-[#8a867c]"
+                  className="absolute w-px bg-[#8a867c] forced-colors:bg-[GrayText]"
                   style={{ left: left(a.distanceM), top: BASE + 14, height: labelTop - 4 - (BASE + 14) }}
                 />
                 <div

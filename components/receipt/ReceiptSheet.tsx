@@ -99,7 +99,7 @@ export function ReceiptTrigger({ entry, visibility, target, scale, viewing, titl
                 {entry.distancesM.map((d) => (
                   <label key={d} className="relative cursor-pointer">
                     <input type="radio" name={groupId} className="peer sr-only" checked={d === distanceM} onChange={() => setDistanceM(d)} />
-                    <span className="num flex min-h-11 min-w-[4.25rem] items-center justify-center border-l border-ink px-3 text-[0.9375rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:bg-[Highlight] forced-colors:peer-checked:text-[HighlightText]">
+                    <span className="num flex min-h-11 min-w-[4.25rem] items-center justify-center border-l border-ink px-3 text-[0.9375rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
                       {formatDistance(d)}
                     </span>
                   </label>
@@ -184,7 +184,7 @@ function MaskCrop({ outline, src, frame, title }: { outline: { x: number; y: num
   const crop = cropAround({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, frame, 1.1, 4 / 3, 190);
   const d = outline.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ") + " Z";
   const where = locationInPhoto({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, frame);
-  const alt = `A close-up of the photo around the area YouCam found, in ${where}. A light outline traces it.`;
+  const alt = `A close-up of the photo around the area YouCam found, ${where}. A light outline traces it.`;
 
   return (
     <figure>
@@ -210,7 +210,7 @@ function MaskCrop({ outline, src, frame, title }: { outline: { x: number; y: num
         </svg>
       </div>
       <figcaption className="mt-2 text-[0.875rem] leading-snug text-ink-soft">
-        {title}: found in {where}.
+        {title}: found {where}.
       </figcaption>
     </figure>
   );

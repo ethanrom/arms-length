@@ -48,7 +48,7 @@ export function MakeItDisappear({ coverage, src, frame, scale, viewing, onRun }:
             {options.map((o, i) => (
               <label key={o.concern} className="relative cursor-pointer">
                 <input type="radio" name={groupId} className="peer sr-only" checked={index === i} onChange={() => setIndex(i)} />
-                <span className="flex min-h-12 min-w-[5.25rem] items-center justify-center border-l border-ink px-5 text-[1rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:bg-[Highlight] forced-colors:peer-checked:text-[HighlightText]">
+                <span className="flex min-h-12 min-w-[5.25rem] items-center justify-center border-l border-ink px-5 text-[1rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
                   {o.title}
                 </span>
               </label>
@@ -105,7 +105,7 @@ export function MakeItDisappear({ coverage, src, frame, scale, viewing, onRun }:
               ].map((v) => (
                 <label key={v.label} className="relative cursor-pointer">
                   <input type="radio" name={viewId} className="peer sr-only" checked={far === v.value} onChange={() => setFar(v.value)} />
-                  <span className="flex min-h-11 items-center justify-center border-l border-ink px-4 text-[0.9375rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:bg-[Highlight] forced-colors:peer-checked:text-[HighlightText]">
+                  <span className="flex min-h-11 items-center justify-center border-l border-ink px-4 text-[0.9375rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
                     {v.label}
                   </span>
                 </label>

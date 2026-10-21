@@ -170,7 +170,7 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
         title="Share what others see"
         lede="Choose the lines. The card has no face unless you add a synthetic one, and it says who it is for."
       >
-        <ShareStudio share={data.share} ownPhoto={data.ownPhoto} />
+        <ShareStudio share={data.share} />
         <ul className="mt-12 max-w-sm divide-y divide-rule border-y border-rule text-[0.9375rem]">
           <li>
             <Link href="/try" className="flex min-h-12 items-center justify-between">

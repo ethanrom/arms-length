@@ -97,12 +97,13 @@ describe("buildResultsData", () => {
     expect(data.share.lines.length).toBe(3);
   });
 
-  test("Worth it? lists every improved concern with the half-strength credit and a simulation image", () => {
+  test("Worth it? lists every improved concern with the YouCam Skin Simulation credit and a simulation image", () => {
     const view = buildResultsData(p2b).worthIt!;
     expect(view.state).toBe("ready");
     expect(view.items.map((i) => i.concern).sort()).toEqual(["acne", "age_spot", "dark_circle", "eye_bag", "pore", "wrinkle"]);
     for (const item of view.items) {
-      expect(item.detail).toContain("YouCam Skin Simulation, half strength");
+      expect(item.detail).toContain("YouCam Skin Simulation");
+      expect(`${item.headline} ${item.detail}`).not.toMatch(/half strength/i);
       expect(item.afterImage).toMatch(/^\/demo\/p2b\/sim-[ab]\.jpg$/);
       const w = p2b.worthIt.find((x) => x.concern === item.concern)!;
       expect(item.headline).toBe(describeWorthIt(worthItInput(w)).headline);

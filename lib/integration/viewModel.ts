@@ -110,6 +110,9 @@ function reliefNoteOf(): string {
   return `A concern with many marks counts as out of sight once even perfect eyes could pick out at most ${Math.round(RELIEF_SHARE * 100)}% of them ${anchorFor(TABLE_M)}; a single area, once it is gone by ${formatDistance(RELIEF_MAX_M)}.`;
 }
 
+/** The simulation is shown as a picture, not as a quantity: the credit says "YouCam Skin Simulation", never "half strength". */
+const noStrength = (text: string) => text.replace(/,? half strength/g, "");
+
 const unmeasuredStub = (concern: ConcernId): ConcernVisibility => ({
   concern,
   targetCount: 0,
@@ -272,8 +275,8 @@ export function buildResultsData(bundle: ReadingBundle, options: ViewOptions = {
               concern: w.concern,
               title: titleOf(w.concern),
               whatIf: w.whatIf,
-              headline: sentences.headline,
-              detail: sentences.detail,
+              headline: noStrength(sentences.headline),
+              detail: noStrength(sentences.detail),
               soft: w.concern === "dark_circle" || w.concern === "eye_bag" || (w.concern === "redness" && typicalM >= ROOM_M),
               typicalM,
               afterImage: w.whatIf.render.imageRef,

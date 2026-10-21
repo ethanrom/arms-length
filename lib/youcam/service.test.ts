@@ -140,13 +140,20 @@ describe("service (live path, fake YouCam)", () => {
     expect(ledger).toHaveBeenCalledTimes(2);
 
     await expect(attempt()).rejects.toMatchObject({ code: "daily_cap", status: 429 });
-    await expect(service.status(CODE)).resolves.toEqual({ live: false, reason: "daily_cap" });
-    await expect(service.status(null)).resolves.toEqual({ live: false, reason: "no_code" });
+    await expect(service.status(CODE)).resolves.toEqual({ live: false, reason: "daily_cap", uploadsAllowed: false });
+    await expect(service.status(null)).resolves.toEqual({ live: false, reason: "no_code", uploadsAllowed: false });
+  });
+
+  test("status.uploadsAllowed is true when live is allowed for the code, false otherwise", async () => {
+    const { service } = setup();
+    expect((await service.status(CODE)).uploadsAllowed).toBe(true);
+    expect((await service.status("not-a-code")).uploadsAllowed).toBe(false);
+    expect((await service.status(null)).uploadsAllowed).toBe(false);
   });
 
   test("status is live for a valid code with budget, and a persona never needs a code", async () => {
     const { service, calls } = setup();
-    await expect(service.status(CODE)).resolves.toEqual({ live: true });
+    await expect(service.status(CODE)).resolves.toEqual({ live: true, uploadsAllowed: true });
     const persona = await service.analysis({ persona: "p2b" }, null);
     expect(persona).toMatchObject({ source: "replay", unitsCharged: 0, fileRef: "persona:p2b" });
     const render = await service.makeup({ fileRef: "persona:p2b", effects: [{ category: "foundation" }] }, null);

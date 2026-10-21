@@ -15,7 +15,7 @@ async function expectNoAxeViolations(page: Page) {
 
 test("the status route says replay_only in replay mode", async ({ request }) => {
   const res = await request.get("/api/youcam/status");
-  expect(await res.json()).toEqual({ live: false, reason: "replay_only" });
+  expect(await res.json()).toEqual({ live: false, reason: "replay_only", uploadsAllowed: true });
 });
 
 test("Check mine: gate, upload, results from a replayed analysis, then the lightest touch", async ({ page }) => {

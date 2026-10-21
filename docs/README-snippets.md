@@ -14,9 +14,10 @@ Numbers with their sources: [`docs/EVAL.md`](EVAL.md) and [`docs/MODEL.md`](MODE
   bound, because the farthest single mark is decided by one outlier. Exact counts live in the receipt.
 - **Better than asking an AI, but not by being cleverer about the recipe.** In 65 real calls ($1.11), Claude Opus 5.5 via
   Amazon Bedrock landed a typical 1.3x from our distance when told a spot's size and contrast. But it gave a different number
-  each time (run-to-run spread 27%, median), doubling the spot raised its answer by 1.4x to 2.3x instead of 2.0x, only 23 of 45
-  answers fell inside our range, it said 0.8 m for pores on every face, and it answered "null" for breakouts on three faces
-  where YouCam found 18, 5 and 3. We measure the inputs per face, give identical results every run, and scale lawfully.
+  each time (run-to-run spread 27%, median), its answers roughly doubled with the spot on average (1.98x and 1.79x) but single
+  pairs of answers ranged from 1.0x to 4.3x, only 23 of 45 answers fell inside our range, it said 0.8 m for pores on every
+  face, and it answered "null" for breakouts on three faces where YouCam found 18, 5 and 3. We measure the inputs per face,
+  give identical results every run, and double exactly when the spot doubles.
 - **"Worth it?" asks whether a change would show.** The visibility of the difference a half-strength YouCam Skin Simulation
   would make, a simulation of the picture and not a result for any product: **pores, a small change** (at most 4% to 14% of
   pores change visibly across a table, none beyond 4 m); **under-eye, a large soft area** that shows even a small change from

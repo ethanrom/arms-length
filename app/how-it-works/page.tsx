@@ -6,6 +6,8 @@ import { CsfChart } from "@/components/how/CsfChart";
 import { IrisFigure } from "@/components/how/IrisFigure";
 import { MeasureFigure } from "@/components/how/MeasureFigure";
 import { SummaryCards } from "@/components/how/SummaryCards";
+import { doublingFacts } from "@/eval/llm-baseline/doubling";
+import summary from "@/eval/llm-baseline/results/summary.json";
 import { MaskStripView } from "@/components/results/MaskStripView";
 import { formatDistance } from "@/lib/copy";
 import { keyDistanceOf } from "@/lib/integration/copy";
@@ -102,6 +104,8 @@ export default function HowItWorksPage() {
   const relief = loadBundle("p1a");
   const pore = relief?.report.concerns.find((c) => c.concern === "pore");
   const poreHalf = pore ? formatDistance(keyDistanceOf(pore)) : "about a metre and a half";
+  const dbl = doublingFacts(summary);
+  const doublingSummary = `On average its answers roughly doubled with the spot (${dbl.mean1to2.toFixed(2)} times for 1 to 2 mm, ${dbl.mean2to4.toFixed(2)} for 2 to 4 mm), but single pairs of answers ranged from ${dbl.pairLow.toFixed(1)} to ${dbl.pairHigh.toFixed(1)} times.`;
 
   return (
     <main id="main" tabIndex={-1} className="outline-none">
@@ -320,7 +324,7 @@ export default function HowItWorksPage() {
 
           <Chapter id="ai" n="08" title={<>Why not just <em className="font-normal italic">ask an AI?</em></>}>
             <p className="serif !max-w-none text-[clamp(1.375rem,1.1rem+1vw,1.875rem)] leading-[1.25] text-ink" style={{ fontWeight: 360 }}>
-              Asked the same question five times, a frontier AI gave five answers, said &ldquo;no breakouts&rdquo; where YouCam found 18, 5 and 3, and broke the size-doubling law. It knows the recipe; it can&rsquo;t measure your face.
+              Asked the same question five times, a frontier AI gave five answers and said &ldquo;no breakouts&rdquo; where YouCam found 18, 5 and 3. It knows the recipe; it can&rsquo;t measure your face.
             </p>
             <p>
               We ran the comparison for real: 65 calls to a frontier vision model. It is better than we expected at the general physics. Told a spot&rsquo;s size and contrast, its typical answer landed about 1.3 times from our model&rsquo;s. What it cannot do is give a number you can build on.
@@ -328,7 +332,7 @@ export default function HowItWorksPage() {
             <ul className="!max-w-none border-t border-ink">
               {[
                 "Five identical asks about one patch differed by 16% to 36%, and the highest of the five was 1.4 to 2.1 times the lowest. Ours has no spread.",
-                "Doubling a spot should double the distance. Its answers rose by 1.4 to 2.3 times instead.",
+                `Doubling a spot should double the distance. ${doublingSummary} Ours doubles exactly, every time.`,
                 "On the four demo faces it said “no breakouts” for three faces where YouCam located 18, 5 and 3. It gave the same pore distance, 0.8 m, on every face.",
                 "It gives one number per concern: no count and no location. YouCam’s masks give both, which is what the Step back slider and the receipts are built on.",
               ].map((t) => (
@@ -341,9 +345,9 @@ export default function HowItWorksPage() {
             <ChartFrame
               src="/charts/ai-comparison.svg"
               width={720}
-              height={1248}
+              height={1284}
               label="AI comparison chart, scrolls sideways on small screens"
-              alt="Two charts. First, for nine dark-spot patches, an AI's five answers each (dots) scatter widely, often outside our model's range (blue bar), while ours is a single range. Second, doubling a spot's size should double the distance; the AI's answers rise by 1.4 to 2.3 times instead of 2.0."
+              alt={`Two charts. First, for nine dark-spot patches, an AI's five answers each (dots) scatter widely, often outside our model's range (blue bar), while ours is a single range. Second, doubling a spot's size should double the distance. ${doublingSummary} Our model gives exactly 2.0.`}
             />
             <p>
               Not shown: that the AI is wrong on real faces. There is no ground truth for those, and this test only measures consistency and sensitivity to the individual face. The method, prompts and every raw answer are in{" "}

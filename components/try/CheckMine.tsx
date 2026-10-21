@@ -96,7 +96,7 @@ export function CheckMine() {
         <input
           id={codeId}
           name="access-code"
-          type="text"
+          type="password"
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}

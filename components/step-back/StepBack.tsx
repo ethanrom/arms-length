@@ -394,7 +394,8 @@ export function StepBack({
       <div className="order-5 lg:col-start-2 lg:row-span-2 lg:row-start-2">
         <p className="eyebrow !text-[0.875rem]">At this distance</p>
         <ul aria-label="What can be picked out at this distance" className="mt-3 divide-y divide-rule border-y border-rule">
-          {concerns.map((c) => {
+          {/* Large soft areas carry far on every face and never change with the tape, so the rows that respond to it lead. */}
+          {[...concerns].sort((a, b) => Number(a.soft) - Number(b.soft)).map((c) => {
             const st = statusAt(c, distance);
             const on = st.state !== "none";
             return (

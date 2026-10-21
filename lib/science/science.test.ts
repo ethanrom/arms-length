@@ -330,6 +330,24 @@ describe("checks and references", () => {
     expect(rows.find((r) => r.id === "determinism")!.result).toContain("identical");
   });
 
+  test("the figures quoted from docs/NUMBERS.md are still in it, and the AI row agrees with it", () => {
+    const ledger = fs.readFileSync("docs/NUMBERS.md", "utf8");
+    for (const quoted of ["4.2e-7 in log10", "3.76 dB", "2.93 dB", "0.029 dB", "0.1% to 4.8%", "1.4x to 2.1x", "16% to 36%", "23 of 45", "1.33x", "8950a9c3"]) {
+      expect(ledger, quoted).toContain(quoted);
+    }
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r.result]));
+    expect(byId.castle).toContain("4.2e-7");
+    expect(byId.castle).toContain("3.76 dB");
+    expect(byId.castle).toContain("2.93 dB");
+    expect(byId.scale).toContain("0.1% to 4.8%");
+    expect(byId.ai).toContain("16% to 36%");
+    expect(byId.ai).toContain("×1.4 to ×2.1");
+    expect(byId.ai).toContain("23 of 45");
+    expect(byId.ai).toContain("×1.33");
+    expect(byId.ai).toContain("×1.4 to ×2.3");
+    expect(byId.determinism).toContain("8950a9c315a8");
+  });
+
   test("references are numbered in order, keys are unique, and cited keys exist", () => {
     const keys = REFERENCES.map((r) => r.key);
     expect(new Set(keys).size).toBe(keys.length);

@@ -92,6 +92,9 @@ export function CsfExplorer() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-14">
         <div>
           <CsfPlot f0={f0} contrastPct={contrastPct} light={light} />
+          <p className="mt-1 text-[0.875rem] leading-snug text-ink-soft">
+            Solid: filter gain S(f). Dashed: sensitivity to a one-octave patch in indoor light. Dotted: in daylight. The bar on the axis marks the frequencies where your contrast is visible.
+          </p>
           <div className="mt-4 grid gap-x-10 gap-y-2 sm:grid-cols-2">
             <RangeField
               label="Spatial frequency"
@@ -163,7 +166,8 @@ export function CsfExplorer() {
 function CsfPlot({ f0, contrastPct, light }: { f0: number; contrastPct: number; light: Light }) {
   const box = useRef<HTMLDivElement>(null);
   const width = useElementWidth(box);
-  const height = Math.round(Math.min(460, Math.max(300, width * 0.66)));
+  const narrow = width > 0 && width < 560;
+  const height = Math.round(narrow ? Math.max(320, width * 0.9) : Math.min(460, Math.max(300, width * 0.66)));
   const pw = Math.max(0, width - M.l - M.r);
   const ph = height - M.t - M.b;
   const lx = (f: number) => M.l + (Math.log(f / CSF_F_MIN) / Math.log(CSF_F_MAX / CSF_F_MIN)) * pw;
@@ -227,7 +231,7 @@ function CsfPlot({ f0, contrastPct, light }: { f0: number; contrastPct: number; 
           <line x1={M.l} x2={M.l + pw} y1={M.t + ph} y2={M.t + ph} stroke={INK} strokeWidth="1" />
           <line x1={M.l} x2={M.l} y1={M.t} y2={M.t + ph} stroke={INK} strokeWidth="1" />
           <text x={M.l + pw / 2} y={height - 8} textAnchor="middle" fontSize="13" fill={INK} letterSpacing="0.4">
-            SPATIAL FREQUENCY (CYCLES PER DEGREE, FINER TO THE RIGHT)
+            {narrow ? "CYCLES PER DEGREE" : "SPATIAL FREQUENCY (CYCLES PER DEGREE, FINER TO THE RIGHT)"}
           </text>
           <text transform={`translate(14 ${M.t + ph / 2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill={INK} letterSpacing="0.4">
             SENSITIVITY
@@ -252,12 +256,11 @@ function CsfPlot({ f0, contrastPct, light }: { f0: number; contrastPct: number; 
           <text x={lx(0.13)} y={ly(csf(0.13, STANDARD_A)) - 10} fontSize="14" fill={INK} stroke={PAPER} strokeWidth="4" paintOrder="stroke" style={{ fontWeight: 500 }}>
             Filter gain S(f)
           </text>
-          <text x={lx(PATCH_F_MAX * 0.5)} y={ly(1 / patchThreshold(PATCH_F_MAX * 0.5, LUMINANCE[light])) - 12} textAnchor="end" fontSize="14" fill={INK} stroke={PAPER} strokeWidth="4" paintOrder="stroke" style={{ fontWeight: 500 }}>
-            Patch sensitivity
-          </text>
-          <text x={M.l + 12} y={ly(1.6)} fontSize="13" fill={MUTED} stroke={PAPER} strokeWidth="4" paintOrder="stroke">
-            dashed: indoor light, dotted: daylight
-          </text>
+          {!narrow && (
+            <text x={lx(PATCH_F_MAX * 0.5)} y={ly(1 / patchThreshold(PATCH_F_MAX * 0.5, LUMINANCE[light])) - 12} textAnchor="end" fontSize="14" fill={INK} stroke={PAPER} strokeWidth="4" paintOrder="stroke" style={{ fontWeight: 500 }}>
+              Patch sensitivity
+            </text>
+          )}
 
           {/* the chosen frequency */}
           <line x1={lx(f0)} x2={lx(f0)} y1={ly(here)} y2={M.t + ph} stroke={INK} strokeWidth="1" strokeDasharray="2 3" />

@@ -60,9 +60,9 @@ export function gaborSdDeg(f0: number): number {
   return PATCH_GABOR_SD_CYCLES / f0;
 }
 
-/** Side of the drawn field in degrees: eight sd of the envelope, so the patch fills about half the picture, and at least one degree. */
+/** Side of the drawn field in degrees: six sd of the envelope, so the patch fills most of the picture, and at least one degree. */
 export function gaborFieldDeg(f0: number): number {
-  return Math.max(1, 8 * gaborSdDeg(f0));
+  return Math.max(1, 6 * gaborSdDeg(f0));
 }
 
 /**

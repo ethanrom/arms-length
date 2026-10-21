@@ -81,7 +81,7 @@ export function ReferenceList() {
             <span className="num font-mono text-[0.875rem] text-ink-soft">[{n}]</span>
             <div>
               <p className="text-ink">
-                {r.authors}
+                {r.authors.replace(/\.$/, "")}
                 {r.year ? ` (${r.year}).` : "."} {r.title ? <em>{r.title}.</em> : null} {r.venue}.
               </p>
               <p className="mt-1 text-ink-soft">{r.used}</p>
@@ -107,7 +107,7 @@ export function ReferenceList() {
 const DOCS = [
   { path: "docs/MODEL.md", name: "MODEL.md", text: "The model in full: every step, every constant, with its source. A test fails if the table and the code disagree." },
   { path: "docs/EVAL.md", name: "EVAL.md", text: "How we check it: ModelFest, the planted-feature oracles, the properties the tests enforce, the AI head-to-head." },
-  { path: "docs/NUMBERS.md", name: "NUMBERS.md", text: "Every number the project quotes, with the file or command it comes from." },
+  { path: "docs/NUMBERS.md", name: "NUMBERS.md", text: "Every number quoted in the README, the video and the entry text, each with the file or command it comes from." },
 ] as const;
 
 const COMMANDS = [
@@ -141,7 +141,7 @@ export function Reproduce() {
             </a>
             <p className="mt-1 max-w-[34rem] text-[0.9375rem] leading-relaxed text-ink-soft">
               github.com/ethanrom/arms-length. The widgets above are in <code className="font-mono text-[0.875rem]">components/science</code>; the helpers behind them are in{" "}
-              <code className="font-mono text-[0.875rem]">lib/science</code>, each with a unit test.
+              <code className="font-mono text-[0.875rem]">lib/science</code>, covered by unit tests.
             </p>
           </li>
         </ul>

@@ -182,7 +182,8 @@ function SurvivalChart({
 }) {
   const box = useRef<HTMLDivElement>(null);
   const width = useElementWidth(box);
-  const height = Math.round(Math.min(420, Math.max(300, width * 0.52)));
+  const narrow = width > 0 && width < 560;
+  const height = Math.round(narrow ? Math.max(320, width * 0.9) : Math.min(420, Math.max(300, width * 0.52)));
   const pw = Math.max(0, width - M.l - M.r);
   const ph = height - M.t - M.b;
   const x = (d: number) => M.l + (Math.log(Math.min(D_MAX, Math.max(D_MIN, d)) / D_MIN) / Math.log(D_MAX / D_MIN)) * pw;
@@ -255,15 +256,19 @@ function SurvivalChart({
             even perfect eyes (at most)
           </text>
           <text x={x(0.22)} y={y(0.45)} fontSize="14" fill={INK} stroke={PAPER} strokeWidth="4" paintOrder="stroke" style={{ fontWeight: 500 }}>
-            typical sharp-eyed person
+            {narrow ? "typical" : "typical sharp-eyed person"}
           </text>
           <line x1={x(far)} x2={x(far)} y1={y(0.42)} y2={M.t + ph + 14} stroke={INK} strokeWidth="1.5" />
-          <text x={x(far) - 6} y={y(0.42) + 4} textAnchor="end" fontSize="13" fill={INK} stroke={PAPER} strokeWidth="4" paintOrder="stroke">
-            the farthest one: {fmtMetres(far)}
-          </text>
-          <text x={M.l + pw} y={height - 14} textAnchor="end" fontSize="13" fill={MUTED}>
-            squares: the recorded report
-          </text>
+          {!narrow && (
+            <>
+              <text x={x(far) - 6} y={y(0.42) + 4} textAnchor="end" fontSize="13" fill={INK} stroke={PAPER} strokeWidth="4" paintOrder="stroke">
+                the farthest one: {fmtMetres(far)}
+              </text>
+              <text x={M.l + pw} y={height - 14} textAnchor="end" fontSize="13" fill={MUTED}>
+                squares: the recorded report
+              </text>
+            </>
+          )}
           <text x={M.l} y={height - 14} fontSize="13" fill={INK} letterSpacing="0.4">
             DISTANCE FROM THE VIEWER
           </text>

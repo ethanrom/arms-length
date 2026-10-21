@@ -80,7 +80,7 @@ export function ModelFestWidget() {
       label="ModelFest: predicted against observed thresholds for 41 stimuli, with the stimuli drawn from their definitions"
       caption={
         <>
-          Each point is one ModelFest stimulus: the contrast 16 observers needed to just see it (across), against the contrast the detector says it needs (up). Points on the
+          Each point is one ModelFest stimulus: the contrast 16 observers needed to just see it (across; more negative is easier to see), against the contrast the detector says it needs (up). Points on the
           diagonal are perfect; the shaded strip is ±1 dB. Filled points are the {SUMMARY.nSkin} shapes that look like skin features: soft blobs, a disk, a thin line and
           its dipole, an edge. The two missing stimuli of the 43 are random noise and a photograph, which have no parameters to generate. Nothing was tuned on this data.
         </>
@@ -186,6 +186,23 @@ function Scatter({ activeId, pinned, onHover, onPin }: { activeId: number; pinne
     box.current?.querySelector<HTMLButtonElement>(`[data-point="${id}"]`)?.focus();
   };
 
+  // The point nearest to the pointer, within 22 px: dense clusters are reachable because only the closest one answers.
+  const nearest = (e: { clientX: number; clientY: number; currentTarget: SVGSVGElement }): number | null => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const mx = e.clientX - r.left;
+    const my = e.clientY - r.top;
+    let best: number | null = null;
+    let bestD = 22;
+    for (const p of MODELFEST_POINTS) {
+      const d = Math.hypot(px(p.observedDb) - mx, py(p.predictedDb) - my);
+      if (d < bestD) {
+        best = p.id;
+        bestD = d;
+      }
+    }
+    return best;
+  };
+
   // ±1 dB strip around the diagonal.
   const strip = `M${px(D_MIN)} ${py(D_MIN + 1)} L${px(D_MAX - 1)} ${py(D_MAX)} L${px(D_MAX)} ${py(D_MAX - 1)} L${px(D_MIN + 1)} ${py(D_MIN)} Z`;
 
@@ -194,7 +211,18 @@ function Scatter({ activeId, pinned, onHover, onPin }: { activeId: number; pinne
       <div className="relative mx-auto" style={{ width: size || undefined, height: size || 360 }}>
         {size > 0 && (
           <>
-            <svg width={size} height={size} role="img" aria-label="Scatter of predicted against observed threshold in decibels for 41 ModelFest stimuli. Points lie close to the diagonal." style={{ fontFamily: SVG_FONT }} className="absolute inset-0">
+            <svg width={size} height={size} role="img" aria-label="Scatter of predicted against observed threshold in decibels for 41 ModelFest stimuli. Points lie close to the diagonal." style={{ fontFamily: SVG_FONT }}
+              className="absolute inset-0"
+              onPointerMove={(e) => {
+                if (e.pointerType === "touch") return;
+                onHover(nearest(e));
+              }}
+              onPointerLeave={() => onHover(null)}
+              onClick={(e) => {
+                const id = nearest(e);
+                if (id !== null) onPin(id);
+              }}
+            >
               {ticks.map((t) => (
                 <g key={t}>
                   <line x1={M.l} x2={M.l + pw} y1={py(t)} y2={py(t)} stroke={RULE} strokeWidth="1" />
@@ -212,14 +240,16 @@ function Scatter({ activeId, pinned, onHover, onPin }: { activeId: number; pinne
               <line x1={M.l} x2={M.l + pw} y1={M.t + ph} y2={M.t + ph} stroke={INK} strokeWidth="1" />
               <line x1={M.l} x2={M.l} y1={M.t} y2={M.t + ph} stroke={INK} strokeWidth="1" />
               <text x={M.l + pw / 2} y={size - 8} textAnchor="middle" fontSize="13" fill={INK} letterSpacing="0.4">
-                OBSERVED THRESHOLD (dB, MORE NEGATIVE = EASIER TO SEE)
+                OBSERVED THRESHOLD (dB)
               </text>
               <text transform={`translate(14 ${M.t + ph / 2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill={INK} letterSpacing="0.4">
                 PREDICTED (dB)
               </text>
-              <text x={px(-14)} y={py(-14) - 14} textAnchor="middle" fontSize="13" fill={MUTED} transform={`rotate(-45 ${px(-14)} ${py(-14) - 14})`} stroke={PAPER} strokeWidth="4" paintOrder="stroke">
-                prediction = observation
-              </text>
+              {size >= 480 && (
+                <text x={px(-14)} y={py(-14) + 22} textAnchor="middle" fontSize="13" fill={MUTED} transform={`rotate(-45 ${px(-14)} ${py(-14) + 22})`} stroke={PAPER} strokeWidth="4" paintOrder="stroke">
+                  prediction = observation
+                </text>
+              )}
 
               {active && (
                 <>
@@ -246,7 +276,7 @@ function Scatter({ activeId, pinned, onHover, onPin }: { activeId: number; pinne
                 <text x="141" y="0">other stimuli</text>
               </g>
             </svg>
-            {/* real buttons over the dots: 28 px targets, one tab stop, arrow keys to move */}
+            {/* one real button per dot for keyboard and screen readers: one tab stop, arrow keys to move */}
             <div role="group" aria-label="ModelFest stimuli. Arrow keys move between points." onKeyDown={onKey}>
               {MODELFEST_POINTS.map((p) => (
                 <button
@@ -260,8 +290,6 @@ function Scatter({ activeId, pinned, onHover, onPin }: { activeId: number; pinne
                   aria-label={`Stimulus ${p.id}, ${p.name}. Observed ${p.observedDb.toFixed(1)} dB, predicted ${p.predictedDb.toFixed(1)} dB, error ${fmtDb(p.errorDb)}.`}
                   aria-pressed={p.id === pinned}
                   onClick={() => onPin(p.id)}
-                  onPointerEnter={() => onHover(p.id)}
-                  onPointerLeave={() => onHover(null)}
                   onFocus={() => onHover(p.id)}
                   onBlur={() => onHover(null)}
                 />

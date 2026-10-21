@@ -159,9 +159,8 @@ export const REFERENCES: readonly Reference[] = [
   },
   {
     key: "berkley1975",
-    authors: "Berkley, M.A., Kitterle, F. & Watkins, D.W. (oblique effect); Rovamo, J. et al. (area model)",
-    year: 1975,
-    venue: "Berkley et al. 1975, as used by Watson & Ahumada (2005); Rovamo et al. 1993, as used in castleCSF",
+    authors: "Berkley, M.A., Kitterle, F. & Watkins, D.W. (1975); Rovamo, J. et al. (1993)",
+    venue: "The oblique effect, as used by Watson & Ahumada (2005); the area model, as used in castleCSF",
     links: [],
     used: "The oblique effect (fixed, not fitted, in the detector) and how sensitivity grows with the size of a patch (inside castleCSF).",
   },

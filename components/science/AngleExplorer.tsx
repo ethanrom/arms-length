@@ -189,7 +189,8 @@ function SizeDistanceMap({ size, distance, line, grid, doubling, onPick }: MapPr
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const width = useElementWidth(box);
-  const height = Math.round(clamp(width * 0.64, 300, 470));
+  const narrow = width > 0 && width < 560;
+  const height = Math.round(clamp(width * (narrow ? 0.95 : 0.64), 300, 470));
   const pw = Math.max(0, width - M.l - M.r);
   const ph = height - M.t - M.b;
   const x = (d: number) => M.l + (d / MAX_DIST) * pw;
@@ -245,7 +246,7 @@ function SizeDistanceMap({ size, distance, line, grid, doubling, onPick }: MapPr
     const deg = -(Math.atan(slope) * 180) / Math.PI;
     return { text, transform: `translate(${px.toFixed(1)} ${py.toFixed(1)}) rotate(${deg.toFixed(1)}) translate(0 ${offset})` };
   };
-  const labels = [alongLine(typical, "typical eyes", -9), alongLine(perfect, "perfect eyes", 19)];
+  const labels = [alongLine(typical, narrow ? "typical" : "typical eyes", -9), alongLine(perfect, narrow ? "perfect" : "perfect eyes", 19)];
 
   const dTicks = [0, 2, 4, 6, 8, 10];
   const sTicks = [0, 1, 2, 3, 4, 5, 6];
@@ -312,7 +313,7 @@ function SizeDistanceMap({ size, distance, line, grid, doubling, onPick }: MapPr
                 <line x1={x(r.typicalM)} x2={x(r.typicalM)} y1={y(r.sizeMm)} y2={M.t + ph} stroke={INK} strokeOpacity="0.55" strokeWidth="1" strokeDasharray="2 3" />
                 <line x1={M.l} x2={x(r.typicalM)} y1={y(r.sizeMm)} y2={y(r.sizeMm)} stroke={INK} strokeOpacity="0.55" strokeWidth="1" strokeDasharray="2 3" />
                 <circle cx={x(r.typicalM)} cy={y(r.sizeMm)} r="4.5" fill={INK} stroke={PAPER} strokeWidth="2" />
-                {x(r.typicalM) < M.l + pw - 10 && (
+                {!narrow && x(r.typicalM) < M.l + pw - 10 && (
                   <text
                     x={x(r.typicalM) - 9}
                     y={y(r.sizeMm) - 9}
@@ -340,7 +341,7 @@ function SizeDistanceMap({ size, distance, line, grid, doubling, onPick }: MapPr
               Seen
             </text>
             <text x={M.l + pw - 10} y={M.t + ph - 12} textAnchor="end" fontSize="13" fill={MUTED} stroke={PAPER} strokeWidth="4" paintOrder="stroke">
-              Out of sight, even for perfect eyes
+              {narrow ? "Out of sight" : "Out of sight, even for perfect eyes"}
             </text>
 
             {/* where you are */}

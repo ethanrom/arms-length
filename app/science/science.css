@@ -95,8 +95,12 @@
   }
 }
 
-/* The map and the scatter use real buttons as hit targets; they are invisible until focused or hovered. */
+/*
+ * The scatter keeps one real button per point for keyboard and screen-reader users. They are invisible until focused and take
+ * no pointer events: with 41 points close together, the chart finds the nearest point to the pointer instead (see ModelFestWidget).
+ */
 .sci-hit {
+  pointer-events: none;
   position: absolute;
   width: 1.75rem;
   height: 1.75rem;

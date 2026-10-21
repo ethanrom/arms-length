@@ -47,10 +47,17 @@ export function buildChecks(): CheckRow[] {
   const peakB = csfPeak(STANDARD_B);
   const worst = fiveStimuliWorstDb();
   const doubling = diskReach(2, 12, viewingAt(45)).typicalM / diskReach(1, 12, viewingAt(45)).typicalM;
-  const a = summary.testA.aggregate;
   const b = summary.testB.aggregate;
-  const at30 = summary.testB.scaling.find((s) => s.weberPct === 30);
   const det = summary.testA.oursDeterminism;
+  const cvs = summary.testB.patches.map((p) => p.llm.cv);
+  const ratios = summary.testB.patches.map((p) => p.llm.maxOverMin);
+  const cvLo = Math.min(...cvs);
+  const cvHi = Math.max(...cvs);
+  const ratioLo = Math.min(...ratios);
+  const ratioHi = Math.max(...ratios);
+  const doublings = summary.testB.scaling.flatMap((x) => [x.llm2over1, x.llm4over2]);
+  const scaleLo = Math.min(...doublings);
+  const scaleHi = Math.max(...doublings);
 
   return [
     {
@@ -90,8 +97,11 @@ export function buildChecks(): CheckRow[] {
       id: "castle",
       check: "castleCSF port",
       result:
-        "Rows of castleCSF's own data files equal a reference port to 1e-4 in log10 sensitivity, and lie within 4 dB (Gabors) and 3.5 dB (discs) of the measurements. The luminance factors agree with the reference port to three decimals.",
-      sources: [{ label: "lib/vision/castle.test.ts", href: codeUrl("lib/vision/castle.test.ts") }],
+        "Rows of castleCSF's own data files, run through our port, equal a reference port to 4.2e-7 in log10 sensitivity at the worst of five (the test allows 1e-4). They lie within 3.76 dB (Gabors) and 2.93 dB (discs) of the measurements, as castleCSF itself does (the test allows 4 and 3.5 dB).",
+      sources: [
+        { label: "lib/vision/castle.test.ts", href: codeUrl("lib/vision/castle.test.ts") },
+        { label: "docs/NUMBERS.md section 1.1", href: codeUrl("docs/NUMBERS.md") },
+      ],
       command: "npx vitest run lib/vision/castle.test.ts",
       cites: ["castle2024"],
     },
@@ -119,10 +129,10 @@ export function buildChecks(): CheckRow[] {
       id: "scale",
       check: "Iris ruler against scale from masks",
       result:
-        "A second, independent ruler (the spacing of the under-eye regions in the YouCam masks) lands within 0.1% to 4.8% of the iris ruler on the recorded faces; the test requires within 10% on three sets, one held out when the ratios were calibrated.",
+        "A second, independent ruler (the spacing of the under-eye regions in the YouCam masks) lands within 0.1% to 4.8% of the iris ruler on the four recorded faces; the test requires within 10% on three sets, one held out when the ratios were calibrated.",
       sources: [
         { label: "lib/scale/fromMasks.test.ts", href: codeUrl("lib/scale/fromMasks.test.ts") },
-        { label: "docs/YOUCAM.md", href: codeUrl("docs/YOUCAM.md") },
+        { label: "docs/NUMBERS.md section 2", href: codeUrl("docs/NUMBERS.md") },
       ],
       command: "npx vitest run lib/scale/fromMasks.test.ts",
       cites: ["ruefer2005"],
@@ -138,10 +148,10 @@ export function buildChecks(): CheckRow[] {
     {
       id: "ai",
       check: "The AI head-to-head",
-      result: `${summary.meta.calls} real calls to a frontier vision model. Five identical asks about one face differed: the highest answer was a median ${a.medianMaxOverMin.toFixed(1)}× the lowest (worst ${a.worstMaxOverMin.toFixed(1)}×) over ${a.cellsWithSpread} face-and-concern cells. Told a spot's size and contrast, ${b.answersInsideModelRange} of ${b.answersTotal} answers fell inside our model's range. Doubling a spot at 30% contrast should double the distance: ours gives ×${(at30?.ours2over1 ?? 0).toFixed(2)}; its median answers rose ×${(at30?.llm2over1 ?? 0).toFixed(1)}.`,
+      result: `${summary.meta.calls} real calls to a frontier vision model. Told a spot's size and contrast, its median answer was a geometric-mean ×${b.geometricMeanFactorOfMedianVsNominal.toFixed(2)} from ours, and ${b.answersInsideModelRange} of ${b.answersTotal} answers fell inside our model's range. Five identical asks about one spot varied with a coefficient of variation of ${Math.round(cvLo * 100)}% to ${Math.round(cvHi * 100)}% (the highest answer was ×${ratioLo.toFixed(1)} to ×${ratioHi.toFixed(1)} the lowest); doubling a spot should double the distance, and its medians rose ×${scaleLo.toFixed(1)} to ×${scaleHi.toFixed(1)} where ours rises exactly ×2. On the faces it gave the same pore distance on all four.`,
       sources: [
         { label: "eval/llm-baseline", href: codeUrl("eval/llm-baseline") },
-        { label: "docs/EVAL.md section 6", href: codeUrl("docs/EVAL.md") },
+        { label: "docs/NUMBERS.md section 4", href: codeUrl("docs/NUMBERS.md") },
       ],
       command: "npx tsx eval/llm-baseline/run.ts --offline",
       cites: [],

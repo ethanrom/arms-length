@@ -31,8 +31,8 @@ test("/science loads with its contents list, the evidence sections and the nav e
   await expect(page.getByRole("heading", { level: 1 })).toContainText("running in your browser");
   const toc = page.getByRole("navigation", { name: "On this page" });
   await expect(toc.locator("ol a")).toHaveCount(10);
-  await expect(toc.getByRole("link", { name: /How we checked it/ })).toHaveAttribute("href", "#checks");
-  await expect(toc.getByRole("link", { name: /References/ })).toHaveAttribute("href", "#references");
+  await expect(toc.locator("ol").getByRole("link", { name: /How we checked it/ })).toHaveAttribute("href", "#checks");
+  await expect(toc.locator("ol").getByRole("link", { name: /References/ })).toHaveAttribute("href", "#references");
   await expect(page.getByRole("navigation", { name: "Main" }).first().getByRole("link", { name: "The science" })).toHaveAttribute("href", "/science");
 });
 
@@ -106,9 +106,13 @@ test("modelfest: 41 points, hover shows the stimulus and its error, the headline
   await points.nth(3).focus();
   await expect(figure.getByText(/^Stimulus \d+$/)).toBeVisible();
   await expect(figure.locator("dt", { hasText: "Error" })).toBeVisible();
-  await points.nth(10).hover();
-  const panel = figure.locator("dl").last();
-  await expect(panel).toContainText(/dB/);
+  // Hovering the chart picks the nearest point, even inside the dense cluster.
+  const target = points.nth(10);
+  const id = await target.getAttribute("data-point");
+  const box = (await target.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(figure.getByText(`Stimulus ${id}`, { exact: true })).toBeVisible();
+  await expect(figure.locator("dl").last()).toContainText(/dB/);
 
   // Pick the 0.25 degree disk and recompute its threshold with the production detector in a worker.
   await figure.getByRole("button", { name: /Stimulus 40: Disk/ }).click();
@@ -123,9 +127,9 @@ test("follow one mark: the outline is traced from the mask, the distance flips t
   const figure = page.locator("#follow figure").first();
   const caption = page.getByTestId("follow-caption");
   await expect(caption).toContainText(/dark spot \d+ of 89/);
-  // Step 1 draws a polygon, not the 4-corner fallback box.
+  // Step 1 draws the traced polygon (a handful of corners even for a small spot), not the 4-corner fallback box.
   const outline = page.locator("#follow ol li").first().locator("svg path").last();
-  await expect(outline).toHaveAttribute("d", /^M[\d. ]+(L[\d. ]+){8,}Z$/, { timeout: 15_000 });
+  await expect(outline).toHaveAttribute("d", /^M[\d. ]+(L[\d. ]+){5,}Z$/, { timeout: 15_000 });
   await expect(figure.getByText("YouCam found it here.")).toBeVisible();
 
   const seen = page.getByRole("slider", { name: "Seen from" });

@@ -329,7 +329,7 @@ Source: `internal/LEDGER.md` (gitignored; the project's own ledger, cross-checke
 | --- | --- | --- | --- |
 | YouCam API endpoints called | 6 | `lib/youcam/client.ts` (see section 5) | `npx tsx scripts/docs/numbers.ts --section youcam` |
 | Our own API routes | 6 (`/api/visibility`, `/api/youcam/analysis`, `/api/youcam/cleanup`, `/api/youcam/makeup`, `/api/youcam/simulate`, `/api/youcam/status`) | `app/api/**/route.ts` | `find app/api -name route.ts` |
-| Axe accessibility scan in the e2e specs | 0 violations asserted on 13 routes: `/`, `/for-brands`, `/how-it-works`, `/privacy`, `/self-test`, `/share/p3a`, `/try`, `/try/live`, `/try/not-a-face`, `/try/p1a`, `/try/p2b`, `/try/p3a`, `/try/p5a` | static scan of `tests/e2e/*.spec.ts`: tests that call the axe helper and the pages they `goto` (6 of 6 spec files assert it). The specs require an empty violations list; this table does not record a run | `npx tsx scripts/docs/numbers.ts --section engineering-misc`; `npm run e2e` |
+| Axe accessibility scan in the e2e specs | 0 violations asserted on 14 routes: `/`, `/for-brands`, `/how-it-works`, `/privacy`, `/science`, `/self-test`, `/share/p3a`, `/try`, `/try/live`, `/try/not-a-face`, `/try/p1a`, `/try/p2b`, `/try/p3a`, `/try/p5a` | static scan of `tests/e2e/*.spec.ts`: tests that call the axe helper and the pages they `goto` (7 of 7 spec files assert it). The specs require an empty violations list; this table does not record a run | `npx tsx scripts/docs/numbers.ts --section engineering-misc`; `npm run e2e` |
 
 Source lines of TypeScript per `lib/` module (physical lines, as `wc -l` counts them; test files separate).
 
@@ -341,12 +341,13 @@ Source lines of TypeScript per `lib/` module (physical lines, as `wc -l` counts 
 | `lib/coverage` | 7 | 571 | 3 | 429 |
 | `lib/integration` | 17 | 2,191 | 6 | 541 |
 | `lib/scale` | 4 | 345 | 2 | 206 |
+| `lib/science` | 11 | 952 | 1 | 370 |
 | `lib/selftest` | 4 | 203 | 1 | 85 |
 | `lib/skin` | 11 | 2,223 | 5 | 522 |
 | `lib/util` | 0 | 0 | 1 | 5 |
 | `lib/vision` | 14 | 1,969 | 8 | 844 |
 | `lib/youcam` | 17 | 1,845 | 8 | 1,099 |
-| **Total** | **100** | **12,183** | **38** | **4,997** |
+| **Total** | **111** | **13,135** | **39** | **5,367** |
 
 Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.test.ts`). Reproduce: `find lib/vision -name '*.ts' ! -name '*.test.ts' | xargs cat | wc -l` for one module, or `npx tsx scripts/docs/numbers.ts --section engineering-lines`.
 
@@ -358,8 +359,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 | Number | Value | Source | Reproduce |
 | --- | --- | --- | --- |
-| Unit tests (vitest) | 379 in 43 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
-| End-to-end tests (Playwright) | 52 in 6 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
+| Unit tests (vitest) | 410 in 44 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
+| End-to-end tests (Playwright) | 63 in 7 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
 
 <!-- generated:engineering-tests:end -->
 
@@ -388,8 +389,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 Slow tables (3.2, 3.3 and 6.1) are not recomputed by `npm test`. Instead `lib/vision/numbers.doc.test.ts` checks two hashes:
 
-- inputs: `4a00c1cac52df404`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
-- slow tables: `4cf08c1044f4297f`. The tables above as committed, so a hand edit differs.
+- inputs: `2c25cc78495a5d65`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
+- slow tables: `9c64633453da2917`. The tables above as committed, so a hand edit differs.
 
 When either test fails, run `npx tsx scripts/docs/numbers.ts --write` and commit. `--check` recomputes everything, including the slow tables.
 

@@ -132,7 +132,7 @@ function BandAxis({ typicalM, perfectM }: { typicalM: number; perfectM: number }
               </text>
             </g>
           ))}
-          {DISTANCE_ANCHORS.filter((a) => ["mirror", "conversation", "across_room"].includes(a.id)).map((a) => (
+          {(width < 520 ? [] : DISTANCE_ANCHORS.filter((a) => ["mirror", "conversation", "across_room"].includes(a.id))).map((a) => (
             <g key={a.id}>
               <line x1={x(a.m)} x2={x(a.m)} y1={axisY} y2={axisY + 4} stroke={FAINT_INK} strokeWidth="1" />
               <text x={x(a.m)} y={axisY + 24} textAnchor="middle" fontSize="13" fill={MUTED}>
@@ -201,7 +201,7 @@ function MarginCurve({ curves, sample, margin }: { curves: Record<Sample, Return
           ))}
           <line x1={m.l} x2={m.l + pw} y1={m.t + ph} y2={m.t + ph} stroke={INK} strokeWidth="1" />
           <text x={m.l + pw / 2} y={height - 6} textAnchor="middle" fontSize="13" fill={INK} letterSpacing="0.4">
-            MARGIN: HOW MUCH MORE SENSITIVE THAN AVERAGE
+            {width < 520 ? "MARGIN (dB)" : "MARGIN: HOW MUCH MORE SENSITIVE THAN AVERAGE"}
           </text>
           <path d={path(other)} fill="none" stroke={INK} strokeOpacity="0.4" strokeWidth="1.25" strokeDasharray={other === "pore" ? "6 4" : undefined} />
           <path d={path(sample)} fill="none" stroke={INK} strokeWidth="2.25" strokeDasharray={sample === "pore" ? "6 4" : undefined} />

@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./science.css";
-import { AngleExplorer } from "@/components/science/AngleExplorer";
 import { LazyMount } from "@/components/science/controls";
-import { CsfExplorer } from "@/components/science/CsfExplorer";
 import { ChecksTable, ReferenceList, Reproduce } from "@/components/science/Evidence";
-import { FollowFeature } from "@/components/science/FollowFeature";
 import { Chapter, Cite, Code } from "@/components/science/kit";
-import { ModelFestWidget } from "@/components/science/ModelFestWidget";
-import { PoreSurvival } from "@/components/science/PoreSurvival";
-import { TwoEyes } from "@/components/science/TwoEyes";
-import { WorthItDiff } from "@/components/science/WorthItDiff";
+import { AngleExplorer, CsfExplorer, FollowFeature, ModelFestWidget, PoreSurvival, TwoEyes, WorthItDiff } from "@/components/science/Widgets";
 import { summarize } from "@/lib/science/modelfest";
 import { codeUrl } from "@/lib/science/refs";
 

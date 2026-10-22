@@ -23,10 +23,12 @@ export function CheckMine() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Uncontrolled fields, filled in after hydration with this tab's earlier answers.
+    // Uncontrolled fields, filled in after hydration with this tab's earlier answers. Restoring only ever adds: the server
+    // HTML is interactive before this runs, so a tick or typing that landed first must survive (never write "unchecked" or
+    // overwrite a non-empty code here).
     const saved = window.sessionStorage.getItem(ACCESS_STORAGE_KEY);
-    if (saved && code.current) code.current.value = saved;
-    if (adult.current) adult.current.checked = window.sessionStorage.getItem(ADULT_STORAGE_KEY) === "1";
+    if (saved && code.current && !code.current.value) code.current.value = saved;
+    if (adult.current && window.sessionStorage.getItem(ADULT_STORAGE_KEY) === "1") adult.current.checked = true;
   }, []);
 
   async function onSubmit(event: FormEvent) {

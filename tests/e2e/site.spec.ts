@@ -104,6 +104,23 @@ test("/try offers four distinct synthetic faces, p1a first, and a gated own-phot
   await expect(page).toHaveURL(/\/try\/live$/, { timeout: 30_000 });
 });
 
+test("/try: an 18+ tick made the moment the page appears survives hydration", async ({ page }) => {
+  // The scripts are held back so the tick deterministically lands on the server HTML before hydration; the mount effect
+  // used to clear it again.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route(/\/_next\/static\/.*\.js/, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto("/try", { waitUntil: "commit" });
+  const adult = page.getByRole("checkbox", { name: /I am 18 or over/ });
+  await adult.check();
+  release();
+  await page.waitForTimeout(1000);
+  await expect(adult).toBeChecked();
+});
+
 test("/privacy says where a photo goes, what is deleted, and what is kept", async ({ page }) => {
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/in plain words/);

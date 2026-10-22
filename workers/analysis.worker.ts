@@ -1,6 +1,6 @@
 // The live analysis in a worker: decode the photo and YouCam's masks, measure, build the visibility report, then (on
 // request) "Worth it?" and the coverage search. Nothing here touches the DOM; images are decoded with OffscreenCanvas.
-import { ACCESS_HEADER, type ConcernId, type RenderResponse, type RgbaImage, type SkinAnalysis } from "@/lib/contracts";
+import { ACCESS_HEADER, YOUCAM_KEY_HEADER, type ConcernId, type RenderResponse, type RgbaImage, type SkinAnalysis } from "@/lib/contracts";
 import { alignCounterfactual } from "@/lib/skin";
 import { computeCoverage, computeReading, computeWorthIt, slimPlan, type ReadingInputs } from "@/lib/integration/compute";
 import { backdropGrey, maskOverlay } from "@/lib/integration/images";
@@ -103,7 +103,11 @@ async function coverage(req: Extract<WorkerRequest, { kind: "coverage" }>): Prom
     // One POST per render, never retried: a lost response may still have been charged.
     const res = await fetch("/api/youcam/makeup", {
       method: "POST",
-      headers: { "content-type": "application/json", ...(req.accessCode ? { [ACCESS_HEADER]: req.accessCode } : {}) },
+      headers: {
+        "content-type": "application/json",
+        ...(req.accessCode ? { [ACCESS_HEADER]: req.accessCode } : {}),
+        ...(req.apiKey ? { [YOUCAM_KEY_HEADER]: req.apiKey } : {}),
+      },
       body: JSON.stringify({ fileRef: req.fileRef, effects }),
     });
     if (!res.ok) {

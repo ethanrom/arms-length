@@ -68,7 +68,7 @@ async function main() {
   console.log(`Smoke test: ${base}${keyless ? " (expecting a keyless deploy)" : ""}\n`);
 
   await check("GET /", () => page("/", /Arm.s Length|arm.s length/i));
-  await check("GET /try", () => page("/try", /demo|Check mine/i));
+  await check("GET /try", () => page("/try", /demo|Use my photo/i));
   await check("GET /try/p2b", () => page("/try/p2b", /<h1|What others see|Step back/i));
 
   await check("GET /demo/p2b/bundle.json", async () => {

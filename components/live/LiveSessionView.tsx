@@ -7,11 +7,23 @@ import { isAdultConfirmed } from "@/components/try/consent";
 import { ResultsExperience } from "@/components/results/ResultsExperience";
 import type { CaptureResult } from "@/lib/capture/types";
 import type { ConcernId } from "@/lib/contracts";
-import { ACCESS_STORAGE_KEY, checkAccess, createLiveSession, type Access, type LiveSession, type LiveSnapshot } from "@/lib/integration/live";
+import {
+  ACCESS_STORAGE_KEY,
+  YOUCAM_KEY_STORAGE_KEY,
+  checkAccess,
+  createLiveSession,
+  type Access,
+  type Credentials,
+  type LiveSession,
+  type LiveSnapshot,
+} from "@/lib/integration/live";
 import { AGE_CONFIRMATION, AGE_NOTE, PRIVACY_LINE } from "@/lib/integration/privacy";
 import { buildResultsData } from "@/lib/integration/viewModel";
 
-type Gate = { kind: "checking" } | { kind: "denied"; message: string } | { kind: "ok"; replay: boolean; code: string | null };
+type Gate = { kind: "checking" } | { kind: "denied"; message: string } | { kind: "ok"; replay: boolean; code: string | null; apiKey: string | null };
+
+const unlocked = (access: Access, { code = null, apiKey = null }: Credentials): Gate =>
+  access.allowed ? { kind: "ok", replay: access.replay, code, apiKey } : { kind: "denied", message: access.message };
 
 export interface DemoFaceLink {
   id: string;
@@ -19,7 +31,7 @@ export interface DemoFaceLink {
 }
 
 /**
- * /try/live: the access check, the capture flow, then the live pipeline (lib/integration/live.ts) and its results.
+ * /try/live: the access check (an own YouCam key, an access code, or neither on an open deployment), the capture flow, then the live pipeline (lib/integration/live.ts) and its results.
  * Everything runs in this browser tab except the YouCam calls, which go through /api/youcam/*.
  */
 export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
@@ -32,14 +44,17 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
 
   useEffect(() => {
     let cancelled = false;
-    const code = window.sessionStorage.getItem(ACCESS_STORAGE_KEY) || null;
-    checkAccess(code).then((access: Access) => {
+    const creds = {
+      code: window.sessionStorage.getItem(ACCESS_STORAGE_KEY) || null,
+      apiKey: window.sessionStorage.getItem(YOUCAM_KEY_STORAGE_KEY) || null,
+    };
+    checkAccess(creds).then((access: Access) => {
       if (cancelled) return;
       if (isAdultConfirmed()) {
         setAdult(true);
         setNeedsAgeGate(false);
       }
-      setGate(access.allowed ? { kind: "ok", replay: access.replay, code } : { kind: "denied", message: access.message });
+      setGate(unlocked(access, creds));
     });
     return () => {
       cancelled = true;
@@ -60,7 +75,7 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
     (capture: CaptureResult) => {
       if (gate.kind !== "ok") return;
       session.current?.dispose();
-      const next = createLiveSession({ accessCode: gate.code });
+      const next = createLiveSession({ accessCode: gate.code, apiKey: gate.apiKey });
       session.current = next;
       next.subscribe(setSnapshot);
       void next.start(capture);
@@ -94,7 +109,7 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
   return (
     <main id="main" tabIndex={-1} className="outline-none">
       <div className="page pb-16 pt-10 md:pb-24 md:pt-16">
-        <p className="eyebrow !text-[0.875rem]">Check mine</p>
+        <p className="eyebrow !text-[0.875rem]">Use my photo</p>
         <h1 className="display mt-4 max-w-4xl text-[clamp(2.6rem,1.3rem+5vw,5.5rem)]">
           Your skin, <em className="font-normal italic">from the other side</em>
         </h1>
@@ -106,11 +121,7 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
         )}
 
         {gate.kind === "denied" && (
-          <Reserved
-            message={gate.message}
-            faces={faces}
-            onCode={(access, code) => setGate(access.allowed ? { kind: "ok", replay: access.replay, code } : { kind: "denied", message: access.message })}
-          />
+          <Reserved message={gate.message} faces={faces} onUnlock={(access, creds) => setGate(unlocked(access, creds))} />
         )}
 
         {gate.kind === "ok" && (!snapshot || snapshot.stage === "idle") && (
@@ -188,63 +199,34 @@ function AgeGate({ adult, onChange }: { adult: boolean; onChange: (adult: boolea
 }
 
 /**
- * Live analysis is not open to this visitor (no code, a wrong one, or a recorded-faces deployment). A calm card in place of
- * the camera step, so nobody takes or uploads a photo only to be turned away: say so, offer the access-code field, and
- * link the demo faces.
+ * Live analysis is not open to this visitor right now (our credits are spent, a wrong code or key, or a recorded-faces
+ * deployment). A calm card in place of the camera step, so nobody takes or uploads a photo only to be turned away: say so,
+ * offer the visitor's own YouCam key first and an access code second, and link the demo faces.
  */
-function Reserved({ message, faces, onCode }: { message: string; faces: DemoFaceLink[]; onCode: (access: Access, code: string | null) => void }) {
-  const inputId = useId();
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
-  const field = useRef<HTMLInputElement>(null);
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    const code = (field.current?.value ?? "").trim();
-    if (!code) {
-      setNote("Enter your access code first.");
-      return;
-    }
-    setBusy(true);
-    setNote(null);
-    const access = await checkAccess(code);
-    setBusy(false);
-    if (access.allowed) {
-      window.sessionStorage.setItem(ACCESS_STORAGE_KEY, code);
-      onCode(access, code);
-    } else {
-      setNote(access.message);
-    }
-  }
-
+function Reserved({ message, faces, onUnlock }: { message: string; faces: DemoFaceLink[]; onUnlock: (access: Access, creds: Credentials) => void }) {
   return (
     <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-16">
       <div>
         <p role="alert" className="serif max-w-[34rem] text-[1.5rem] leading-snug" style={{ fontWeight: 380 }}>
           {message}
         </p>
-        <form onSubmit={submit} noValidate className="mt-8 max-w-sm">
-          <label htmlFor={inputId} className="eyebrow !text-[0.875rem] block">
-            Access code
-          </label>
-          <div className="mt-3 flex gap-3">
-            <input
-              id={inputId}
-              ref={field}
-              type="password"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              className="h-12 min-w-0 flex-1 border border-ink bg-transparent px-4 text-[1.0625rem]"
-            />
-            <button type="submit" className="btn btn-primary" disabled={busy} aria-disabled={busy}>
-              {busy ? "Checking…" : "Use code"}
-            </button>
-          </div>
-          <p role="status" className="mt-3 min-h-6 text-[0.9375rem] leading-relaxed text-ink-soft">
-            {note}
-          </p>
-        </form>
+        <CredentialForm
+          label="YouCam API key"
+          button="Use my key"
+          storageKey={YOUCAM_KEY_STORAGE_KEY}
+          empty="Enter your YouCam API key first."
+          note="Used only for this tab's calls to YouCam. We never store it, and it is forgotten when you close the tab."
+          creds={(value) => ({ apiKey: value })}
+          onUnlock={onUnlock}
+        />
+        <CredentialForm
+          label="Access code"
+          button="Use code"
+          storageKey={ACCESS_STORAGE_KEY}
+          empty="Enter your access code first."
+          creds={(value) => ({ code: value })}
+          onUnlock={onUnlock}
+        />
       </div>
       <div>
         <p className="eyebrow !text-[0.875rem]">Or try a demo face</p>
@@ -257,8 +239,83 @@ function Reserved({ message, faces, onCode }: { message: string; faces: DemoFace
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-[0.875rem] leading-relaxed text-ink-soft">The demo faces are synthetic (AI-generated), and need no camera, no upload and no code.</p>
+        <p className="mt-4 text-[0.875rem] leading-relaxed text-ink-soft">The demo faces are synthetic (AI-generated), and need no camera, no upload, no key and no code.</p>
       </div>
     </div>
+  );
+}
+
+/** One password field and its button: checks the value with the server, keeps it in this tab's storage when it works. */
+function CredentialForm({
+  label,
+  button,
+  storageKey,
+  empty,
+  note,
+  creds,
+  onUnlock,
+}: {
+  label: string;
+  button: string;
+  storageKey: string;
+  empty: string;
+  note?: string;
+  creds: (value: string) => Credentials;
+  onUnlock: (access: Access, creds: Credentials) => void;
+}) {
+  const inputId = useId();
+  const noteId = useId();
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const field = useRef<HTMLInputElement>(null);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const value = (field.current?.value ?? "").trim();
+    if (!value) {
+      setStatus(empty);
+      return;
+    }
+    setBusy(true);
+    setStatus(null);
+    const access = await checkAccess(creds(value));
+    setBusy(false);
+    if (access.allowed) {
+      window.sessionStorage.setItem(storageKey, value);
+      onUnlock(access, creds(value));
+    } else {
+      setStatus(access.message);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="mt-8 max-w-sm">
+      <label htmlFor={inputId} className="eyebrow !text-[0.875rem] block">
+        {label}
+      </label>
+      <div className="mt-3 flex gap-3">
+        <input
+          id={inputId}
+          ref={field}
+          type="password"
+          autoComplete="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          aria-describedby={note ? noteId : undefined}
+          className="h-12 min-w-0 flex-1 border border-ink bg-transparent px-4 text-[1.0625rem]"
+        />
+        <button type="submit" className="btn btn-primary" disabled={busy} aria-disabled={busy}>
+          {busy ? "Checking…" : button}
+        </button>
+      </div>
+      {note && (
+        <p id={noteId} className="mt-2 text-[0.875rem] leading-relaxed text-muted">
+          {note}
+        </p>
+      )}
+      <p role="status" className="mt-3 min-h-6 text-[0.9375rem] leading-relaxed text-ink-soft">
+        {status}
+      </p>
+    </form>
   );
 }

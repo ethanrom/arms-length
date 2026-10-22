@@ -3,7 +3,7 @@ import { LiveSessionView } from "@/components/live/LiveSessionView";
 import { DEMO_IDS, loadBundle } from "@/lib/integration/demo";
 
 export const metadata: Metadata = {
-  title: "Check mine",
+  title: "Use my photo",
   description: "Add a photo and see what others can actually see of your skin, and from how far.",
   robots: { index: false, follow: false },
 };

@@ -122,10 +122,14 @@ export default function PrivacyPage() {
           <Block id="ours" title="What we keep">
             <p>
               <strong className="font-medium text-ink">We don&rsquo;t store your photo, your results or anything that names you.</strong> There are no accounts and no cookies. Your browser&rsquo;s tab
-              storage holds an access code or your age confirmation until you close the tab, and nothing else.
+              storage holds an access code, a YouCam API key if you chose to use your own, or your age confirmation until you close the tab, and nothing else.
             </p>
             <p>
-              Our server keeps a small log of each call it makes to YouCam: what kind of call, the units it cost, the time, and a scrambled (hashed) copy of the access code, so that we can keep a daily
+              <strong className="font-medium text-ink">Your own YouCam API key</strong> stays in this tab. It is sent only to our server and on to YouCam, to make your calls with your own units; we never store it
+              and never write it to a log.
+            </p>
+            <p>
+              Our server keeps a small log of each call it makes to YouCam: what kind of call, the units it cost, the time, and whether it was an open visitor, someone using their own key, or a scrambled (hashed) copy of an access code, so that we can keep a daily
               cap. Like most hosts, ours may also keep ordinary request logs, such as the time and the address a request came from.
             </p>
           </Block>

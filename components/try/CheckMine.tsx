@@ -4,20 +4,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { DISCLAIMERS } from "@/lib/copy/disclaimers";
-import { ACCESS_STORAGE_KEY, checkAccess } from "@/lib/integration/live";
+import { ACCESS_STORAGE_KEY, YOUCAM_KEY_STORAGE_KEY, checkAccess } from "@/lib/integration/live";
 import { ADULT_STORAGE_KEY } from "./consent";
 
 /**
- * "Use my photo": the 18+ confirmation, what happens to a photo, an optional access code (judges get one) and the gate.
- * GET /api/youcam/status decides between live analysis and "invite-only, try a demo face"; the camera and upload step
- * is on /try/live.
+ * "Use my photo": the 18+ confirmation, what happens to a photo, and the gate. Live analysis is open while the contest runs;
+ * a collapsed disclosure holds the two optional ways in when it is not: the visitor's own YouCam API key, or an access code.
+ * GET /api/youcam/status decides between live analysis and "try a demo face"; the camera and upload step is on /try/live.
  */
 export function CheckMine() {
   const router = useRouter();
   const codeId = useId();
+  const keyId = useId();
+  const keyNoteId = useId();
   const adultId = useId();
   const noteId = useId();
+  const disclosure = useRef<HTMLDetailsElement>(null);
   const code = useRef<HTMLInputElement>(null);
+  const key = useRef<HTMLInputElement>(null);
   const adult = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -28,6 +32,9 @@ export function CheckMine() {
     // overwrite a non-empty code here).
     const saved = window.sessionStorage.getItem(ACCESS_STORAGE_KEY);
     if (saved && code.current && !code.current.value) code.current.value = saved;
+    const savedKey = window.sessionStorage.getItem(YOUCAM_KEY_STORAGE_KEY);
+    if (savedKey && key.current && !key.current.value) key.current.value = savedKey;
+    if ((saved || savedKey) && disclosure.current) disclosure.current.open = true;
     if (adult.current && window.sessionStorage.getItem(ADULT_STORAGE_KEY) === "1") adult.current.checked = true;
   }, []);
 
@@ -41,14 +48,19 @@ export function CheckMine() {
     }
     setBusy(true);
     const trimmed = (code.current?.value ?? "").trim();
-    const access = await checkAccess(trimmed || null);
+    const apiKey = (key.current?.value ?? "").trim();
+    const access = await checkAccess({ code: trimmed || null, apiKey: apiKey || null });
     if (!access.allowed) {
       setMessage(access.message);
+      // The reason may be about a field that is folded away: open it so the visitor can see what to fix.
+      if ((trimmed || apiKey) && disclosure.current) disclosure.current.open = true;
       setBusy(false);
       return;
     }
     if (trimmed) window.sessionStorage.setItem(ACCESS_STORAGE_KEY, trimmed);
     else window.sessionStorage.removeItem(ACCESS_STORAGE_KEY);
+    if (apiKey) window.sessionStorage.setItem(YOUCAM_KEY_STORAGE_KEY, apiKey);
+    else window.sessionStorage.removeItem(YOUCAM_KEY_STORAGE_KEY);
     window.sessionStorage.setItem(ADULT_STORAGE_KEY, "1");
     router.push("/try/live");
   }
@@ -61,8 +73,8 @@ export function CheckMine() {
           Two things to know
         </p>
         <p className="mt-4 max-w-[28rem] text-[1rem] leading-relaxed text-ink-soft">
-          Your own photo is analysed live by YouCam, which spends YouCam credits, so it is invite-only while the contest runs. Have an access code? Enter it. Otherwise the demo faces above show
-          everything it does.
+          Your own photo is analysed live by YouCam. Live analysis is open while the contest runs, within a small daily allowance of our YouCam credits. If those run out, you can use your own
+          YouCam API key. The demo faces above show everything it does, with no photo at all.
         </p>
         <p className="mt-4 max-w-[28rem] text-[0.9375rem] leading-relaxed text-muted">
           {DISCLAIMERS.privacy} {DISCLAIMERS.retention} {DISCLAIMERS.simulationRetention}{" "}
@@ -92,20 +104,40 @@ export function CheckMine() {
           </label>
         </div>
 
-        <label htmlFor={codeId} className="eyebrow mt-8 block">
-          Access code (optional)
-        </label>
-        <input
-          id={codeId}
-          name="access-code"
-          type="password"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          ref={code}
-          className="mt-3 h-12 w-full max-w-sm border border-ink bg-transparent px-4 text-[1.0625rem]"
-        />
-        <p id={noteId} className="mt-2 max-w-sm text-[0.875rem] leading-relaxed text-muted">
+        <details ref={disclosure} className="mt-8 max-w-sm">
+          <summary className="flex min-h-12 cursor-pointer items-center text-[1rem] text-ink underline underline-offset-4">Have a YouCam API key? Use your own</summary>
+          <label htmlFor={keyId} className="eyebrow mt-4 block">
+            YouCam API key (optional)
+          </label>
+          <input
+            id={keyId}
+            name="youcam-key"
+            type="password"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            ref={key}
+            aria-describedby={keyNoteId}
+            className="mt-3 h-12 w-full border border-ink bg-transparent px-4 text-[1.0625rem]"
+          />
+          <p id={keyNoteId} className="mt-2 text-[0.875rem] leading-relaxed text-muted">
+            Used only for this tab&rsquo;s calls to YouCam, and never stored on our server. It is forgotten when you close the tab. You can delete the key from your YouCam account after judging.
+          </p>
+          <label htmlFor={codeId} className="eyebrow mt-6 block">
+            Access code (optional)
+          </label>
+          <input
+            id={codeId}
+            name="access-code"
+            type="password"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            ref={code}
+            className="mt-3 h-12 w-full border border-ink bg-transparent px-4 text-[1.0625rem]"
+          />
+        </details>
+        <p id={noteId} className="mt-6 max-w-sm text-[0.875rem] leading-relaxed text-muted">
           {DISCLAIMERS.adults}
         </p>
         <div className="mt-6">

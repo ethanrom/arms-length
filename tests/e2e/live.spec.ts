@@ -3,7 +3,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 // The server runs with YOUCAM_MODE=replay (playwright.config.ts): the access gate reports replay_only and an uploaded
-// photo is answered with the recorded p2b analysis. No YouCam unit is ever spent here.
+// photo is answered with the recorded p2b analysis. No YouCam unit is ever spent here. The out-of-credits and own-key
+// screens are driven by routing the status call, so they need no key and no units either.
+const RESERVED = "Live analysis needs your own YouCam API key or an access code here. Try a demo face.";
+const OUT_OF_CREDITS = "Our live credits are used up for now. Use your own YouCam API key to continue, or try a demo face.";
 test.use({ reducedMotion: "reduce" });
 
 const PHOTO = path.join(process.cwd(), "fixtures", "youcam", "p2b", "input.jpg");
@@ -21,7 +24,12 @@ test("the status route says replay_only in replay mode", async ({ request }) => 
 test("Use my photo: gate, upload, results from a replayed analysis, then the lightest touch", async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto("/try");
+  // The own-key and access-code fields sit in a collapsed disclosure: live is open, so most visitors never need them.
+  await expect(page.getByLabel(/Access code/)).toBeHidden();
+  await page.getByText("Have a YouCam API key? Use your own").click();
+  await expect(page.getByLabel(/YouCam API key/)).toBeVisible();
   await expect(page.getByLabel(/Access code/)).toBeVisible();
+  await expectNoAxeViolations(page);
   await page.getByRole("checkbox", { name: /I am 18 or over/ }).check();
   await page.getByRole("button", { name: "Use my photo" }).click();
   await expect(page).toHaveURL(/\/try\/live$/);
@@ -67,12 +75,43 @@ test("Use my photo: gate, upload, results from a replayed analysis, then the lig
 test("when uploads are turned away, the camera step is replaced by a calm card before any prompt", async ({ page }) => {
   await page.route("**/api/youcam/status", (route) => route.fulfill({ json: { live: false, reason: "replay_only", uploadsAllowed: false } }));
   await page.goto("/try/live");
-  await expect(page.locator("p[role=alert]")).toHaveText("Live analysis is reserved for judges with an access code. Try a demo face.");
+  await expect(page.locator("p[role=alert]")).toHaveText(RESERVED);
+  await expect(page.getByLabel("YouCam API key")).toBeVisible();
   await expect(page.getByLabel("Access code")).toBeVisible();
   await expect(page.getByRole("link", { name: /Synthetic face [A-D]/ })).toHaveCount(4);
   await expect(page.getByLabel("I'm 18 or older")).toHaveCount(0);
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expectNoAxeViolations(page);
+});
+
+test("out of live credits, the card offers the visitor's own YouCam key first, and a key that works opens the camera step", async ({ page }) => {
+  const KEY = "e2e-not-a-real-key-123";
+  const sent: (string | undefined)[] = [];
+  await page.route("**/api/youcam/status", (route) => {
+    const key = route.request().headers()["x-youcam-key"];
+    sent.push(key);
+    return route.fulfill({
+      json: key
+        ? { live: true, byok: true, keyOk: true, uploadsAllowed: true }
+        : { live: false, reason: "budget_floor", open: true, uploadsAllowed: false },
+    });
+  });
+  await page.goto("/try/live");
+  await expect(page.locator("p[role=alert]")).toHaveText(OUT_OF_CREDITS);
+  await expect(page.getByRole("link", { name: /Synthetic face [A-D]/ })).toHaveCount(4);
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  const fields = page.locator("form input[type=password]");
+  await expect(fields).toHaveCount(2);
+  await expect(fields.first()).toHaveAccessibleName("YouCam API key"); // the key comes first, the code second
+  await expect(fields.last()).toHaveAccessibleName("Access code");
+  await expectNoAxeViolations(page);
+
+  await fields.first().fill(KEY);
+  await page.getByRole("button", { name: "Use my key" }).click();
+  await expect(page.getByRole("heading", { name: "Before you add a photo" })).toBeVisible({ timeout: 30_000 });
+  expect(sent[sent.length - 1]).toBe(KEY);
+  expect(await page.evaluate(() => window.sessionStorage.getItem("arms-length:youcam-key"))).toBe(KEY);
+  await expect(page.locator("p[role=alert]")).toHaveCount(0);
 });
 
 test("opened directly, the live page asks for the 18+ confirmation before any camera prompt", async ({ page }) => {

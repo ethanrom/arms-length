@@ -7,6 +7,8 @@ const config: GuardConfig = {
   unitFloor: 100,
   analysisDailyCap: 3,
   renderDailyCap: 5,
+  open: false,
+  openDailyCap: 8,
 };
 
 function guard(overrides: Partial<GuardConfig> = {}, balance: () => Promise<number> = async () => 500) {
@@ -88,7 +90,11 @@ describe("budget guard", () => {
       unitFloor: 100,
       analysisDailyCap: 3,
       renderDailyCap: 20,
+      open: false,
+      openDailyCap: 8,
     });
+    expect(configFromEnv({ LIVE_OPEN: "1", LIVE_OPEN_DAILY_CAP: "5" })).toMatchObject({ open: true, openDailyCap: 5 });
+    expect(configFromEnv({ LIVE_OPEN: "0" }).open).toBe(false);
     expect(configFromEnv({ LIVE_ACCESS_CODES: " a , b,,", KILL_SWITCH: "1", UNIT_FLOOR: "250", LIVE_DAILY_CAP: "5" })).toMatchObject({
       codes: ["a", "b"],
       killSwitch: true,
@@ -114,16 +120,84 @@ describe("budget guard", () => {
 
   test("the ledger line is one JSON object with a hashed code, never the code itself", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    writeLedger({ action: "skin_analysis_hd", units: 16, codeHash: hashCode("judge-alpha") });
-    writeLedger({ action: "makeup_vto", units: 1, codeHash: hashCode("judge-alpha"), maybe: true });
+    writeLedger({ action: "skin_analysis_hd", units: 16, who: hashCode("judge-alpha") });
+    writeLedger({ action: "makeup_vto", units: 1, who: hashCode("judge-alpha"), maybe: true });
 
     expect(log).toHaveBeenCalledTimes(2);
     const line = String(log.mock.calls[0][0]);
     expect(line).not.toContain("judge-alpha");
     const entry = JSON.parse(line);
-    expect(entry).toMatchObject({ type: "ledger", action: "skin_analysis_hd", units: 16, code_hash: hashCode("judge-alpha") });
-    expect(entry.code_hash).toMatch(/^[0-9a-f]{12}$/);
+    expect(entry).toMatchObject({ type: "ledger", action: "skin_analysis_hd", units: 16, who: hashCode("judge-alpha") });
+    expect(entry.who).toMatch(/^[0-9a-f]{12}$/);
     expect(Number.isNaN(Date.parse(entry.ts))).toBe(false);
     expect(JSON.parse(String(log.mock.calls[1][0])).maybe).toBe(true);
+  });
+
+  test("the ledger names an own-key or open call by kind, so no key material or address is ever logged", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    writeLedger({ action: "skin_analysis_hd", units: 16, who: "byok" });
+    writeLedger({ action: "makeup_vto", units: 1, who: "open" });
+    expect(log.mock.calls.map(([line]) => JSON.parse(String(line)).who)).toEqual(["byok", "open"]);
+  });
+});
+
+describe("open deployment (LIVE_OPEN)", () => {
+  const open = { open: true, analysisDailyCap: 2, openDailyCap: 3, unitFloor: 300 };
+  const visitor = (g: ReturnType<typeof guard>["g"], ip: string, kind: "analysis" | "render" = "analysis", reserve = true) =>
+    g.decide(null, kind, { cost: kind === "analysis" ? 16 : 1, reserve, ip });
+
+  test("no code is needed, but only when the deployment is open; a wrong code is never downgraded to open", async () => {
+    expect(await guard().g.decide(null, "analysis", { ...analysis, ip: "198.51.100.1" })).toEqual({ ok: false, reason: "no_code" });
+    const { g } = guard(open, async () => 1000);
+    expect(await visitor(g, "198.51.100.1")).toMatchObject({ ok: true, who: "open" });
+    expect(await g.decide("wrong", "analysis", { ...analysis, ip: "198.51.100.1" })).toEqual({ ok: false, reason: "bad_code" });
+    expect(await g.decide("judge-alpha", "analysis", { ...analysis, ip: "198.51.100.1" })).toMatchObject({ ok: true, who: hashCode("judge-alpha") });
+    expect(g.isOpen()).toBe(true);
+    expect(guard().g.isOpen()).toBe(false);
+  });
+
+  test("each address gets its own daily cap, keyed by a hash of the address; renders have their own cap", async () => {
+    const { g, advance } = guard({ ...open, openDailyCap: 99, renderDailyCap: 2 }, async () => 1000);
+    expect((await visitor(g, "198.51.100.1")).ok).toBe(true);
+    expect((await visitor(g, "198.51.100.1")).ok).toBe(true);
+    expect(await visitor(g, "198.51.100.1")).toEqual({ ok: false, reason: "daily_cap" });
+    expect((await visitor(g, "198.51.100.2")).ok).toBe(true); // another address is unaffected
+    expect((await visitor(g, "198.51.100.1", "render")).ok).toBe(true);
+    expect((await visitor(g, "198.51.100.1", "render")).ok).toBe(true);
+    expect(await visitor(g, "198.51.100.1", "render")).toEqual({ ok: false, reason: "daily_cap" });
+    advance(24 * 3_600_000);
+    expect((await visitor(g, "198.51.100.1")).ok).toBe(true);
+  });
+
+  test("all open visitors together are held to LIVE_OPEN_DAILY_CAP analyses a day; a returned slot is reusable; codes are exempt", async () => {
+    const { g, advance } = guard({ ...open, analysisDailyCap: 5 }, async () => 1000);
+    const slots = [];
+    for (const ip of ["a", "b", "c"]) slots.push(await visitor(g, ip));
+    expect(slots.every((s) => s.ok)).toBe(true);
+    expect(await visitor(g, "d")).toEqual({ ok: false, reason: "daily_cap" });
+    expect((await visitor(g, "d", "render")).ok).toBe(true); // renders are not part of the shared analysis pool
+    expect((await g.decide("judge-alpha", "analysis", analysis)).ok).toBe(true); // an access code has its own count
+
+    const first = slots[0];
+    if (first.ok) first.release(); // failed before any unit was spent
+    expect((await visitor(g, "d", "analysis", false)).ok).toBe(true); // a peek (status) costs no slot
+    expect((await visitor(g, "d")).ok).toBe(true);
+    expect((await visitor(g, "e")).ok).toBe(false);
+    advance(24 * 3_600_000);
+    expect((await visitor(g, "e")).ok).toBe(true);
+  });
+
+  test("the balance floor holds for open visitors: refused when balance - cost <= 300 (test floor 300)", async () => {
+    // 316 - 16 = 300 is not above the floor; 317 - 16 = 301 is.
+    expect(await visitor(guard(open, async () => 316).g, "a")).toEqual({ ok: false, reason: "budget_floor" });
+    expect((await visitor(guard(open, async () => 317).g, "a")).ok).toBe(true);
+    expect(await visitor(guard(open, async () => { throw new Error("credit down"); }).g, "a")).toEqual({ ok: false, reason: "budget_floor" });
+  });
+
+  test("the kill switch refuses open visitors, and the cap and floor checks come after it", async () => {
+    const { g, getBalance } = guard({ ...open, killSwitch: true }, async () => 1000);
+    expect(await visitor(g, "a")).toEqual({ ok: false, reason: "kill_switch" });
+    expect(g.killed()).toBe(true);
+    expect(getBalance).not.toHaveBeenCalled();
   });
 });

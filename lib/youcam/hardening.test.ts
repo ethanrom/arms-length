@@ -8,11 +8,14 @@ import { POST as simulate } from "@/app/api/youcam/simulate/route";
 import { GET as status } from "@/app/api/youcam/status/route";
 import type { AnalysisResponse, ApiError, StatusResponse } from "@/lib/contracts";
 import { createBudgetGuard } from "./budget";
-import { BAD_CODE_LIMIT, ROUTE_LIMITS, readBoundedText, resetRouteLimits } from "./http";
+import { createYouCamClient } from "./client";
+import { YouCamError } from "./errors";
+import { BAD_CODE_LIMIT, ROUTE_LIMITS, callerOf, readBoundedText, redact, resetRouteLimits, respond } from "./http";
 import { LIVE_RESERVED_MESSAGE, youcamMode } from "./mode";
 import { createLimiter } from "./ratelimit";
 import { MAX_BODY_BYTES } from "./schemas";
-import { pngDataUrl } from "./test-helpers";
+import { signTaskId } from "./tasktokens";
+import { fakeFetch, json, noSleep, pngDataUrl } from "./test-helpers";
 
 const ENV_KEYS = [
   "YOUCAM_API_KEY",
@@ -24,6 +27,9 @@ const ENV_KEYS = [
   "KILL_SWITCH",
   "LIVE_DAILY_CAP",
   "LIVE_RENDER_DAILY_CAP",
+  "LIVE_OPEN",
+  "LIVE_OPEN_DAILY_CAP",
+  "TASK_TOKEN_SECRET",
   "YOUCAM_ENGINE",
   "YOUCAM_DELETE_TASKS",
 ];
@@ -83,7 +89,7 @@ describe("no .env at all: a public demo", () => {
       expect(res.status).toBe(403);
       expect(await errorOf(res)).toEqual({ code: "live_reserved", message: LIVE_RESERVED_MESSAGE });
     }
-    expect(LIVE_RESERVED_MESSAGE).toBe("Live analysis is reserved for judges with an access code. Try a demo face.");
+    expect(LIVE_RESERVED_MESSAGE).toBe("Live analysis needs your own YouCam API key or an access code here. Try a demo face.");
     expect(network).not.toHaveBeenCalled();
   });
 
@@ -193,7 +199,7 @@ describe("status.uploadsAllowed", () => {
 describe("access codes", () => {
   const guard = (codes: string[]) =>
     createBudgetGuard({
-      config: () => ({ codes, killSwitch: false, unitFloor: 100, analysisDailyCap: 3, renderDailyCap: 20 }),
+      config: () => ({ codes, killSwitch: false, unitFloor: 100, analysisDailyCap: 3, renderDailyCap: 20, open: false, openDailyCap: 8 }),
       getBalance: async () => 1000,
     });
 
@@ -278,5 +284,146 @@ describe("body-size caps", () => {
     const request = (body: string) => new Request("http://localhost/x", { method: "POST", body });
     await expect(readBoundedText(request("é".repeat(60)), 100, tooBig)).rejects.toThrow("big"); // 120 bytes, 60 characters
     await expect(readBoundedText(request("é".repeat(50)), 100, tooBig)).resolves.toHaveLength(50);
+  });
+});
+
+// ---------- own YouCam keys, open mode, key hygiene ----------
+
+const KEY = "vk/abc+def=ghi_0123456789";
+const withKey = { "x-youcam-key": KEY };
+const credit = (amount = 500) => vi.fn<typeof fetch>(async () => Response.json({ status: 200, results: [{ id: "1", amount_dec: amount }] }));
+const rejected = () => vi.fn<typeof fetch>(async () => Response.json({ error: "Unauthorized" }, { status: 401 }));
+const bearerOf = (fn: ReturnType<typeof credit>, call = 0) => ((fn.mock.calls[call][1] as RequestInit).headers as Record<string, string>).Authorization;
+
+describe("an own YouCam key on a keyless deploy", () => {
+  test("status validates it with one free credit call made with that key; the answer carries neither key nor balance", async () => {
+    const fetchMock = credit(7);
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await status(get(withKey));
+    const text = await res.text();
+    expect(JSON.parse(text)).toEqual({ live: true, byok: true, keyOk: true, uploadsAllowed: true } satisfies StatusResponse);
+    expect(text).not.toContain(KEY);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(bearerOf(fetchMock)).toBe("Bearer " + KEY);
+  });
+
+  test("a refused key is keyOk false with invalid_key, and however often it is tried it never counts as a wrong access code", async () => {
+    vi.stubEnv("YOUCAM_API_KEY", "test-key-not-real");
+    vi.stubEnv("LIVE_ACCESS_CODES", "judge-alpha");
+    vi.stubGlobal("fetch", rejected());
+    const ip = { "x-forwarded-for": "203.0.113.20" };
+    for (let i = 0; i < BAD_CODE_LIMIT.max + 2; i++) {
+      const res = await status(get({ ...ip, ...withKey, "x-access-code": "not-the-code" }));
+      expect(await res.json()).toEqual({ live: false, reason: "invalid_key", byok: true, keyOk: false, uploadsAllowed: false } satisfies StatusResponse);
+    }
+    const next = await status(get({ ...ip, "x-access-code": "judge-alpha" })); // not locked out
+    expect(next.status).toBe(200);
+  });
+
+  test("a deployment forced to recordings or switched off refuses the key before any call to YouCam", async () => {
+    vi.stubEnv("YOUCAM_MODE", "replay");
+    expect(await (await status(get(withKey))).json()).toEqual({ live: false, reason: "replay_only", uploadsAllowed: false });
+    vi.stubEnv("YOUCAM_MODE", undefined as unknown as string);
+    vi.stubEnv("KILL_SWITCH", "1");
+    expect(await (await status(get(withKey))).json()).toEqual({ live: false, reason: "kill_switch", byok: true, uploadsAllowed: false });
+    const upload = await analysis(post("analysis", { image: pngDataUrl(1080, 1341) }, withKey));
+    expect(upload.status).toBe(503);
+    expect(network).not.toHaveBeenCalled();
+  });
+
+  test("an upload with a key is a live upload, never answered with a stand-in recording, even when REPLAY_UPLOADS is on", async () => {
+    vi.stubEnv("REPLAY_UPLOADS", "1");
+    vi.stubEnv("KILL_SWITCH", "1"); // stops it at the gate, which is as far as this test needs it to go
+    const res = await analysis(post("analysis", { image: pngDataUrl(1080, 1341) }, withKey));
+    expect((await errorOf(res)).code).toBe("kill_switch");
+  });
+
+  test("cleanup deletes with the caller's key (sent in the body, as sendBeacon must), and only with a token secret", async () => {
+    const token = signTaskId("task-secret", "task-9");
+    const del = credit();
+    vi.stubGlobal("fetch", del);
+    const refused = await cleanup(post("cleanup", { taskIds: [token], youcamKey: KEY }));
+    expect(await refused.json()).toEqual({ deleted: 0, failed: 0 }); // no secret: nothing could have been signed
+    expect(del).not.toHaveBeenCalled();
+
+    vi.stubEnv("TASK_TOKEN_SECRET", "task-secret");
+    const done = await cleanup(post("cleanup", { taskIds: [token], youcamKey: KEY }));
+    expect(await done.json()).toEqual({ deleted: 1, failed: 0 });
+    expect(bearerOf(del)).toBe("Bearer " + KEY);
+    const forged = await cleanup(post("cleanup", { taskIds: ["task-9." + "0".repeat(24)], youcamKey: KEY }));
+    expect(await forged.json()).toEqual({ deleted: 0, failed: 1 });
+  });
+
+  test("the key header is read only when it is plain printable text of a sane length, and it outranks an access code", () => {
+    const callerWith = (headers: Record<string, string>) => callerOf(new Request("http://localhost/x", { headers }));
+    expect(callerWith({ ...withKey, "x-access-code": "judge-alpha" })).toMatchObject({ apiKey: KEY, code: null });
+    for (const bad of ["has space", "x".repeat(201), "tab\there"]) {
+      expect(callerWith({ "x-youcam-key": bad, "x-access-code": "c" })).toMatchObject({ apiKey: null, code: "c" });
+    }
+  });
+});
+
+describe("key hygiene", () => {
+  const caller = { ip: "203.0.113.50", code: null, apiKey: KEY };
+
+  test("an upstream error that echoes the key is scrubbed from every console channel and from the response", async () => {
+    vi.stubEnv("YOUCAM_API_KEY", "project-key-0123456789");
+    const spies = (["log", "info", "warn", "error", "debug"] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => undefined));
+    const echoed = `bad token ${KEY}; Authorization: Bearer ${KEY}; ?k=${encodeURIComponent(KEY)}; project project-key-0123456789`;
+    const res = await respond(async () => {
+      throw new YouCamError("upstream_error", "The analysis service had a hiccup. Please try again in a moment.", 502, echoed);
+    }, caller);
+    const unhandled = await respond(async () => {
+      throw new Error("fetch failed for " + KEY);
+    }, caller);
+
+    const logged = spies.flatMap((spy) => spy.mock.calls.flat().map(String)).join("\n");
+    expect(logged).toContain("[youcam] upstream_error"); // it did log, just not the secrets
+    for (const secret of [KEY, encodeURIComponent(KEY), "project-key-0123456789"]) expect(logged).not.toContain(secret);
+    expect(await res.text()).not.toContain(KEY);
+    expect(await unhandled.text()).not.toContain(KEY);
+    spies.forEach((spy) => spy.mockRestore());
+  });
+
+  test("redact removes the given secrets and bearer tokens, and ignores empty or tiny ones", () => {
+    expect(redact("a Bearer abc.def b", [])).toBe("a Bearer [redacted] b");
+    expect(redact("key=sekret-1234 again sekret-1234", ["sekret-1234", "", null, undefined])).toBe("key=[redacted] again [redacted]");
+    expect(redact("a cat sat", ["a"])).toBe("a cat sat");
+  });
+
+  test("the client removes its key from an upstream error body before it is cut or parsed", async () => {
+    const fake = fakeFetch(() => json({ error: "Invalid key " + KEY }, 400));
+    const client = createYouCamClient({ apiKey: KEY, fetch: fake.fetch, sleep: noSleep });
+    const error = (await client.credit().catch((e: unknown) => e)) as YouCamError;
+    expect(error).toBeInstanceOf(YouCamError);
+    expect(error.detail).toBe("Invalid key [redacted]");
+  });
+});
+
+// Last in the file: it reads the project balance, and the guard keeps that for 60 s.
+describe("open deployment, through the routes", () => {
+  beforeEach(() => {
+    vi.stubEnv("YOUCAM_API_KEY", "test-key-not-real");
+    vi.stubEnv("LIVE_OPEN", "1");
+    vi.stubEnv("UNIT_FLOOR", "300");
+    vi.stubGlobal("fetch", credit(310)); // 310 - 16 <= 300
+  });
+
+  test("with no code the floor decides, and the way on offered is the visitor's own key; demo faces are unaffected", async () => {
+    const res = await status(get({ "x-forwarded-for": "203.0.113.60" }));
+    expect(await res.json()).toEqual({ live: false, reason: "budget_floor", open: true, uploadsAllowed: false } satisfies StatusResponse);
+    const upload = await analysis(post("analysis", { image: pngDataUrl(1080, 1341) }, { "x-forwarded-for": "203.0.113.60" }));
+    expect(upload.status).toBe(503);
+    expect((await errorOf(upload)).message).toMatch(/your own YouCam API key/);
+    expect((await analysis(post("analysis", { persona: "p2b" }))).status).toBe(200);
+  });
+
+  test("the kill switch closes it, and cleanup is refused when the deployment is not open", async () => {
+    vi.stubEnv("KILL_SWITCH", "1");
+    expect(await (await status(get({ "x-forwarded-for": "203.0.113.61" }))).json()).toEqual({ live: false, reason: "kill_switch", open: true, uploadsAllowed: false });
+    vi.stubEnv("LIVE_OPEN", "0");
+    vi.stubEnv("TASK_TOKEN_SECRET", "task-secret");
+    const res = await cleanup(post("cleanup", { taskIds: [signTaskId("task-secret", "t-1")] }));
+    expect(await res.json()).toEqual({ deleted: 0, failed: 0 });
   });
 });

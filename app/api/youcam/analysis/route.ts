@@ -1,5 +1,5 @@
 import { admit, callerOf, readBody, respond } from "@/lib/youcam/http";
-import { replayUploadsEnabled, youcamMode } from "@/lib/youcam/mode";
+import { byokAllowed, replayUploadsEnabled, youcamMode } from "@/lib/youcam/mode";
 import { MAX_BODY_BYTES, analysisBody } from "@/lib/youcam/schemas";
 import { getService } from "@/lib/youcam/service";
 
@@ -19,10 +19,12 @@ export async function POST(request: Request) {
   return respond(async () => {
     admit(who, "analysis");
     const body = await readBody(request, analysisBody, MAX_BODY_BYTES.analysis);
-    // Without the flag, an upload in replay mode reaches the service, which refuses it ("reserved for judges").
-    if (body.image !== undefined && youcamMode(process.env) === "replay" && replayUploadsEnabled(process.env)) {
-      return getService().analysis({ persona: standIn(), engine: body.engine }, who.code);
+    // Without the flag, an upload in replay mode reaches the service, which refuses it ("reserved" for keys and codes).
+    // A caller's own key is a live upload, not a stand-in, wherever own keys are accepted.
+    const ownKey = who.apiKey !== null && byokAllowed(process.env);
+    if (body.image !== undefined && !ownKey && youcamMode(process.env) === "replay" && replayUploadsEnabled(process.env)) {
+      return getService().analysis({ persona: standIn(), engine: body.engine }, who);
     }
-    return getService().analysis(body, who.code);
+    return getService().analysis(body, who);
   }, who);
 }

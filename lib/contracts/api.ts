@@ -1,13 +1,16 @@
 /**
  * HTTP contracts for app/api routes and the demo persona bundles.
- * Live calls need the `x-access-code` header (a code from LIVE_ACCESS_CODES); without it, routes serve
- * replayed fixtures for demo personas only.
+ * Live calls are made as one of three identities, in this order: the caller's own YouCam key (`x-youcam-key`), an
+ * access code from LIVE_ACCESS_CODES (`x-access-code`), or nobody when the deployment is open (LIVE_OPEN=1). Without
+ * any of them, routes serve replayed fixtures for demo personas only.
  */
 import type { ScaleEstimate, SkinAnalysis } from "./measure";
 import type { MakeupEffect, RenderResult, SimulationStrengths, CoveragePlan, WhatIf } from "./render";
 import type { ViewingConditions, VisibilityReport } from "./vision";
 
 export const ACCESS_HEADER = "x-access-code";
+/** The caller's own YouCam API key. Used for that request's YouCam calls only; never stored, logged or echoed. */
+export const YOUCAM_KEY_HEADER = "x-youcam-key";
 
 export interface ApiError {
   error: { code: string; message: string }; // message is plain language, safe to show
@@ -51,8 +54,14 @@ export type RenderResponse = RenderResult;
 
 /** GET /api/youcam/status */
 export interface StatusResponse {
-  live: boolean; // live analysis available for this access code
-  reason?: "no_code" | "bad_code" | "budget_floor" | "kill_switch" | "daily_cap" | "replay_only";
+  live: boolean; // live analysis available for this caller (own key, access code, or an open deployment)
+  reason?: "no_code" | "bad_code" | "invalid_key" | "budget_floor" | "kill_switch" | "daily_cap" | "replay_only";
+  /** The deployment is open (LIVE_OPEN=1) and the caller is on the project key: no code needed. */
+  open?: boolean;
+  /** The request carried an own YouCam key, so nothing is spent from the project's units. */
+  byok?: boolean;
+  /** Own-key requests only: whether YouCam accepted the key (one free credit() call). */
+  keyOk?: boolean;
   /** Whether a photo upload will be accepted right now (live, or replay with REPLAY_UPLOADS=1). Gate the capture UI on it. */
   uploadsAllowed?: boolean;
 }

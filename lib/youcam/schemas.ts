@@ -21,10 +21,11 @@ export const analysisBody = z
     message: "Send either an image or a persona.",
   });
 
-/** POST /api/youcam/cleanup: the task tokens a session collected. The code may ride in the body for sendBeacon. */
+/** POST /api/youcam/cleanup: the task tokens a session collected. The code or own key may ride in the body for sendBeacon. */
 export const cleanupBody = z.strictObject({
   taskIds: z.array(z.string().min(3).max(200)).max(24),
-  accessCode: z.string().max(200).optional(),
+  accessCode: z.string().max(200).nullish(),
+  youcamKey: z.string().max(200).nullish(),
 });
 
 export const makeupBody = z.strictObject({

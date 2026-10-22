@@ -8,8 +8,11 @@ import { getService } from "@/lib/youcam/service";
 // with Fluid compute (300 s default and maximum on Hobby); without Fluid, Hobby caps at 60 s (docs/DEPLOY.md).
 export const maxDuration = 120;
 
-/** Dev and e2e only (REPLAY_UPLOADS=1, replay mode): an uploaded photo is answered with this recorded face, labelled replay. */
-const REPLAY_STAND_IN = "p2b";
+/**
+ * Dev and e2e only (REPLAY_UPLOADS=1, replay mode): an uploaded photo is answered with this recorded face, labelled
+ * replay. REPLAY_STAND_IN picks another recorded face (video rehearsals of the upload flow on the same face).
+ */
+const standIn = () => process.env.REPLAY_STAND_IN || "p2b";
 
 export async function POST(request: Request) {
   const who = callerOf(request);
@@ -18,7 +21,7 @@ export async function POST(request: Request) {
     const body = await readBody(request, analysisBody, MAX_BODY_BYTES.analysis);
     // Without the flag, an upload in replay mode reaches the service, which refuses it ("reserved for judges").
     if (body.image !== undefined && youcamMode(process.env) === "replay" && replayUploadsEnabled(process.env)) {
-      return getService().analysis({ persona: REPLAY_STAND_IN, engine: body.engine }, who.code);
+      return getService().analysis({ persona: standIn(), engine: body.engine }, who.code);
     }
     return getService().analysis(body, who.code);
   }, who);

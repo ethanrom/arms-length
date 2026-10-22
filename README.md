@@ -125,8 +125,8 @@ npm run dev            # http://localhost:3000. With no .env at all, the demo fa
 ```
 
 For live analysis of your own photo, copy `.env.example` to `.env` and set `YOUCAM_API_KEY` and `LIVE_ACCESS_CODES`.
-Every variable is explained in that file. Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md). A public deploy should
-start keyless.
+Every variable is explained in that file. It deploys to Vercel as a standard Next.js app; a public deploy should
+start keyless (demo faces only), and anyone can still use their own YouCam API key on it.
 
 **Checks:**
 

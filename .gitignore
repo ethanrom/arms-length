@@ -40,3 +40,8 @@ next-env.d.ts
 # agent worktrees
 /.claude/worktrees/
 /.playwright-mcp/
+
+# Operator and agent files, kept locally only (moved out of the public repo 2026-10-23)
+CLAUDE.md
+AGENTS.md
+.mcp.json

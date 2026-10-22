@@ -5,7 +5,7 @@ import { getService } from "@/lib/youcam/service";
 
 // No `runtime` export: cacheComponents requires the Node.js runtime and rejects the config.
 // Upload + HD analysis + mask downloads take 10 to 30 s; the poll gives up after about 60 s. 120 s fits Hobby and Pro
-// with Fluid compute (300 s default and maximum on Hobby); without Fluid, Hobby caps at 60 s (docs/DEPLOY.md).
+// with Fluid compute (300 s default and maximum on Hobby); without Fluid, Hobby caps at 60 s.
 export const maxDuration = 120;
 
 /**

@@ -114,6 +114,50 @@ test("the You | Them seam works from the keyboard", async ({ page }) => {
   await expect(page.getByRole("slider", { name: /Step back/ })).toHaveAttribute("aria-valuetext", /1 metre, conversation/i);
 });
 
+test("the magnified area can be dragged and nudged with the arrow keys, and stays inside the photo", async ({ page }) => {
+  await page.goto("/try/p1a");
+  await ready(page);
+  const patch = page.getByRole("button", { name: /Move the magnified area/ });
+  const read = async () => ({ x: Number(await patch.getAttribute("x")), y: Number(await patch.getAttribute("y")) });
+  const [frameW, frameH] = (await patch.locator("xpath=..").getAttribute("viewBox"))!.split(" ").slice(2).map(Number);
+  const w = Number(await patch.getAttribute("width"));
+  const h = Number(await patch.getAttribute("height"));
+  const inside = ({ x, y }: { x: number; y: number }) => x >= 0 && y >= 0 && x + w <= frameW + 1e-6 && y + h <= frameH + 1e-6;
+  const dragBy = async (dx: number, dy: number) => {
+    const box = (await patch.boundingBox())!;
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx + dx, cy + dy, { steps: 8 });
+    await page.mouse.up();
+  };
+
+  // About 120 px right and 60 px down moves it right and down.
+  const before = await read();
+  expect(inside(before)).toBe(true);
+  await dragBy(120, 60);
+  await expect.poll(async () => (await read()).x).toBeGreaterThan(before.x);
+  const dragged = await read();
+  expect(dragged.y).toBeGreaterThan(before.y);
+  expect(inside(dragged)).toBe(true);
+
+  // A drag far past the corner parks it against the frame instead of leaving it.
+  await dragBy(4000, 4000);
+  await expect.poll(async () => (await read()).x).toBeCloseTo(frameW - w, 3);
+  const corner = await read();
+  expect(corner.y).toBeCloseTo(frameH - h, 3);
+
+  // The arrow keys nudge it.
+  await patch.focus();
+  await patch.press("ArrowLeft");
+  await expect.poll(async () => (await read()).x).toBeLessThan(corner.x);
+  await patch.press("Shift+ArrowUp");
+  await expect.poll(async () => (await read()).y).toBeLessThan(corner.y - 1);
+  expect(inside(await read())).toBe(true);
+  await expectNoAxeViolations(page);
+});
+
 test("the Step back slider changes the live counter and speaks its value", async ({ page }) => {
   await page.goto("/try/p2b");
   await ready(page); // the seam only shows once the page has hydrated and the renders are in

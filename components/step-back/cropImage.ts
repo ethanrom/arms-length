@@ -2,6 +2,7 @@ import type { Box, RgbaImage } from "@/lib/contracts";
 
 /** Crops are cached per decoded or rendered image, so redrawing while a slider moves only copies small canvases. */
 const cropCache = new WeakMap<RgbaImage, Map<string, HTMLCanvasElement>>();
+const MAX_CROPS_PER_IMAGE = 24;
 
 /**
  * The part of `image` that `crop` (frame px) covers, as a canvas at the image's own resolution. The image may be a working
@@ -18,14 +19,18 @@ export function cropOf(image: RgbaImage, frame: { width: number; height: number 
   let byKey = cropCache.get(image);
   if (!byKey) cropCache.set(image, (byKey = new Map()));
   let canvas = byKey.get(key);
-  if (!canvas) {
+  if (canvas) {
+    byKey.delete(key); // re-insert below so the least recently used crop is the first key
+  } else {
     canvas = document.createElement("canvas");
     canvas.width = sw;
     canvas.height = sh;
     const data = new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height);
     // Only the dirty rectangle is painted, and it lands at the canvas origin.
     canvas.getContext("2d")?.putImageData(data, -sx, -sy, sx, sy, sw, sh);
-    byKey.set(key, canvas);
   }
+  byKey.set(key, canvas);
+  // The movable loupe asks for a new crop on every step of a drag, so the cache is bounded.
+  if (byKey.size > MAX_CROPS_PER_IMAGE) byKey.delete(byKey.keys().next().value!);
   return canvas;
 }

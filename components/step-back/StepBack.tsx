@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { animate, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import {
   DEFAULT_AXIS,
   DEFAULT_STOPS,
@@ -54,6 +54,17 @@ interface StepBackProps {
 }
 
 const clampPct = (v: number) => Math.min(100, Math.max(0, v));
+
+/** `box` with its top-left corner at (x, y), kept inside the frame. */
+function placed(box: Box, x: number, y: number, frame: { width: number; height: number }): Box {
+  return { ...box, x: Math.max(0, Math.min(x, frame.width - box.w)), y: Math.max(0, Math.min(y, frame.height - box.h)) };
+}
+
+const sameBox = (a: Box, b: Box) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+
+/** How far the arrow keys move the patch, as a share of the frame width; Shift takes the bigger step. */
+const NUDGE = 0.02;
+const NUDGE_BIG = 0.08;
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const subscribeReduced = (notify: () => void) => {
@@ -194,6 +205,80 @@ export function StepBack({
   };
   const showSeam = ready && !failed;
 
+  // The loupe's patch starts where the analysis put it and can be moved; another face (a new prop) puts it back.
+  const [patch, setPatch] = useState(loupe);
+  const [seenLoupe, setSeenLoupe] = useState(loupe);
+  if (!sameBox(seenLoupe, loupe)) {
+    setSeenLoupe(loupe);
+    setPatch(loupe);
+  }
+  const overlayRef = useRef<SVGSVGElement>(null);
+  const grab = useRef<{ dx: number; dy: number } | null>(null);
+  const queued = useRef<{ x: number; y: number } | null>(null);
+  const frameRequest = useRef(0);
+  const [grabbing, setGrabbing] = useState(false);
+  const [ringed, setRinged] = useState(false);
+
+  // client px to frame px: the overlay is stretched (preserveAspectRatio="none") and scaled with the face, so x and y
+  // each need their own factor, which the inverse screen matrix carries.
+  const toFrame = (clientX: number, clientY: number) => {
+    const matrix = overlayRef.current?.getScreenCTM();
+    if (!matrix) return null;
+    const at = new DOMPoint(clientX, clientY).matrixTransform(matrix.inverse());
+    return { x: at.x, y: at.y };
+  };
+  // Pointer events can outrun the screen, so a drag asks for one state update per frame.
+  const flushMove = () => {
+    window.cancelAnimationFrame(frameRequest.current);
+    frameRequest.current = 0;
+    const to = queued.current;
+    queued.current = null;
+    if (to) setPatch((p) => placed(p, to.x, to.y, frame));
+  };
+  const queueMove = (x: number, y: number) => {
+    queued.current = { x, y };
+    if (!frameRequest.current) frameRequest.current = window.requestAnimationFrame(flushMove);
+  };
+  useEffect(() => () => window.cancelAnimationFrame(frameRequest.current), []);
+
+  const patchDown = (e: PointerEvent<SVGRectElement>) => {
+    const at = toFrame(e.clientX, e.clientY);
+    if (!at) return;
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    grab.current = { dx: at.x - patch.x, dy: at.y - patch.y };
+    setGrabbing(true);
+  };
+  const patchMove = (e: PointerEvent<SVGRectElement>) => {
+    const held = grab.current;
+    const at = held && toFrame(e.clientX, e.clientY);
+    if (!held || !at) return;
+    e.stopPropagation();
+    queueMove(at.x - held.dx, at.y - held.dy);
+  };
+  const patchUp = (e: PointerEvent<SVGRectElement>) => {
+    if (!grab.current) return;
+    e.stopPropagation();
+    grab.current = null;
+    flushMove();
+    setGrabbing(false);
+  };
+  const patchKeys = (e: KeyboardEvent<SVGRectElement>) => {
+    const step = frame.width * (e.shiftKey ? NUDGE_BIG : NUDGE);
+    const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+    const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+    if (!dx && !dy) return;
+    e.preventDefault();
+    e.stopPropagation();
+    flushMove();
+    setPatch((p) => placed(p, p.x + dx, p.y + dy, frame));
+  };
+  // A click on the photo puts the patch's centre there. The seam handle is a sibling of the photo, so it never gets here.
+  const aimPatch = (e: MouseEvent<HTMLDivElement>) => {
+    const at = showSeam ? toFrame(e.clientX, e.clientY) : null;
+    if (at) setPatch((p) => placed(p, at.x - p.w / 2, at.y - p.h / 2, frame));
+  };
+
   return (
     <div className="grid gap-x-12 gap-y-3 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-14 lg:gap-y-4">
       {/* the face */}
@@ -208,6 +293,7 @@ export function StepBack({
             ref={faceRef}
             className="absolute inset-0 will-change-transform [-webkit-mask-composite:source-in] [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,#000_5%,#000_95%,transparent),linear-gradient(to_bottom,transparent,#000_3%,#000_97%,transparent)]"
             style={{ transform: `scale(${s})` }}
+            onClick={aimPatch}
           >
             <motion.div
               className="absolute inset-0 will-change-[filter]"
@@ -227,11 +313,35 @@ export function StepBack({
                 ))}
               </div>
             </motion.div>
-            {/* where the loupe is looking */}
+            {/* where the loupe is looking; only the box takes the pointer, the rest of the overlay lets it through */}
             {showSeam && (
-              <svg aria-hidden="true" viewBox={`0 0 ${frame.width} ${frame.height}`} preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
-                <rect x={loupe.x} y={loupe.y} width={loupe.w} height={loupe.h} fill="none" stroke="#161513" strokeOpacity="0.6" strokeWidth="4" vectorEffect="non-scaling-stroke" />
-                <rect x={loupe.x} y={loupe.y} width={loupe.w} height={loupe.h} fill="none" stroke="#f5f3ef" strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
+              <svg ref={overlayRef} viewBox={`0 0 ${frame.width} ${frame.height}`} preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
+                {/* the same ink and paper pair as the site's focus ring, drawn heavier while the keys have it */}
+                <g aria-hidden="true">
+                  <rect x={patch.x} y={patch.y} width={patch.w} height={patch.h} fill="none" stroke="#161513" strokeOpacity={ringed ? 1 : 0.6} strokeWidth={ringed ? 7 : 4} vectorEffect="non-scaling-stroke" />
+                  <rect x={patch.x} y={patch.y} width={patch.w} height={patch.h} fill="none" stroke="#f5f3ef" strokeWidth={ringed ? 3.4 : 1.6} vectorEffect="non-scaling-stroke" />
+                </g>
+                <rect
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Move the magnified area. Use the arrow keys; hold Shift for bigger steps."
+                  data-testid="loupe-patch"
+                  x={patch.x}
+                  y={patch.y}
+                  width={patch.w}
+                  height={patch.h}
+                  fill="transparent"
+                  pointerEvents="all"
+                  style={{ cursor: grabbing ? "grabbing" : "grab", touchAction: "none" }}
+                  onPointerDown={patchDown}
+                  onPointerMove={patchMove}
+                  onPointerUp={patchUp}
+                  onPointerCancel={patchUp}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={patchKeys}
+                  onFocus={(e) => setRinged(e.currentTarget.matches(":focus-visible"))}
+                  onBlur={() => setRinged(false)}
+                />
               </svg>
             )}
           </div>
@@ -352,9 +462,14 @@ export function StepBack({
         {!failed && (
           <figure className="w-[9.5rem] shrink-0 sm:w-[12rem] lg:mt-5 lg:w-full lg:max-w-[22rem]">
             <div className="stage on-stage overflow-hidden border border-ink">
-              <Loupe src={src} frame={frame} patch={loupe} frames={frames.frames} opacities={opacities} className="block h-auto w-full" />
+              <Loupe src={src} frame={frame} patch={patch} frames={frames.frames} opacities={opacities} className="block h-auto w-full" />
             </div>
-            <figcaption className="mt-1.5 text-[0.875rem] leading-snug text-ink-soft">Magnified so you can see what fades</figcaption>
+            <figcaption className="mt-1.5 text-[0.875rem] leading-snug text-ink-soft">
+              Magnified so you can see what fades.{" "}
+              {/* the phone keeps the slider above the fold, so its hint is one short line */}
+              <span className="sm:hidden">Drag the box to move it.</span>
+              <span className="hidden sm:inline">Drag the box on the face, or click the face, to look elsewhere.</span>
+            </figcaption>
           </figure>
         )}
       </div>

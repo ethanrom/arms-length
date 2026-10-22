@@ -2,7 +2,7 @@
 
 **Start keyless.** The first public deploy should have no environment variables at all. It then serves the recorded demo
 faces only: nothing can reach the YouCam API, nothing can spend a unit, and there is no key to leak. Turn live analysis on
-later, with a judge access code, only when you are ready (section 3).
+later, only when you are ready (section 3).
 
 ## 1. Import
 
@@ -32,34 +32,74 @@ deployments: redeploy after editing.
 | `YOUCAM_SECRET_KEY` | Not read by the app today (the API authenticates with the key alone). Leave empty. | empty |
 | `YOUCAM_MODE` | `replay` forces recorded answers even with a key. `live` or unset: live when a key exists. | unset |
 | `REPLAY_UPLOADS` | Dev and test only (Playwright sets it). In replay mode, answers an uploaded photo with a recorded face. **Leave unset on a public deploy**, so uploads are refused. | unset |
-| `LIVE_ACCESS_CODES` | Comma-separated codes that unlock live analysis. **Empty means live is off**, even with a key. | empty |
-| `UNIT_FLOOR` | Live refuses a call that would leave the balance at or under this. Can raise the floor, never lower it under 100. | `100` |
-| `KILL_SWITCH` | Anything but empty, `0`, `false`, `no` or `off` refuses every paid call. | off |
-| `LIVE_DAILY_CAP` | Live analyses per access code per day (16 units each in HD). | `3` |
-| `LIVE_RENDER_DAILY_CAP` | Live makeup and simulation renders per code per day (1 to 4 units each). | `20` |
+| `LIVE_ACCESS_CODES` | Comma-separated codes that unlock live analysis on the project key. Empty means no codes. | empty |
+| `LIVE_OPEN` | Anything but empty, `0`, `false`, `no` or `off` opens live: a visitor with no code uses the project key, held by the floor and the caps. Needs `YOUCAM_API_KEY`. | off |
+| `LIVE_OPEN_DAILY_CAP` | Live analyses per day across **all** open visitors together (16 units each in HD, about 22 with a session's renders). | `8` |
+| `UNIT_FLOOR` | Live refuses a call that would leave the balance at or under this. Can raise the floor, never lower it under 100. The judging deploy uses `300`. | `100` |
+| `KILL_SWITCH` | Anything but empty, `0`, `false`, `no` or `off` refuses every paid call, a visitor's own key included. | off |
+| `LIVE_DAILY_CAP` | Live analyses per day, per access code or (open mode) per address (16 units each in HD). | `3` |
+| `LIVE_RENDER_DAILY_CAP` | Live makeup and simulation renders per day, per code or per address (1 to 4 units each). | `20` |
+| `TASK_TOKEN_SECRET` | Signs the tokens that let a browser ask for its YouCam tasks to be deleted when the visitor leaves. Any long random string. Falls back to `YOUCAM_API_KEY`; **with neither, no tokens are issued and clean-up is refused**. | falls back to the key |
 | `YOUCAM_ENGINE` | `hd` (16 units) or `sd` (12 units, the budget fallback). | `hd` |
 | `YOUCAM_DELETE_TASKS` | `0` stops the browser asking YouCam to delete a visitor's tasks when they leave. | on |
 
 No `.env` file is needed or read in production. `.env.example` lists the same names for local work.
 
-## 3. Turn on live for judges
+## 3. Turn on live
 
-Only when you are ready, and after a keyless deploy has passed the smoke test.
+Only when you are ready, and after a keyless deploy has passed the smoke test. A request runs as one of three callers, in
+this order:
 
-1. Make codes that are long and random, for example `openssl rand -base64 18`, one per judge or one for all.
-2. Add `YOUCAM_API_KEY` and `LIVE_ACCESS_CODES` (and, if you like, the caps). Leave `UNIT_FLOOR` alone. Redeploy.
-3. Open `/try`, enter a code under **Check mine**, run one analysis yourself. Then run the smoke test without `--keyless`.
-4. Watch the balance. Every paid call writes one JSON log line (`"type":"ledger"`) with the action, units and a short hash
-   of the code (never the code). Vercel, Logs, search for `ledger`.
+1. **Their own YouCam key** (header `x-youcam-key`). The visitor pastes it under **Have a YouCam API key? Use your own**
+   on `/try`. The server uses it for that request's YouCam calls only: it is never stored, logged or echoed, the project's
+   floor and caps do not apply (these are the visitor's units), and the per-address rate limits and the kill switch still
+   do. `/api/youcam/status` checks it with one free `credit()` call. It works on a keyless deploy too; only
+   `YOUCAM_MODE=replay` or the kill switch turn it away.
+2. **An access code** (header `x-access-code`), from `LIVE_ACCESS_CODES`. Unchanged.
+3. **Nobody**, when `LIVE_OPEN=1`: the project key, with the floor, the per-address daily caps and `LIVE_OPEN_DAILY_CAP`.
+
+### Judging deploy
+
+The recipe for the deploy the contest links to. Judges click the link, then **Use my photo**, and get a real result with
+no code. If the credits are spent they paste their own YouCam key, or use a demo face.
+
+1. **Name the project with a random suffix**, for example `arms-length-k7m2xq` (six random characters), so that
+   `arms-length.vercel.app` is not guessable. Under **Settings, General** the project name sets the `*.vercel.app` domain.
+2. Set these under **Settings, Environment Variables** (mark them **Sensitive**):
+
+   ```
+   YOUCAM_API_KEY=<the project key>
+   LIVE_OPEN=1
+   UNIT_FLOOR=300
+   LIVE_DAILY_CAP=3
+   LIVE_OPEN_DAILY_CAP=8
+   TASK_TOKEN_SECRET=<random, for example: openssl rand -base64 24>
+   ```
+
+   Leave `LIVE_ACCESS_CODES` empty unless you also want codes. `UNIT_FLOOR=300` switches open live off by itself when the
+   balance falls near 300; `LIVE_OPEN_DAILY_CAP=8` limits what a leaked link can burn to about 180 units a day. Redeploy.
+3. Open `/try`, tick the 18+ box and press **Use my photo**; run one analysis yourself. Then run the smoke test without
+   `--keyless`. Also try the own-key path: paste a key under **Have a YouCam API key? Use your own**.
+4. **Never post the URL outside the Devpost submission.** Not in the README, the repo, the video description or an end card.
+   The site also sends `noindex, nofollow` and a `robots.txt` that disallows everything, so search engines do not list it.
+5. Watch the balance. Every paid call writes one JSON log line (`"type":"ledger"`) with the action, the units and `who`:
+   `open`, `byok`, or a short hash of the access code (never the code or a key). Vercel, Logs, search for `ledger`.
+
+### Access codes only
+
+For a private deploy: set `YOUCAM_API_KEY` and `LIVE_ACCESS_CODES` (codes that are long and random, for example
+`openssl rand -base64 18`), leave `LIVE_OPEN` off, redeploy. Open `/try`, open **Have a YouCam API key? Use your own**,
+enter a code in the access-code field there, and run one analysis yourself.
 
 Visitors without a code still get the demo faces. Live also stays shut if the balance cannot be read.
 
 ## 4. Rotate or disable
 
 - **Stop all spending now:** set `KILL_SWITCH=1`, redeploy. Or use Vercel's **Instant Rollback** to the keyless deploy.
+- **Close open live but keep codes:** set `LIVE_OPEN=0`, redeploy.
 - **Rotate a judge code:** edit `LIVE_ACCESS_CODES` (add the new one, remove the old), redeploy.
 - **Rotate the API key:** create a new key in the YouCam console, replace `YOUCAM_API_KEY`, redeploy, delete the old key.
-  Sessions that were open lose their end-of-session clean-up, which is harmless.
+  Sessions that were open lose their end-of-session clean-up, which is harmless. Changing `TASK_TOKEN_SECRET` does the same.
 - **Back to demo only:** delete `YOUCAM_API_KEY` (or set `YOUCAM_MODE=replay`), redeploy.
 
 ## 5. What protects the deploy
@@ -68,10 +108,12 @@ Visitors without a code still get the demo faces. Live also stays shut if the ba
 |---|---|
 | Request body | 4 MB for a photo (Vercel's own limit is 4.5 MB), 64 KB for renders, 16 KB for clean-up. Read as a stream, so an oversized body is refused early. |
 | Requests per address, per 10 minutes | status 60, analysis 30, renders 120, clean-up 60, `/api/visibility` 20. Over the limit: HTTP 429 with `Retry-After`. |
-| Wrong access codes | 8 per address per 10 minutes, then requests that carry a code are refused. Demo faces keep working. |
+| Wrong access codes | 8 per address per 10 minutes, then requests that carry a code are refused. Demo faces keep working. A refused own key is not a wrong code. |
 | Access code compare | Hashed, then compared in constant time against every configured code. |
-| Daily caps, balance floor, kill switch | Section 2. A failed call hands its daily slot back. |
-| Errors | Plain-language messages only; no stack traces, paths or keys in responses or logs. |
+| Daily caps, balance floor, kill switch | Section 2. A failed call hands its daily slot back. In open mode the caps are per address (hashed) plus `LIVE_OPEN_DAILY_CAP` for everyone. |
+| Own YouCam keys | Sent in a header (or the clean-up body), used for that request, never stored. Not subject to the floor or the daily caps. |
+| Errors and logs | Plain-language messages only; no stack traces or paths in responses. Every log line is scrubbed of the project key, the visitor's key and any bearer token before it is written. |
+| Search engines | `noindex, nofollow` on every page and a `robots.txt` that disallows everything. |
 
 Limits and daily caps live in each server instance's memory. Vercel can run several instances, so count on them as best
 effort. The balance floor (read from YouCam, shared by all instances) and the kill switch are the firm limits.

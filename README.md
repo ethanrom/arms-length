@@ -3,8 +3,7 @@
 **YouCam Skin Analysis finds every pore. Arm's Length shows which ones anyone else can actually see, and from how
 far, using a published model of human vision.**
 
-**Live demo:** `[VERCEL URL]` · **Demo video:** `[YOUTUBE URL]` · **The science, for technical readers:**
-`[VERCEL URL]/science` · **Every number:** [`docs/NUMBERS.md`](docs/NUMBERS.md)
+**Live demo and video:** linked from the Devpost submission. **The science, for technical readers:** [`docs/MODEL.md`](docs/MODEL.md) · **Every number:** [`docs/NUMBERS.md`](docs/NUMBERS.md)
 
 ![The Step back view on a synthetic demo face: the photo as someone a metre away would see it, with a detail loupe and what can still be picked out at that distance](docs/img/step-back.png)
 
@@ -110,7 +109,8 @@ All are called from the server; keys never reach the browser.
 
 **Safe on a budget.**
 - The demo faces replay real recorded YouCam output, with no keys needed.
-- Live mode needs an access code, and has daily caps, a 100-unit balance floor and a kill switch.
+- Live mode on the judging deploy is open while the contest runs: no code needed, within a small daily cap per visitor and a shared daily cap, a balance floor (300 units there; 100 is the minimum anywhere) and a kill switch.
+- Out of credits? Anyone can paste their own YouCam API key. It is used only for that tab's calls, sent in a header, never stored or logged, and the project's caps and floor do not apply to it. An access code still works too.
 - A task submit is never retried automatically.
 - A full live session costs about 26 units.
 - Notes for other developers (masks, render offsets, deletion) are in [`docs/YOUCAM.md`](docs/YOUCAM.md).

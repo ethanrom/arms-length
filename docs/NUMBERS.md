@@ -302,9 +302,9 @@ Claude Opus 5.5 on Amazon Bedrock (`global.anthropic.claude-opus-5-5`) against o
 | Number | Value | Source | Reproduce |
 | --- | --- | --- | --- |
 | Units at the start | 1,000 | `internal/LEDGER.md` "Starting balance" | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
-| Units spent in total | 184 | `internal/LEDGER.md` allocation table, Total row | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
-| Units left | 816 | `internal/LEDGER.md` allocation table, Total row | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
-| Balance after the last logged call | 816 | `internal/LEDGER.md` spend log, last row | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
+| Units spent in total | 206 | `internal/LEDGER.md` allocation table, Total row | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
+| Units left | 794 | `internal/LEDGER.md` allocation table, Total row | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
+| Balance after the last logged call | 794 | `internal/LEDGER.md` spend log, last row | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
 | Units the first live session through the app spent | 25 (bucket "Integration checks") | `internal/LEDGER.md` allocation table | `npx tsx scripts/docs/numbers.ts --section ledger` (reads `internal/LEDGER.md`) |
 
 | Bucket | Planned | Spent | Left |
@@ -313,7 +313,7 @@ Claude Opus 5.5 on Amazon Bedrock (`global.anthropic.claude-opus-5-5`) against o
 | Demo personas | 90 | 90 | 0 |
 | Integration checks | 40 | 25 | 15 |
 | Deployed smoke tests | 40 | 0 | 40 |
-| Demo video | 40 | 0 | 40 |
+| Demo video | 40 | 22 | 18 |
 | Judges' live sessions | 400 | 0 | 400 |
 | Reserve | 335 | 16 | 319 |
 
@@ -360,7 +360,7 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 | Number | Value | Source | Reproduce |
 | --- | --- | --- | --- |
 | Unit tests (vitest) | 412 in 44 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
-| End-to-end tests (Playwright) | 63 in 7 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
+| End-to-end tests (Playwright) | 64 in 7 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
 
 <!-- generated:engineering-tests:end -->
 
@@ -389,8 +389,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 Slow tables (3.2, 3.3 and 6.1) are not recomputed by `npm test`. Instead `lib/vision/numbers.doc.test.ts` checks two hashes:
 
-- inputs: `4e70197a37199968`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
-- slow tables: `fa0c56ea43472c1b`. The tables above as committed, so a hand edit differs.
+- inputs: `181ca107df00cae4`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
+- slow tables: `2ccb0a73e098da1b`. The tables above as committed, so a hand edit differs.
 
 When either test fails, run `npx tsx scripts/docs/numbers.ts --write` and commit. `--check` recomputes everything, including the slow tables.
 

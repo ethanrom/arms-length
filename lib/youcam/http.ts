@@ -1,6 +1,6 @@
 // HTTP plumbing shared by the route handlers: bounded JSON bodies, validation, per-address limits, ApiError responses.
-// Never logs request bodies, image data or keys.
-import { ACCESS_HEADER } from "@/lib/contracts";
+// Never logs request bodies, image data or keys: every log line goes through redact().
+import { ACCESS_HEADER, YOUCAM_KEY_HEADER } from "@/lib/contracts";
 import type { ApiError } from "@/lib/contracts";
 import type { z } from "zod";
 import { YouCamError, rateLimitedError } from "./errors";
@@ -11,6 +11,16 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export function accessCode(request: Request): string | null {
   const value = request.headers.get(ACCESS_HEADER)?.trim();
   return value && value.length <= 200 ? value : null;
+}
+
+/** A caller's own YouCam key: printable ASCII with no spaces, at most 200 characters. Anything else is treated as absent. */
+export function cleanYoucamKey(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length <= 200 && /^[!-~]+$/.test(trimmed) ? trimmed : null;
+}
+
+export function youcamKey(request: Request): string | null {
+  return cleanYoucamKey(request.headers.get(YOUCAM_KEY_HEADER));
 }
 
 /**
@@ -84,10 +94,13 @@ const badCodes = createLimiter(BAD_CODE_LIMIT);
 export interface Caller {
   ip: string;
   code: string | null;
+  /** The caller's own YouCam key. Identity order is key, then code, then open, so a key drops any code sent with it. */
+  apiKey: string | null;
 }
 
 export function callerOf(request: Request): Caller {
-  return { ip: clientIp(request), code: accessCode(request) };
+  const apiKey = youcamKey(request);
+  return { ip: clientIp(request), code: apiKey ? null : accessCode(request), apiKey };
 }
 
 /** Counts the request against its route's limit; throws a 429 when the address is over it or has guessed too many codes. */
@@ -113,6 +126,31 @@ export function resetRouteLimits(): void {
   badCodes.reset();
 }
 
+// ---------- log hygiene ----------
+
+const MIN_SECRET_LENGTH = 4;
+
+/**
+ * Removes every given secret (raw, URL-encoded and JSON-escaped) and any "Bearer <token>" from text bound for a log, so an
+ * upstream error that echoes a key back cannot leak it.
+ */
+export function redact(text: string, secrets: readonly (string | null | undefined)[]): string {
+  let out = text.replace(/Bearer\s+[^\s"',;]+/gi, "Bearer [redacted]");
+  for (const secret of secrets) {
+    if (!secret || secret.length < MIN_SECRET_LENGTH) continue;
+    for (const form of new Set([secret, encodeURIComponent(secret), JSON.stringify(secret).slice(1, -1)])) {
+      out = out.split(form).join("[redacted]");
+    }
+  }
+  return out;
+}
+
+/** Every key this server could be holding for a request: the caller's own, and the ones in its environment. */
+function secretsFor(caller?: Caller): (string | null | undefined)[] {
+  const { YOUCAM_API_KEY, YOUCAM_SECRET_KEY, TASK_TOKEN_SECRET } = process.env;
+  return [caller?.apiKey, caller?.code, YOUCAM_API_KEY, YOUCAM_SECRET_KEY, TASK_TOKEN_SECRET];
+}
+
 // ---------- responses ----------
 
 function errorBody(code: string, message: string): ApiError {
@@ -128,8 +166,8 @@ export async function respond<T>(run: () => Promise<T>, caller?: Caller): Promis
     return Response.json(await run(), { headers: NO_STORE });
   } catch (error) {
     if (error instanceof YouCamError) {
-      // Only our own code and the sanitised upstream detail are logged.
-      if (error.status >= 500) console.error(`[youcam] ${error.code} ${error.detail ?? ""}`.trim());
+      // Only our own code and the upstream detail are logged, with every key scrubbed out.
+      if (error.status >= 500) console.error(redact(`[youcam] ${error.code} ${error.detail ?? ""}`.trim(), secretsFor(caller)));
       if (caller && error.code === "bad_code") strikeBadCode(caller);
       const headers = error.retryAfterS ? { ...NO_STORE, "Retry-After": String(error.retryAfterS) } : NO_STORE;
       return Response.json(errorBody(error.code, error.message), { status: error.status, headers });

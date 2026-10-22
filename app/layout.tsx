@@ -32,6 +32,8 @@ export const metadata: Metadata = {
   },
   description:
     "You judge your skin in a mirror at 25 cm. Everyone else sees it from a metre or more. Arm's Length shows what others can actually see, and from how far.",
+  // The live demo is linked from the submission page only; keep it out of search results (see also app/robots.ts).
+  robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {

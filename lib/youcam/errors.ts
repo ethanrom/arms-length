@@ -125,11 +125,12 @@ export function networkError(cause: unknown): YouCamError {
 }
 
 /** Reasons a live call is refused before any unit is spent (StatusResponse.reason). */
-export type GateReason = "no_code" | "bad_code" | "budget_floor" | "kill_switch" | "daily_cap";
+export type GateReason = "no_code" | "bad_code" | "invalid_key" | "budget_floor" | "kill_switch" | "daily_cap";
 
 const GATE: Record<GateReason, Mapped> = {
   no_code: { message: LIVE_RESERVED_MESSAGE, status: 401 },
   bad_code: { message: "That access code wasn't recognised. Check it and try again, or use a demo face.", status: 403 },
+  invalid_key: { message: "YouCam didn't accept that API key. Check it and try again, or use a demo face.", status: 401 },
   kill_switch: { message: "Live analysis is switched off right now. The demo faces are still available.", status: 503 },
   budget_floor: { message: "Live analysis is paused for now. The demo faces are still available.", status: 503 },
   daily_cap: {
@@ -138,8 +139,14 @@ const GATE: Record<GateReason, Mapped> = {
   },
 };
 
-export function gateError(reason: GateReason): YouCamError {
-  return new YouCamError(reason, GATE[reason].message, GATE[reason].status);
+/** What an open-deployment visitor (no code) is told when the shared allowance is spent: the way on is their own key. */
+const OPEN_GATE: Partial<Record<GateReason, string>> = {
+  budget_floor: "Our live credits are used up for now. Use your own YouCam API key to continue, or use a demo face.",
+  daily_cap: "Today's live analyses on our key are used up. Use your own YouCam API key, try again tomorrow, or use a demo face.",
+};
+
+export function gateError(reason: GateReason, open = false): YouCamError {
+  return new YouCamError(reason, (open && OPEN_GATE[reason]) || GATE[reason].message, GATE[reason].status);
 }
 
 /** A live call on a deployment that only serves recorded faces (no API key, or YOUCAM_MODE=replay). */

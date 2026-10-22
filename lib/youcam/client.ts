@@ -138,7 +138,10 @@ export function createYouCamClient(options: ClientOptions): YouCamClient {
       },
       safe,
     );
-    const text = await res.text();
+    // An error body that echoes the key must not carry it into a log line (the detail is cut to 300 characters later,
+    // which could split the key and slip past a log-time scrub), so it is removed before the body is parsed.
+    const raw = await res.text();
+    const text = options.apiKey.length >= 4 ? raw.split(options.apiKey).join("[redacted]") : raw;
     let json: unknown;
     try {
       json = JSONB.parse(text);

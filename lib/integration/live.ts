@@ -1,5 +1,5 @@
 /**
- * The live "Check mine" path, on the client.
+ * The live "Use my photo" path, on the client.
  *
  *   1. POST /api/youcam/analysis (photo, engine) answers with the masks inline.
  *   2. workers/analysis.worker.ts decodes the photo and masks, measures, builds the visibility report. Results show.
@@ -13,6 +13,7 @@
 import {
   ACCESS_HEADER,
   DEFAULT_VIEWING,
+  YOUCAM_KEY_HEADER,
   type AnalysisRequest,
   type AnalysisResponse,
   type ApiError,
@@ -36,6 +37,19 @@ import {
 import type { WorkerRequest, WorkerResponse } from "./workerProtocol";
 
 export const ACCESS_STORAGE_KEY = "arms-length:access-code";
+/** The visitor's own YouCam key. sessionStorage, so it lives in this tab only and goes when the tab closes. */
+export const YOUCAM_KEY_STORAGE_KEY = "arms-length:youcam-key";
+
+/** What the visitor brought: an own YouCam key and/or an access code. Either, both or neither (an open deployment). */
+export interface Credentials {
+  code?: string | null;
+  apiKey?: string | null;
+}
+
+/** The request headers for `creds`. The key goes first in the server's order of precedence; both are sent if both are set. */
+function credentialHeaders({ code, apiKey }: Credentials): Record<string, string> {
+  return { ...(code ? { [ACCESS_HEADER]: code } : {}), ...(apiKey ? { [YOUCAM_KEY_HEADER]: apiKey } : {}) };
+}
 
 export class LiveError extends Error {
   constructor(
@@ -50,7 +64,7 @@ export class LiveError extends Error {
 // ---------- access ----------
 
 export interface Access {
-  /** Live analysis may run (a valid code), or the server is in replay mode and will answer from a recording. */
+  /** Live analysis may run (an own key, a valid code, or an open deployment), or the server is in replay mode and will answer from a recording. */
   allowed: boolean;
   /** The server answers every analysis with a recorded face (dev and tests). */
   replay: boolean;
@@ -58,22 +72,30 @@ export interface Access {
   message: string;
 }
 
-const RESERVED = "Live analysis is reserved for judges with an access code. Try a demo face.";
+const RESERVED = "Live analysis needs your own YouCam API key or an access code here. Try a demo face.";
+
+/** Same ending in every case: the way on is the visitor's own key (or a demo face), never a dead end. */
+const OUT_OF_CREDITS = "Our live credits are used up for now. Use your own YouCam API key to continue, or try a demo face.";
+const OUT_OF_TODAY = "Today's live analyses on our key are used up. Use your own YouCam API key to continue, or try a demo face.";
 
 const REASONS: Record<NonNullable<StatusResponse["reason"]>, string> = {
   no_code: RESERVED,
   bad_code: "That access code didn't work. Check it, or try a demo face.",
+  invalid_key: "YouCam didn't accept that API key. Check it and try again, or try a demo face.",
   budget_floor: "Live analysis is paused right now. Try a demo face.",
   kill_switch: "Live analysis is paused right now. Try a demo face.",
   daily_cap: "This access code has used its live analyses for today. Try a demo face.",
   replay_only: "",
 };
 
-/** GET /api/youcam/status with the access code: live, replay-only (dev), or the reason it is not available. */
-export async function checkAccess(code: string | null, fetcher: typeof fetch = fetch): Promise<Access> {
+/** On an open deployment the shared allowance running out is not the visitor's doing: point them at their own key. */
+const OPEN_REASONS: Partial<typeof REASONS> = { budget_floor: OUT_OF_CREDITS, daily_cap: OUT_OF_TODAY };
+
+/** GET /api/youcam/status with the visitor's key and/or code: live, replay-only (dev), or the reason it is not available. */
+export async function checkAccess({ code, apiKey }: Credentials = {}, fetcher: typeof fetch = fetch): Promise<Access> {
   let status: StatusResponse;
   try {
-    const res = await fetcher("/api/youcam/status", { headers: code ? { [ACCESS_HEADER]: code } : {}, cache: "no-store" });
+    const res = await fetcher("/api/youcam/status", { headers: credentialHeaders({ code, apiKey }), cache: "no-store" });
     if (!res.ok) throw new Error(String(res.status));
     status = (await res.json()) as StatusResponse;
   } catch {
@@ -82,9 +104,12 @@ export async function checkAccess(code: string | null, fetcher: typeof fetch = f
   if (status.live) return { allowed: true, replay: false, message: "" };
   // A recorded-faces deployment turns uploads away unless it was started for tests: say so before any camera prompt.
   if (status.reason === "replay_only") {
-    return status.uploadsAllowed === false ? { allowed: false, replay: true, message: RESERVED } : { allowed: true, replay: true, message: "" };
+    if (status.uploadsAllowed !== false) return { allowed: true, replay: true, message: "" };
+    const message = apiKey ? "This site only serves its recorded demo faces, so your key can't be used here. Try a demo face." : RESERVED;
+    return { allowed: false, replay: true, message };
   }
-  return { allowed: false, replay: false, message: REASONS[status.reason ?? "no_code"] ?? RESERVED };
+  const reason = status.reason ?? "no_code";
+  return { allowed: false, replay: false, message: (status.open && OPEN_REASONS[reason]) || REASONS[reason] || RESERVED };
 }
 
 // ---------- session ----------
@@ -117,12 +142,12 @@ export interface LiveSession {
 
 const NETWORK = "We couldn't reach the analysis service. Check your connection and try again.";
 
-async function postJson<T>(path: string, body: unknown, code: string | null): Promise<T> {
+async function postJson<T>(path: string, body: unknown, creds: Credentials): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
       method: "POST",
-      headers: { "content-type": "application/json", ...(code ? { [ACCESS_HEADER]: code } : {}) },
+      headers: { "content-type": "application/json", ...credentialHeaders(creds) },
       body: JSON.stringify(body),
     });
   } catch {
@@ -148,9 +173,12 @@ const rescale = (scale: ScaleEstimate, factor: number): ScaleEstimate =>
 
 export interface LiveOptions {
   accessCode: string | null;
+  /** The visitor's own YouCam key, if they brought one. Held in memory for this session only. */
+  apiKey?: string | null;
 }
 
-export function createLiveSession({ accessCode }: LiveOptions): LiveSession {
+export function createLiveSession({ accessCode, apiKey = null }: LiveOptions): LiveSession {
+  const creds: Credentials = { code: accessCode, apiKey };
   const listeners = new Set<(s: LiveSnapshot) => void>();
   const urls: string[] = [];
   let worker: Worker | null = null;
@@ -216,7 +244,7 @@ export function createLiveSession({ accessCode }: LiveOptions): LiveSession {
 
   async function simulate(strengths: SimulateRequest["strengths"]): Promise<RenderResponse> {
     if (!fileRef) throw new LiveError("The analysis isn't ready yet.");
-    const res = await postJson<WithTasks<RenderResponse>>("/api/youcam/simulate", { fileRef, strengths } satisfies SimulateRequest, accessCode);
+    const res = await postJson<WithTasks<RenderResponse>>("/api/youcam/simulate", { fileRef, strengths } satisfies SimulateRequest, creds);
     remember(res.taskIds);
     return res;
   }
@@ -260,15 +288,16 @@ export function createLiveSession({ accessCode }: LiveOptions): LiveSession {
 
   function cleanup() {
     if (taskTokens.size === 0) return;
-    const body = JSON.stringify({ taskIds: [...taskTokens], accessCode });
+    // Absent fields are left out (not null): the server's body schema is strict.
+    const body = JSON.stringify({ taskIds: [...taskTokens], ...(accessCode ? { accessCode } : {}), ...(apiKey ? { youcamKey: apiKey } : {}) });
     taskTokens.clear();
-    // sendBeacon survives the page going away; it cannot set headers, so the access code rides in the body.
+    // sendBeacon survives the page going away; it cannot set headers, so the code or own key rides in the body.
     const queued = typeof navigator !== "undefined" && navigator.sendBeacon?.("/api/youcam/cleanup", new Blob([body], { type: "application/json" }));
     if (!queued) {
       void fetch("/api/youcam/cleanup", {
         method: "POST",
         keepalive: true,
-        headers: { "content-type": "application/json", ...(accessCode ? { [ACCESS_HEADER]: accessCode } : {}) },
+        headers: { "content-type": "application/json", ...credentialHeaders(creds) },
         body,
       }).catch(() => undefined);
     }
@@ -291,7 +320,7 @@ export function createLiveSession({ accessCode }: LiveOptions): LiveSession {
         const response = await postJson<WithTasks<AnalysisResponse>>(
           "/api/youcam/analysis",
           { image: capture.image, engine: capture.engine } satisfies AnalysisRequest,
-          accessCode,
+          creds,
         );
         fileRef = response.fileRef;
         remember(response.taskIds);
@@ -358,7 +387,7 @@ export function createLiveSession({ accessCode }: LiveOptions): LiveSession {
       const mark = (patch: NonNullable<ViewOptions["coverage"]>[ConcernId]) => setOptions({ coverage: { ...state.options.coverage, [concern]: patch } });
       mark({ state: "running" });
       try {
-        const res = await ask({ kind: "coverage", concern, fileRef, accessCode }, (m) => set({ coverageProgress: m }));
+        const res = await ask({ kind: "coverage", concern, fileRef, accessCode, apiKey }, (m) => set({ coverageProgress: m }));
         if (res.kind !== "coverage") throw new LiveError("Unexpected answer from the measuring step.");
         const entry: CoverageEntry = { plan: res.plan, afterImage: res.image ? url(res.image) : null };
         const steps = res.plan.steps.length;

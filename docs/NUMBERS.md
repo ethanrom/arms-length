@@ -336,18 +336,18 @@ Source lines of TypeScript per `lib/` module (physical lines, as `wc -l` counts 
 | Module | Source files | Source lines | Test files | Test lines |
 | --- | --- | --- | --- | --- |
 | `lib/capture` | 9 | 845 | 3 | 359 |
-| `lib/contracts` | 6 | 440 | 0 | 0 |
+| `lib/contracts` | 6 | 449 | 0 | 0 |
 | `lib/copy` | 11 | 1,551 | 1 | 907 |
 | `lib/coverage` | 7 | 571 | 3 | 429 |
-| `lib/integration` | 17 | 2,191 | 6 | 541 |
+| `lib/integration` | 17 | 2,222 | 6 | 541 |
 | `lib/scale` | 4 | 345 | 2 | 206 |
 | `lib/science` | 11 | 952 | 1 | 370 |
 | `lib/selftest` | 4 | 203 | 1 | 85 |
 | `lib/skin` | 11 | 2,223 | 5 | 522 |
 | `lib/util` | 0 | 0 | 1 | 5 |
 | `lib/vision` | 14 | 1,969 | 8 | 844 |
-| `lib/youcam` | 17 | 1,845 | 8 | 1,099 |
-| **Total** | **111** | **13,135** | **39** | **5,367** |
+| `lib/youcam` | 17 | 2,030 | 8 | 1,475 |
+| **Total** | **111** | **13,360** | **39** | **5,743** |
 
 Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.test.ts`). Reproduce: `find lib/vision -name '*.ts' ! -name '*.test.ts' | xargs cat | wc -l` for one module, or `npx tsx scripts/docs/numbers.ts --section engineering-lines`.
 
@@ -359,8 +359,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 | Number | Value | Source | Reproduce |
 | --- | --- | --- | --- |
-| Unit tests (vitest) | 412 in 44 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
-| End-to-end tests (Playwright) | 64 in 7 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
+| Unit tests (vitest) | 437 in 44 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
+| End-to-end tests (Playwright) | 66 in 7 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
 
 <!-- generated:engineering-tests:end -->
 
@@ -389,8 +389,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 Slow tables (3.2, 3.3 and 6.1) are not recomputed by `npm test`. Instead `lib/vision/numbers.doc.test.ts` checks two hashes:
 
-- inputs: `181ca107df00cae4`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
-- slow tables: `2ccb0a73e098da1b`. The tables above as committed, so a hand edit differs.
+- inputs: `b968527b97658d49`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
+- slow tables: `8886add28751c49e`. The tables above as committed, so a hand edit differs.
 
 When either test fails, run `npx tsx scripts/docs/numbers.ts --write` and commit. `--check` recomputes everything, including the slow tables.
 

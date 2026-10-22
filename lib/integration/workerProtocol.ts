@@ -27,6 +27,8 @@ export type WorkerRequest =
       concern: ConcernId;
       fileRef: string;
       accessCode: string | null;
+      /** The visitor's own YouCam key for the makeup renders, or null. Lives in this worker for the one request. */
+      apiKey: string | null;
     };
 
 export interface ReadingPayload {

@@ -252,6 +252,13 @@ test("the skip route shows the prediction without a walk", async ({ page }) => {
   await expect(page.getByText(/gone beyond/)).toBeVisible();
 });
 
+test("the site keeps itself out of search results: noindex on the pages and a robots.txt that disallows everything", async ({ page, request }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex, nofollow/);
+  const robots = await (await request.get("/robots.txt")).text();
+  expect(robots).toMatch(/User-Agent: \*\s+Disallow: \/\s*$/i);
+});
+
 test("keyboard: tab order reaches the skip link, the nav, the CTAs and a visible focus ring", async ({ page }) => {
   await page.goto("/for-brands");
   await page.keyboard.press("Tab");

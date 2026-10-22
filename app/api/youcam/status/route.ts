@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   return respond(async () => {
     admit(who, "status");
     // Replay mode (no API key, or YOUCAM_MODE=replay) answers { live: false, reason: "replay_only" } without any gate check.
-    const status = await getService().status(who.code);
+    const status = await getService().status(who);
     if (status.reason === "bad_code") strikeBadCode(who);
     return status;
   }, who);

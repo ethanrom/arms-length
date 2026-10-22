@@ -9,6 +9,6 @@ export async function POST(request: Request) {
   const who = callerOf(request);
   return respond(async () => {
     admit(who, "render");
-    return getService().makeup(await readBody(request, makeupBody, MAX_BODY_BYTES.render), who.code);
+    return getService().makeup(await readBody(request, makeupBody, MAX_BODY_BYTES.render), who);
   }, who);
 }

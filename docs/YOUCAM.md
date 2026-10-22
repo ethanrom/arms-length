@@ -88,8 +88,8 @@ Our own routes sit on top of these, so the browser never talks to YouCam:
 | `POST /api/youcam/analysis` | Upload and analyse a photo, or return a recorded demo face. Returns scores and masks (as data URLs) | `app/api/youcam/analysis/route.ts` |
 | `POST /api/youcam/makeup` | One foundation render for a given `fileRef` | `app/api/youcam/makeup/route.ts` |
 | `POST /api/youcam/simulate` | One Skin Simulation render | `app/api/youcam/simulate/route.ts` |
-| `GET /api/youcam/status` | Tells the UI whether live mode is open for this access code, and why not | `app/api/youcam/status/route.ts` |
-| `POST /api/youcam/cleanup` | Deletes the YouCam tasks a live session created: signed task tokens in, a count of deleted and failed out. The browser calls it when the visitor leaves the page (section 4, note 10) | `app/api/youcam/cleanup/route.ts` |
+| `GET /api/youcam/status` | Tells the UI whether live mode is open for this caller (own key, access code, or open deployment), and why not. With an own key it checks the key with one free `credit()` call | `app/api/youcam/status/route.ts` |
+| `POST /api/youcam/cleanup` | Deletes the YouCam tasks a live session created (with the visitor's own key for an own-key session): signed task tokens in, a count of deleted and failed out. The browser calls it when the visitor leaves the page (section 4, note 10) | `app/api/youcam/cleanup/route.ts` |
 | `POST /api/visibility` | The drop-in layer: a YouCam Skin Analysis result you already have plus its photo in, a visibility report out. Calls no YouCam endpoint, spends no units (section 8) | `app/api/visibility/route.ts` |
 
 ## 3. What the masks actually contain
@@ -263,24 +263,42 @@ A live session costs about 26 units: the analysis (16), one half-strength simula
 5-to-10-concern price tier) and up to 4 coverage renders (4). The first real session spent 25 (16 + 6 + 3), and the balance
 read 841 before it and 816 after. Demo faces cost nothing.
 
-Every paid call goes through one guard (`lib/youcam/budget.ts`, used by `lib/youcam/service.ts`):
+Every paid call goes through one guard (`lib/youcam/budget.ts`, used by `lib/youcam/service.ts`). A live request runs as one
+of three callers, in this order:
+
+1. **An own YouCam key**, header `x-youcam-key` (the `youcamKey` body field for the `sendBeacon` clean-up, which cannot set headers).
+2. **An access code**, header `x-access-code`, compared in constant time against `LIVE_ACCESS_CODES`.
+3. **Nobody**, when `LIVE_OPEN=1` (the judging deploy).
 
 - **Demo faces are free and always on.** A request for a demo face is answered from recorded files (section 6) and never reaches
   YouCam. No code and no key are needed.
-- **Live mode needs an access code.** Judges get one in the testing instructions. The code travels in the `x-access-code`
-  header and is compared in constant time against `LIVE_ACCESS_CODES`. Only a 12-character hash of it is logged.
-- **Daily caps per code:** 3 live analyses (`LIVE_DAILY_CAP`) and a separate, larger cap for renders
-  (`LIVE_RENDER_DAILY_CAP`; the example config uses 12). A slot is handed back if a call fails before any unit is spent.
-  Caps are held in memory per server instance, so they are a best-effort limit; the floor and the kill switch below are the firm ones.
-- **Balance floor.** Live mode refuses a call if the balance after it would be at or below `UNIT_FLOOR` (default **100**).
-  The balance is read from `GET /s2s/v1.0/client/credit`, cached for 60 s, and lowered locally after every spend so a burst
-  of requests cannot overshoot. If the balance cannot be read, live mode stays closed.
-- **Kill switch.** `KILL_SWITCH` accepts `1`, `true` or `yes` and fails safe: set it and every paid call is refused at once.
-- **Replay mode, and the keyless deploy.** `YOUCAM_MODE=replay`, or no API key, makes live calls impossible. The guard then reports it like a kill switch. A deploy without a key therefore always replays, and uploads are refused unless `REPLAY_UPLOADS=1`, which is for tests only.
+- **Own key (bring your own).** The server builds a YouCam client with the caller's key for that request only: the key is never
+  stored, logged or echoed, and every YouCam call of the request (upload, analysis, simulation, makeup, delete) carries it. These
+  are the caller's units, so the project's balance floor and daily caps do not apply and the project balance is never read; the
+  per-address rate limits and the kill switch still do. `GET /api/youcam/status` checks the key with one free `credit()` call and
+  answers `keyOk` true, or `keyOk: false` with the reason `invalid_key` (not counted as a wrong access code). It works on a deploy
+  with no project key; only `KILL_SWITCH` or a forced `YOUCAM_MODE=replay` refuses it. The ledger line says `who: "byok"`.
+- **Open live mode (`LIVE_OPEN=1`).** A request with no code uses the project key, under the same floor and kill switch, a per-address
+  daily cap (`LIVE_DAILY_CAP` analyses and `LIVE_RENDER_DAILY_CAP` renders, kept against a hash of the address, `ip:<hash>`) and a
+  global `LIVE_OPEN_DAILY_CAP` (default **8** analyses a day across all open visitors, so a leaked link can burn about 180 units a
+  day at most). A wrong code is never downgraded to open. When open mode is refused (floor or cap) the client offers the visitor's own key.
+- **Access codes** work as before, for anyone who has one: 3 live analyses a day each (`LIVE_DAILY_CAP`), and a separate, larger cap
+  for renders (`LIVE_RENDER_DAILY_CAP`, default **20**). A slot is handed back if a call fails before any unit is spent. Caps are held
+  in memory per server instance, so they are a best-effort limit; the floor and the kill switch below are the firm ones.
+- **Balance floor.** Live mode on the project key refuses a call if the balance after it would be at or below `UNIT_FLOOR` (default
+  **100**; the judging deploy uses 300). The balance is read from `GET /s2s/v1.0/client/credit`, cached for 60 s, and lowered locally
+  after every spend so a burst of requests cannot overshoot. If the balance cannot be read, live mode stays closed.
+- **Kill switch.** `KILL_SWITCH` accepts `1`, `true` or `yes` and fails safe: set it and every paid call is refused at once, own keys included.
+- **Replay mode, and the keyless deploy.** `YOUCAM_MODE=replay`, or no API key, makes live calls on the project key impossible. The guard then reports it like a kill switch. A deploy without a key therefore always replays, and uploads are refused unless `REPLAY_UPLOADS=1`, which is for tests only. An own key still works on a keyless deploy (not under `YOUCAM_MODE=replay`).
 - **Per-address limits.** Every route limits requests per IP address, and an address is locked out after 8 wrong access codes.
+- **Task tokens.** Live responses carry the YouCam tasks they created as HMAC-signed tokens, signed with `TASK_TOKEN_SECRET` (falling back to
+  `YOUCAM_API_KEY`; with neither, no token is issued and clean-up is refused). Clean-up works for open sessions (deleted with the project
+  key) and own-key sessions (deleted with the caller's key).
+- **Log hygiene.** Every server log line goes through a scrubber that removes the project key, the caller's key and any bearer token, and
+  the client removes its own key from an upstream error body before it is parsed. The ledger logs `who` as `byok`, `open` or the code hash, never key material.
 - **Checks before spending.** Wrong file type, over 4 MB (the hosting platform's 4.5 MB request-body limit), or an HD photo with a
   short side under 1080 px is refused before anything is uploaded.
-- **Ledger.** Each paid call writes one JSON line with the action, units, access-code hash, timestamp and a `maybe` flag for
+- **Ledger.** Each paid call writes one JSON line with the action, units, `who` (`byok`, `open` or the access-code hash), timestamp and a `maybe` flag for
   submits whose outcome is unknown. The balance is cross-checked with the credit and credit-history endpoints.
 - **Cheaper fallback.** `YOUCAM_ENGINE=sd` switches live analysis to the 12-unit engine.
 - Keys are read from the server environment only. Nothing in `.env` is committed, logged or sent to the browser.

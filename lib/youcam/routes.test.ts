@@ -70,6 +70,7 @@ describe("app/api/youcam routes (replay, no network)", () => {
   });
 
   test("cleanup needs a configured code (header or body), ignores tokens it did not sign, and validates its body", async () => {
+    vi.stubEnv("TASK_TOKEN_SECRET", "route-test-secret");
     const noCode = await cleanup(post("cleanup", { taskIds: ["abc.def"] }));
     expect(await noCode.json()).toEqual({ deleted: 0, failed: 0 });
     const forgedViaBody = await cleanup(post("cleanup", { taskIds: ["abc.def"], accessCode: "judge-alpha" }));

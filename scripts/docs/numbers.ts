@@ -731,6 +731,92 @@ function aiSection(facts: Facts): string {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// 4.1 Rehearse: with and without our numbers
+// ---------------------------------------------------------------------------------------------------------------
+
+interface RehearseEvalBlock {
+  tally: { claims: number; noticeable: number; outOfSight: number; contradictions: number; misses: number; overCovers: number; advisedOutOfSight: number };
+  rates: { contradiction: number | null; miss: number | null; meanAbsShareError: number | null };
+}
+interface RehearseEvalSummary {
+  meta: {
+    calls: number;
+    caps: { calls: number; usd: number };
+    agentRunsHere: number;
+    unaidedCalls: number;
+    modelRequests: number;
+    estimatedCostUsd: number;
+    priceAssumptionUsdPerMillion: { input: number; output: number };
+    truthThreshold: number;
+    faces: string[];
+    days: { id: string }[];
+  };
+  headline: {
+    without: RehearseEvalBlock;
+    withoutJudgedOnly: RehearseEvalBlock;
+    with: RehearseEvalBlock;
+    marksOnly: { without: RehearseEvalBlock; with: RehearseEvalBlock };
+    intervals: { contradiction: { without: [number, number] | null; with: [number, number] | null; diff: [number, number] | null } };
+    shareCorrelation: { all: number | null };
+  };
+  effortCheck: { pairs: number; calls: number; low: RehearseEvalBlock; high: RehearseEvalBlock };
+  unaided: {
+    saidAbsentButFound: number;
+    consistency: { sameChoice: number; alignedMoments: number; comparedSame: number; disagreeSame: number; noticeableDisagreementSameChoice: number | null };
+    perf: { medianLatencyMs: number | null; costUsdMean: number | null };
+  };
+  agent: {
+    plans: number;
+    fixturesReused: number;
+    newRuns: number;
+    outcomes: { verified: number; repaired: number; fallback: number };
+    verifier: { numbersShipped: number; unverifiedNumbersShipped: number; issuesTotal: number };
+    perf: { medianMs: number | null; costUsdMean: number | null };
+  };
+}
+
+function rehearseEvalSection(facts: Facts): string {
+  const s = readJson<RehearseEvalSummary>("eval/rehearse/results/summary.json");
+  const h = s.headline;
+  const ag = s.agent;
+  const un = s.unaided;
+  const file = "`eval/rehearse/results/summary.json`";
+  const rebuild = "`npx tsx eval/rehearse/run.ts --offline`";
+  const pct1 = (x: number | null): string => (x === null ? "-" : `${(100 * x).toFixed(x < 0.095 && x !== 0 ? 1 : 0)}%`);
+  const range = (r: [number, number] | null): string => (r ? `${pct1(r[0])} to ${pct1(r[1])}` : "-");
+  const usd = (x: number | null, d = 3): string => (x === null ? "-" : `$${x.toFixed(d)}`);
+  const secs = (ms: number | null): string => (ms === null ? "-" : `${(ms / 1000).toFixed(1)} s`);
+  if (ag.plans !== s.meta.faces.length * s.meta.days.length) throw new Error("Rehearse eval summary: the agent plans do not cover every face and day");
+  if (ag.fixturesReused + ag.newRuns !== ag.plans) throw new Error("Rehearse eval summary: fixtures plus new runs do not add up to the plans");
+
+  facts["rehearse.contradictionWithout"] = pct1(h.without.rates.contradiction);
+  facts["rehearse.contradictionWith"] = pct1(h.with.rates.contradiction);
+  facts["rehearse.overCover"] = `${h.without.tally.overCovers} of ${h.without.tally.advisedOutOfSight} unaided, ${h.with.tally.overCovers} of ${h.with.tally.advisedOutOfSight} with numbers`;
+  facts["rehearse.unverified"] = `${ag.verifier.unverifiedNumbersShipped} of ${ag.verifier.numbersShipped}`;
+
+  return [
+    `The same model (Claude Sonnet 5.5 on Amazon Bedrock) on the four demo faces and ${s.meta.days.length} days, with our numbers (the Rehearse agent) and without (the photo and the day only), both scored against our model on the scene each chose. "Noticeable" means the model's typical share is above ${pct1(s.meta.truthThreshold)}. The truth is our own model, so the agent's low disagreement is close to guaranteed; the unaided model's disagreement is the finding, and the unaided model does not over-cover. Every number is in ${file}; the write-up, the prompts and the limits are in \`eval/rehearse/README.md\`. ${rebuild} rebuilds the file and the README from the cached replies, with no network and no spend.`,
+    "",
+    quantityTable([
+      { what: "Calls (an agent run or an unaided call each) and cap", value: `${s.meta.calls} of ${s.meta.caps.calls}: ${s.meta.agentRunsHere} agent runs and ${s.meta.unaidedCalls} unaided calls (${s.effortCheck.calls} of them at high effort); ${ag.fixturesReused} more agent plans are the recorded fixtures`, source: `${file} \`meta\`, \`effortCheck.calls\``, reproduce: rebuild },
+      { what: "Model requests and estimated cost", value: `${s.meta.modelRequests} requests, ${usd(s.meta.estimatedCostUsd, 2)} at list price ($${s.meta.priceAssumptionUsdPerMillion.input} in, $${s.meta.priceAssumptionUsdPerMillion.output} out per million tokens, cache reads 0.1x, cache writes 1.25x; cap $${s.meta.caps.usd}; Bedrock billing may differ)`, source: `${file} \`meta.modelRequests\`, \`meta.estimatedCostUsd\``, reproduce: rebuild },
+      { what: "Concern-moments scored, unaided / agent", value: `${int(h.without.tally.claims)} / ${int(h.with.tally.claims)} (${int(h.without.tally.noticeable)} of the unaided ones are noticeable per the model)`, source: `${file} \`headline.without.tally\`, \`headline.with.tally\``, reproduce: rebuild },
+      { what: "Contradiction with our model, unaided", value: `${pct1(h.without.rates.contradiction)} (95% interval ${range(h.intervals.contradiction.without)})`, source: `${file} \`headline.without.rates.contradiction\`, \`headline.intervals\``, reproduce: rebuild },
+      { what: "Contradiction with our model, only where the unaided model gave a judgment (leaving out \"not on this face\")", value: `${pct1(h.withoutJudgedOnly.rates.contradiction)} over ${int(h.withoutJudgedOnly.tally.claims)} concern-moments; ${int(un.saidAbsentButFound)} answers were "not on this face" where the masks found the mark`, source: `${file} \`headline.withoutJudgedOnly\`, \`unaided.saidAbsentButFound\``, reproduce: rebuild },
+      { what: "Contradiction with our model, the agent's plans", value: `${pct1(h.with.rates.contradiction)} (95% interval ${range(h.intervals.contradiction.with)}); gap to the unaided model ${range(h.intervals.contradiction.diff)}`, source: `${file} \`headline.with.rates.contradiction\`, \`headline.intervals\``, reproduce: rebuild },
+      { what: "Unaided model: said \"not noticeable\" where the model says a typical viewer can pick it out", value: `${pct1(h.without.rates.miss)} of ${int(h.without.tally.noticeable)}; marks only (large soft areas left out) ${pct1(h.marksOnly.without.rates.miss)}`, source: `${file} \`headline.without.rates.miss\`, \`headline.marksOnly\``, reproduce: rebuild },
+      { what: "Over-cover (\"cover\" advised where the model says out of sight)", value: `${h.without.tally.overCovers} of ${h.without.tally.advisedOutOfSight} unaided; ${h.with.tally.overCovers} of ${h.with.tally.advisedOutOfSight} with numbers`, source: `${file} \`headline.without.tally\`, \`headline.with.tally\``, reproduce: rebuild },
+      { what: "Unaided model: mean absolute share error on marks, and correlation with the model's share", value: `${(h.marksOnly.without.rates.meanAbsShareError ?? NaN).toFixed(2)} and r = ${(h.shareCorrelation.all ?? NaN).toFixed(2)}`, source: `${file} \`headline.marksOnly.without.rates\`, \`headline.shareCorrelation\``, reproduce: rebuild },
+      { what: "Unaided model asked twice: \`noticeable\` differs, where it chose the same scene, light and viewer", value: `${un.consistency.disagreeSame} of ${un.consistency.comparedSame} (${pct1(un.consistency.noticeableDisagreementSameChoice)}); same choice in ${un.consistency.sameChoice} of ${un.consistency.alignedMoments} moments`, source: `${file} \`unaided.consistency\``, reproduce: rebuild },
+      { what: `Unaided model at high effort against the default effort, contradiction on the same ${s.effortCheck.pairs} pairs`, value: `${pct1(s.effortCheck.high.rates.contradiction)} against ${pct1(s.effortCheck.low.rates.contradiction)}`, source: `${file} \`effortCheck\``, reproduce: rebuild },
+      { what: "Agent plans: verified first time / after one repair / fallback", value: `${ag.outcomes.verified} / ${ag.outcomes.repaired} / ${ag.outcomes.fallback} of ${ag.plans}`, source: `${file} \`agent.outcomes\``, reproduce: rebuild },
+      { what: "Agent plans: numbers shipped that no cited quote carries (\`verifyPlan\` re-run on every shipped plan)", value: `${ag.verifier.unverifiedNumbersShipped} of ${ag.verifier.numbersShipped} (${ag.verifier.issuesTotal} issues of any kind)`, source: `${file} \`agent.verifier\``, reproduce: rebuild },
+      { what: "Median time and mean cost per answer, agent / unaided", value: `${secs(ag.perf.medianMs)} and ${usd(ag.perf.costUsdMean)} / ${secs(un.perf.medianLatencyMs)} and ${usd(un.perf.costUsdMean)}`, source: `${file} \`agent.perf\`, \`unaided.perf\``, reproduce: rebuild },
+    ]),
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // 5. YouCam
 // ---------------------------------------------------------------------------------------------------------------
 
@@ -1110,6 +1196,8 @@ function headlineSection(facts: Facts): string {
     ["AI run-to-run spread, same question", `CV ${get("ai.cvB")} (median); highest of five asks ${get("ai.ratioB")} the lowest`, "4"],
     ["AI against our distance", `${get("ai.factor")} off (geometric mean); ${get("ai.inRange")} answers inside our range`, "4"],
     ["AI on real faces", `pores ${get("ai.poresMedian")}; breakouts ${get("ai.breakoutsNull")}`, "4"],
+    ["Rehearse: the same model without our numbers, against our model", `contradicts it on ${get("rehearse.contradictionWithout")} of concern-moments (the agent's plans: ${get("rehearse.contradictionWith")}); over-cover ${get("rehearse.overCover")}`, "4.1"],
+    ["Rehearse: numbers in shipped plans that no cited quote carries", get("rehearse.unverified"), "4.1"],
     ["YouCam units", `${get("youcam.hd")} per analysis, ${get("youcam.session")} per full session`, "5"],
     ["Measured route latency", get("youcam.latency"), "5"],
   ];
@@ -1148,6 +1236,7 @@ export const SECTIONS: SectionDef[] = [
   { id: "persona-worthit", heading: "3.2 Worth it?", level: 3, tier: "slow" },
   { id: "persona-coverage", heading: "3.3 The lightest touch: the coverage knee", level: 3, tier: "slow" },
   { id: "ai", heading: "4. The AI comparison", level: 2, tier: "fast" },
+  { id: "rehearse-eval", heading: "4.1 Rehearse: with and without our numbers", level: 3, tier: "fast" },
   { id: "youcam", heading: "5. YouCam", level: 2, tier: "fast" },
   { id: "ledger", heading: "5.1 Units spent and left", level: 3, tier: "ledger" },
   { id: "engineering-misc", heading: "6. Engineering", level: 2, tier: "fast" },
@@ -1190,6 +1279,7 @@ export async function buildSections(options: BuildOptions = {}): Promise<Built[]
   if (wanted("persona-found", "fast")) put("persona-found", "fast", await foundSection());
   if (wanted("persona-sight", "fast")) put("persona-sight", "fast", await sightSection(facts));
   if (wanted("ai", "fast")) put("ai", "fast", aiSection(facts));
+  if (wanted("rehearse-eval", "fast")) put("rehearse-eval", "fast", rehearseEvalSection(facts));
   if (wanted("youcam", "fast")) put("youcam", "fast", youcamSection(facts));
   if (wanted("engineering-misc", "fast")) put("engineering-misc", "fast", engineeringFastSection(facts));
   if (wanted("vision", "fast")) put("vision", "fast", visionSection(facts));

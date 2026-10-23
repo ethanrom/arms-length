@@ -1,0 +1,26 @@
+{
+  "kind": "without",
+  "face": "p3a",
+  "day": "workday",
+  "run": 1,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-sonnet-5-5",
+  "effort": "low",
+  "at": "2026-10-23T09:00:47.409Z",
+  "imageSha256": "d75b68d255ee83a879a0137f27334ed8d30c8aa8a130edaa3d9e9fa45a080b2e",
+  "latencyMs": 9083,
+  "cache": true,
+  "httpCalls": 1,
+  "stopReason": "end_turn",
+  "meter": {
+    "input": 70,
+    "output": 593,
+    "cacheRead": 1397,
+    "cacheWrite": 2227
+  },
+  "costUsd": 0.01192,
+  "text": "{\"moments\":[{\"title\":\"Video standup\",\"time\":\"9am\",\"scene\":\"video_call\",\"light\":\"videoCall\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.03,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":true,\"share\":0.3,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.1,\"advice\":\"nothing\"},\"dark_circle\":null,\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"}}},{\"title\":\"Client lunch by the window\",\"time\":null,\"scene\":\"conversation\",\"light\":\"daylight\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.05,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":true,\"share\":0.6,\"advice\":\"cover\"},\"acne\":null,\"wrinkle\":{\"noticeable\":true,\"share\":0.4,\"advice\":\"nothing\"},\"dark_circle\":null,\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}},{\"title\":\"Dinner date\",\"time\":\"7pm\",\"scene\":\"dinner_table\",\"light\":\"home\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.02,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":true,\"share\":0.3,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.15,\"advice\":\"nothing\"},\"dark_circle\":null,\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"}}}]}",
+  "blocks": [
+    "text"
+  ]
+}

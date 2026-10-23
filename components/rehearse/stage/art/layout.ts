@@ -18,10 +18,10 @@ export type InPersonScene = Exclude<SceneId, "video_call">;
 /** Eye line and horizontal centre of the face per scene, as fractions of the stage. */
 const FRAME: Record<InPersonScene, { eyeY: number; cx: number }> = {
   close_talk: { eyeY: 0.43, cx: 0.5 },
-  cafe_table: { eyeY: 0.4, cx: 0.5 },
+  cafe_table: { eyeY: 0.38, cx: 0.5 },
   conversation: { eyeY: 0.38, cx: 0.5 },
-  dinner_table: { eyeY: 0.4, cx: 0.5 },
-  meeting_room: { eyeY: 0.4, cx: 0.5 },
+  dinner_table: { eyeY: 0.38, cx: 0.5 },
+  meeting_room: { eyeY: 0.385, cx: 0.5 },
   presenting: { eyeY: 0.37, cx: 0.6 },
 };
 

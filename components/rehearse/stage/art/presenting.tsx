@@ -5,6 +5,7 @@
  * behind, and rows of audience heads seen from behind. The speaker's face is small and up front.
  */
 import { C, Ink, Layer, W, Wash } from "./ink";
+import { GarmentBack } from "./garment";
 import { ellipse, line, rect, smooth } from "./shapes";
 
 const FACE_X = 960;
@@ -32,9 +33,12 @@ function Screen() {
   );
 }
 
-export function PresentingBack({ uid }: { uid: string }) {
+export function PresentingBack({ uid, photoHeight }: { uid: string; photoHeight?: number }) {
   return (
     <>
+      <Layer at={0.3} to={0.6}>
+        <GarmentBack scene="presenting" photoHeight={photoHeight} bottom={PLATFORM - 130} />
+      </Layer>
       <defs>
         <linearGradient id={`${uid}beam`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={C.paper} stopOpacity="0.14" />
@@ -120,7 +124,7 @@ export function PresentingFront() {
     <>
       <Layer at={0.3} to={0.6}>
         {/* the lectern: a slanted top, a body and a gooseneck microphone */}
-        <g transform={`translate(${FACE_X} ${PLATFORM - 24})`}>
+        <g transform={`translate(${FACE_X} ${PLATFORM - 6})`}>
           <Ink d="M-74 -160L74 -160L86 -132H-86Z" fill={C.paper} w={W.near} />
           <Ink d="M-86 -132H86V0H-86Z" fill={C.paperDeep} w={W.near} />
           <Ink d="M-70 -116H70V-12H-70Z" stroke={C.ruleStrong} w={W.hair} />

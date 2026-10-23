@@ -5,6 +5,7 @@
  * In front: the near half of a round table (its far edge sits just under the shoulders), two cups and a bud vase.
  */
 import { C, Fade, Ink, Layer, W, Wash } from "./ink";
+import { GarmentBack } from "./garment";
 import { BudVase, Cup, Plant } from "./props";
 import { arc, ellipse, line, rect, smooth } from "./shapes";
 
@@ -83,9 +84,12 @@ function Shelf() {
   );
 }
 
-export function CafeBack({ uid }: { uid: string }) {
+export function CafeBack({ uid, photoHeight }: { uid: string; photoHeight?: number }) {
   return (
     <>
+      <Layer at={0.3} to={0.7}>
+        <GarmentBack scene="cafe_table" photoHeight={photoHeight} />
+      </Layer>
       <Layer at={0} to={0.5}>
         <Window uid={uid} />
       </Layer>
@@ -105,22 +109,22 @@ export function CafeBack({ uid }: { uid: string }) {
 export function CafeFront() {
   return (
     <Layer at={0.45} to={1}>
-      <Ink d={ellipse(800, 919, 700, 255)} fill={C.rule} w={W.near} />
-      <Ink d={ellipse(800, 895, 700, 255)} fill={C.paperDeep} w={W.near} />
-      <Ink d={ellipse(800, 895, 668, 240)} stroke={C.ruleStrong} w={W.hair} o={0.7} />
-      <Ink d={arc(800, 895, 560, 196, 196, 250)} stroke={C.ruleStrong} w={W.hair} o={0.5} />
-      <Ink d={arc(800, 895, 470, 164, 300, 342)} stroke={C.ruleStrong} w={W.hair} o={0.5} />
-      <Ink d={arc(800, 895, 610, 214, 118, 150)} stroke={C.ruleStrong} w={W.hair} o={0.5} />
+      <Ink d={ellipse(800, 959, 700, 255)} fill={C.rule} w={W.near} />
+      <Ink d={ellipse(800, 935, 700, 255)} fill={C.paperDeep} w={W.near} />
+      <Ink d={ellipse(800, 935, 668, 240)} stroke={C.ruleStrong} w={W.hair} o={0.7} />
+      <Ink d={arc(800, 935, 560, 196, 196, 250)} stroke={C.ruleStrong} w={W.hair} o={0.5} />
+      <Ink d={arc(800, 935, 470, 164, 300, 342)} stroke={C.ruleStrong} w={W.hair} o={0.5} />
+      <Ink d={arc(800, 935, 610, 214, 118, 150)} stroke={C.ruleStrong} w={W.hair} o={0.5} />
       <Fade o={0.5}>
-        <path d={arc(800, 895, 600, 205, 205, 262)} style={{ fill: "none", stroke: "#fff", strokeWidth: 3, strokeLinecap: "round", strokeOpacity: 0.6 }} />
+        <path d={arc(800, 935, 600, 205, 205, 262)} style={{ fill: "none", stroke: "#fff", strokeWidth: 3, strokeLinecap: "round", strokeOpacity: 0.6 }} />
       </Fade>
-      <g transform="translate(1046 748) scale(0.68)">
+      <g transform="translate(1046 790) scale(0.68)">
         <Cup />
       </g>
-      <g transform="translate(1214 826)">
+      <g transform="translate(1214 868)">
         <BudVase />
       </g>
-      <g transform="translate(500 858)">
+      <g transform="translate(500 902)">
         <Cup />
       </g>
     </Layer>

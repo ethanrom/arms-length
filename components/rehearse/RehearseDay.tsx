@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ScaleEstimate } from "@/lib/contracts";
+import type { Box, ScaleEstimate } from "@/lib/contracts";
 import type { DayPlan, ObserveResult, RehearsePrefs, RehearseRequest, SceneInput } from "@/lib/contracts/rehearse";
 import { AskForm } from "./AskForm";
 import { PlanView } from "./PlanView";
@@ -10,7 +10,8 @@ import { streamRehearse, type ErrorEvent } from "./stream";
 
 export interface RehearseDayProps {
   requestFace: RehearseRequest["face"];
-  photo: { src: string; alt: string; frame: { width: number; height: number }; scale: ScaleEstimate };
+  /** `focus` is the cheek and nose patch the Step back loupe magnifies (frame px); each card shows it at the moment's distance. */
+  photo: { src: string; alt: string; frame: { width: number; height: number }; scale: ScaleEstimate; focus?: Box };
   /** Recomputes a moment for an edited light, viewer or distance, with the model that built the plan. Without it, moments can't be edited. */
   rerun?: (input: SceneInput, ref: string) => ObserveResult;
   /** A card was chosen: the page moves its Step back view to this distance (metres). */
@@ -39,13 +40,20 @@ interface Run {
  * Everything numeric arrives checked from /api/rehearse; this component only asks, shows progress and lays the plan out.
  */
 export function RehearseDay({ requestFace, photo, rerun, onSelectMoment }: RehearseDayProps) {
-  const { src, alt, frame, scale } = photo;
+  const { src, alt, frame, scale, focus } = photo;
   const { width, height } = frame;
   const { mmPerPx, relSd, source, irisPx } = scale;
+  const [fx, fy, fw, fh] = focus ? [focus.x, focus.y, focus.w, focus.h] : [];
   // The renderer restarts when these change identity, so the photo is rebuilt only when a value does.
   const stable = useMemo(
-    () => ({ src, alt, frame: { width, height }, scale: { mmPerPx, relSd, source, ...(irisPx === undefined ? {} : { irisPx }) } }),
-    [src, alt, width, height, mmPerPx, relSd, source, irisPx],
+    () => ({
+      src,
+      alt,
+      frame: { width, height },
+      scale: { mmPerPx, relSd, source, ...(irisPx === undefined ? {} : { irisPx }) },
+      ...(fx === undefined || fy === undefined || fw === undefined || fh === undefined ? {} : { focus: { x: fx, y: fy, w: fw, h: fh } }),
+    }),
+    [src, alt, width, height, mmPerPx, relSd, source, irisPx, fx, fy, fw, fh],
   );
 
   const [prefs, setPrefs] = useState<RehearsePrefs>({ callDevice: "laptop", noMakeup: false });

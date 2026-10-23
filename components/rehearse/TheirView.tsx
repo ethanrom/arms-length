@@ -2,14 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatDistance, spokenDistance } from "@/app/_lib/axis";
+import { CropCanvas } from "@/components/step-back/CropCanvas";
 import { FrameCanvas } from "@/components/step-back/FrameCanvas";
 import { useDistanceFrames } from "@/components/step-back/useDistanceFrames";
-import type { RgbaImage, ScaleEstimate } from "@/lib/contracts";
+import type { Box, RgbaImage, ScaleEstimate } from "@/lib/contracts";
 import type { ObserveResult } from "@/lib/contracts/rehearse";
 import { lightLabel } from "./labels";
 
-/** Small on purpose: a card shows a glance, and the worker renders it in a fraction of the Step back hero's time. */
+/**
+ * Small on purpose: a card shows a glance, and the worker renders it in a fraction of the Step back hero's time. With a
+ * focus patch the frame is drawn sharper, because at thumbnail size 90 cm and 2 m look alike; the patch shows the change.
+ */
 const MAX_SIDE = 360;
+const MAX_SIDE_FOCUS = 900;
 /** A slider drag or a run of key presses changes the scene many times a second; the render waits for it to settle. */
 const SETTLE_MS = 220;
 
@@ -18,6 +23,8 @@ export interface RehearsePhoto {
   alt: string;
   frame: { width: number; height: number };
   scale: ScaleEstimate;
+  /** The cheek and nose patch the Step back loupe magnifies, in frame px. */
+  focus?: Box;
 }
 
 /** `value` once it has stopped changing for `ms` (immediately on the first render). */
@@ -44,7 +51,7 @@ function FrameRenderer({ photo, scene, onFrame }: { photo: RehearsePhoto; scene:
     () => ({ luminanceCdM2: scene.luminanceCdM2, acuityScale: scene.acuityScale, label: "custom" as const, marginDb: 6 }),
     [scene.luminanceCdM2, scene.acuityScale],
   );
-  const state = useDistanceFrames(src, scale, viewing, stops, MAX_SIDE);
+  const state = useDistanceFrames(src, scale, viewing, stops, photo.focus ? MAX_SIDE_FOCUS : MAX_SIDE);
   const image = state.frames[0] ?? null;
   useEffect(() => onFrame(image, state.status), [image, state.status, onFrame]);
   return null;
@@ -89,8 +96,20 @@ export function TheirView({ photo, observe }: { photo: RehearsePhoto; observe: O
         )}
         <FrameRenderer key={`${scene.luminanceCdM2}|${scene.acuityScale}|${scene.distanceM}`} photo={photo} scene={scene} onFrame={onFrame} />
       </div>
+      {photo.focus && (
+        <div className="stage on-stage relative mt-2 overflow-hidden" data-testid="their-view-detail">
+          <CropCanvas
+            image={shown.image}
+            frame={photo.frame}
+            crop={photo.focus}
+            ariaLabel={`Cheek and nose, magnified, as they look from ${distance}.`}
+            className="transition-opacity duration-300"
+          />
+        </div>
+      )}
       <figcaption className="mt-1.5 text-[0.875rem] leading-snug text-ink-soft">
         Their view, from <span className="num">{formatDistance(observe.distanceM)}</span>
+        {photo.focus && <span className="block">Below: the cheek, magnified.</span>}
       </figcaption>
     </figure>
   );

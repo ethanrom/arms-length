@@ -27,7 +27,7 @@ export function useDistanceFrames(
   maxSide = 1200,
 ): FramesState {
   const [state, setState] = useState<{ key: string; value: FramesState }>({ key: "", value: IDLE });
-  const key = `${src}|${stops.join(",")}|${maxSide}|${scale.mmPerPx}|${viewing.label}|${viewing.acuityScale}`;
+  const key = `${src}|${stops.join(",")}|${maxSide}|${scale.mmPerPx}|${viewing.label}|${viewing.luminanceCdM2}|${viewing.acuityScale}`;
 
   useEffect(() => {
     const controller = new AbortController();

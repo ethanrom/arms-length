@@ -10,8 +10,9 @@ import { StepBack } from "@/components/step-back/StepBack";
 import { Section } from "@/components/ui/Section";
 import { WorthItReveal } from "@/components/whatif/WorthItReveal";
 import type { ConcernId } from "@/lib/contracts";
-import type { RehearseRequest } from "@/lib/contracts/rehearse";
+import type { RehearseRequest, SceneInput } from "@/lib/contracts/rehearse";
 import { engineBadge } from "@/lib/integration/copy";
+import { observeScene } from "@/lib/rehearse";
 import { deriveConcernViews } from "./derive";
 import { EngineStrip } from "./EngineStrip";
 import { MaskDisclosure } from "./MaskDisclosure";
@@ -39,6 +40,9 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
 
   // A moment chosen in "Rehearse your day" moves the Step back slider and brings it into view.
   const [goTo, setGoTo] = useState<{ distanceM: number; key: number }>();
+  // Editing a rehearsed moment re-runs the same model in the page; only the measurements are needed for that.
+  const rehearseFace = useMemo(() => ({ measurements, coverage: [], worthIt: [] }), [measurements]);
+  const rerun = useCallback((input: SceneInput, ref: string) => observeScene(rehearseFace, input, ref), [rehearseFace]);
   const showMoment = useCallback((distanceM: number) => {
     setGoTo((g) => ({ distanceM, key: (g?.key ?? 0) + 1 }));
     document.getElementById("step-back")?.scrollIntoView({ block: "start" });
@@ -191,7 +195,8 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
         >
           <RehearseDay
             requestFace={rehearse.requestFace}
-            photo={{ src: persona.image, alt: data.alt, frame, scale: measurements.scale }}
+            photo={{ src: persona.image, alt: data.alt, frame, scale: measurements.scale, focus: data.loupe }}
+            rerun={rerun}
             onSelectMoment={showMoment}
           />
         </Section>

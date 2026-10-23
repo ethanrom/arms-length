@@ -8,6 +8,7 @@ import type { ConcernId } from "../../../../lib/contracts/concerns";
 import {
   EXAMPLE_DAYS,
   type CallFrameResult,
+  type CallGeometry,
   type ConcernAtScene,
   type DayPlan,
   type FreeFixResult,
@@ -41,12 +42,12 @@ function concerns(rows: Row[]): ConcernAtScene[] {
   }));
 }
 
-function observe(ref: string, scene: SceneId, light: LightId, viewer: ViewerId, distanceM: number, rows: Row[], assumptions: string[]): ObserveResult {
+function observe(ref: string, scene: SceneId, light: LightId, viewer: ViewerId, distanceM: number, rows: Row[], assumptions: string[], call?: CallGeometry): ObserveResult {
   return {
     ref,
     quotes: { distance: `${distanceM} m` },
     assumptions,
-    input: { scene, light, viewer },
+    input: { scene, light, viewer, ...(call ? { call } : {}) },
     distanceM,
     luminanceCdM2: LUMINANCE[light],
     acuityScale: viewer === "typical" ? 1 : 2,
@@ -67,7 +68,7 @@ const VIDEO_ROWS: Row[] = [
 const obsVideo = observe("obs-0900", "video_call", "videoCall", "typical", 1.9, VIDEO_ROWS, [
   "Screen light: your face is lit at about 80 cd/m2 while you look at a bright screen.",
   "A typical viewer has 20/20 eyesight.",
-]);
+], { device: "laptop", cameraDistanceCm: 55, layout: "speaker" });
 
 const callVideo: CallFrameResult = {
   ref: "call-0900",
@@ -90,7 +91,7 @@ const obsVideoFurther = observe("obs-0900-after", "video_call", "videoCall", "ty
   ["dark_circle", 2, 0, 0, true],
   ["eye_bag", 2, 0, 0, true],
   ["redness", 5, 1, 1, true],
-], ["Same screen and webcam as the call at 55 cm, with the camera moved back."]);
+], ["Same screen and webcam as the call at 55 cm, with the camera moved back."], { device: "laptop", cameraDistanceCm: 80, layout: "speaker" });
 
 const fixVideo: FreeFixResult = {
   ref: "fix-0900",
@@ -172,6 +173,7 @@ const moments: PlannedMoment[] = [
     id: "m1",
     time: "9am",
     title: "Video standup",
+    headline: { text: "On the call, your pores and fine lines stay soft; a few dark spots come through.", refs: ["obs-0900"] },
     scene: { scene: "video_call", light: "videoCall", viewer: "typical", call: { device: "laptop", cameraDistanceCm: 55, layout: "speaker" } },
     observeRef: "obs-0900",
     assumptions: ["Calls are on a laptop, about 55 cm from the camera.", "You are the speaker on screen, not a small tile."],
@@ -193,6 +195,7 @@ const moments: PlannedMoment[] = [
     id: "m2",
     time: "12:30",
     title: "Client lunch by the window",
+    headline: { text: "Across the table in window light, only the larger marks can be picked out.", refs: ["obs-1230"] },
     scene: { scene: "dinner_table", light: "overcast", viewer: "typical" },
     observeRef: "obs-1230",
     assumptions: ["Lunch is at a table for two, about 1.5 m across.", "A window seat means soft daylight."],
@@ -207,6 +210,7 @@ const moments: PlannedMoment[] = [
     id: "m3",
     time: "7pm",
     title: "Dinner date",
+    headline: { text: "In lamplight, breakouts are the one thing that still shows.", refs: ["obs-1900"] },
     scene: { scene: "cafe_table", light: "home", viewer: "typical" },
     observeRef: "obs-1900",
     assumptions: ["A small restaurant table, about 0.9 m across.", "Evening lamplight, much dimmer than the office."],
@@ -253,8 +257,8 @@ export const VERIFIED_PLAN: DayPlan = {
 /** The deterministic fallback: built from the same results with fixed templates when the agent's wording was not accepted. */
 export const FALLBACK_PLAN: DayPlan = {
   day: WORKDAY,
-  moments: moments.map((m) => ({
-    ...m,
+  moments: moments.map(({ headline, ...m }) => ({
+    ...(void headline, m),
     notice: m.notice.slice(0, 1),
     outOfSight: m.outOfSight.slice(0, 1),
     action:
@@ -275,14 +279,24 @@ export const FOLLOW_UP_PLAN: DayPlan = {
   summary: { text: "Outdoors at lunch, daylight is stronger and more of the fine detail shows; the plan for the call and for dinner stays as it was.", refs: ["obs-1230"] },
 };
 
-export const STEP_LABELS = ["Found 3 moments", "Running the vision model for 9am", "Solving the call framing", "Checking each number against the model’s results"];
+export const STEP_LABELS = [
+  "Found 3 moments",
+  "Working out how you will look on the call",
+  "Running the vision model for lunch",
+  "Running the vision model for dinner",
+  "Looking for a free change for the call",
+  "Checking each number against the model’s results",
+];
 
+/** The run's steps. Those that name a moment carry it, so the storyboard can sketch its scene as it is found. */
 export function stepEvents(): RehearseEvent[] {
   return [
     { type: "step", tool: "list_scenes", label: STEP_LABELS[0] },
-    { type: "step", tool: "observe_scene", label: STEP_LABELS[1] },
-    { type: "step", tool: "find_free_fix", label: STEP_LABELS[2] },
-    { type: "step", tool: "final_answer", label: STEP_LABELS[3] },
+    { type: "step", tool: "video_call_frame", label: STEP_LABELS[1], moment: { title: "Video standup", scene: "video_call" } },
+    { type: "step", tool: "observe_scene", label: STEP_LABELS[2], moment: { title: "Client lunch by the window", scene: "dinner_table" } },
+    { type: "step", tool: "observe_scene", label: STEP_LABELS[3], moment: { title: "Dinner date", scene: "cafe_table" } },
+    { type: "step", tool: "find_free_fix", label: STEP_LABELS[4] },
+    { type: "step", tool: "final_answer", label: STEP_LABELS[5] },
   ];
 }
 

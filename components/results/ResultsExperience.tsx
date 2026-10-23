@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState, type CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { ConcernExplorer } from "@/components/concerns/ConcernExplorer";
 import { MakeItDisappear } from "@/components/disappear/MakeItDisappear";
 import { RehearseDay } from "@/components/rehearse/RehearseDay";
@@ -10,9 +10,8 @@ import { StepBack } from "@/components/step-back/StepBack";
 import { Section } from "@/components/ui/Section";
 import { WorthItReveal } from "@/components/whatif/WorthItReveal";
 import type { ConcernId } from "@/lib/contracts";
-import type { RehearseRequest, SceneInput } from "@/lib/contracts/rehearse";
+import type { RehearseRequest } from "@/lib/contracts/rehearse";
 import { engineBadge } from "@/lib/integration/copy";
-import { observeScene } from "@/lib/rehearse";
 import { deriveConcernViews } from "./derive";
 import { EngineStrip } from "./EngineStrip";
 import { MaskDisclosure } from "./MaskDisclosure";
@@ -38,22 +37,11 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
   const views = useMemo(() => deriveConcernViews(data), [data]);
   const { persona, frame, measurements, report, anchors } = data;
 
-  // A moment chosen in "Rehearse your day" moves the Step back slider and brings it into view.
-  const [goTo, setGoTo] = useState<{ distanceM: number; key: number }>();
-  // Editing a rehearsed moment re-runs the same model in the page; only the measurements are needed for that.
-  const rehearseFace = useMemo(() => ({ measurements, coverage: [], worthIt: [] }), [measurements]);
-  const rerun = useCallback((input: SceneInput, ref: string) => observeScene(rehearseFace, input, ref), [rehearseFace]);
-  const showMoment = useCallback((distanceM: number) => {
-    setGoTo((g) => ({ distanceM, key: (g?.key ?? 0) + 1 }));
-    document.getElementById("step-back")?.scrollIntoView({ block: "start" });
-    document.querySelector<HTMLElement>("#step-back input[type='range']")?.focus({ preventScroll: true });
-  }, []);
-
   const chapters = [
     { id: "what-others-see", label: "What others see" },
     ...(data.coverage ? [{ id: "make-it-disappear", label: data.coverage.title }] : []),
     ...(data.worthIt ? [{ id: "worth-it", label: "Worth it?" }] : []),
-    ...(rehearse ? [{ id: "rehearse", label: "Rehearse your day" }] : []),
+    ...(rehearse ? [{ id: "rehearse", label: "Tomorrow, from their side" }] : []),
     { id: "share", label: "Share" },
   ];
   const num = (id: string) => String(chapters.findIndex((c) => c.id === id) + 1).padStart(2, "0");
@@ -81,7 +69,6 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
           estimate={data.disclaimers.estimate}
           validation={data.engine.validation}
           loupe={data.loupe}
-          goTo={goTo}
         />
       </section>
 
@@ -185,19 +172,17 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
         <Section
           id="rehearse"
           index={num("rehearse")}
-          eyebrow="Your day, through other eyes"
+          eyebrow="What others see, hour by hour"
           title={
             <>
-              Rehearse <em className="font-normal italic">your day</em>
+              Tomorrow, from <em className="font-normal italic">their side</em>
             </>
           }
-          lede="Describe a day and each moment comes back with your face as the people there will see it. Every number comes from the same model as the slider."
+          lede="Tell us what your day holds and see your face as the people there will, at their distance and in their light."
         >
           <RehearseDay
             requestFace={rehearse.requestFace}
             photo={{ src: persona.image, alt: data.alt, frame, scale: measurements.scale, focus: data.loupe }}
-            rerun={rerun}
-            onSelectMoment={showMoment}
           />
         </Section>
       )}

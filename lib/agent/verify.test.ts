@@ -269,6 +269,8 @@ describe("verifyPlan headlines", () => {
       "In the front row you look relaxed.",
       "No move you make hides the dark spots.",
       "The model says your pores are out of sight.",
+      "By the window more of your skin shows, and moving further away would not change that.",
+      "In bright sun your skin shows, and distance alone doesn't change that.",
     ];
     for (const text of bad) expect(codes(verifyPlan(withHeadline(text), base, prefs)), text).toContain("banned_word");
     const good = [

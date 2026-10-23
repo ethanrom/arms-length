@@ -17,7 +17,7 @@ export const HEADLINE_FORBIDDEN: ForbiddenPhrase[] = [
   { re: /\bsimply\b/i, shown: '"simply"' },
   { re: /\b(?:only|one|single) (?:option|thing|way)\b/i, shown: '"only option", "only thing", "one option"' },
   { re: /\bno\b[^.;:]*\bhides?\b/i, shown: '"no ... hides"' },
-  { re: /\b(?:can['’]t|cannot|can not|won['’]t) (?:change|help|hide)\b/i, shown: '"can\'t change"' },
+  { re: /\b(?:can['’]t|cannot|can not|won['’]t|would not|wouldn['’]t|will not|does not|doesn['’]t|did not|didn['’]t|do not|don['’]t) (?:really )?(?:change|help|hide|alter)\b/i, shown: "\"can't change\", \"doesn't change that\", \"would not help\"" },
   { re: /\bnothing (?:can|will)\b/i, shown: '"nothing can"' },
   { re: /\b(?:back|front) (?:of the room|row)\b|\bby the door\b/i, shown: '"back of the room", "front row" (the scene gives a distance, not a position)' },
 ];

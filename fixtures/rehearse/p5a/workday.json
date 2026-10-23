@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-10-23T09:06:52.236Z",
+  "recordedAt": "2026-10-23T09:21:42.007Z",
   "model": "Claude Sonnet 5.5 via Amazon Bedrock",
   "steps": [
     {
@@ -15,7 +15,7 @@
       "label": "Running the vision model for \"Client lunch\"",
       "moment": {
         "title": "Client lunch",
-        "scene": "cafe_table"
+        "scene": "dinner_table"
       }
     },
     {
@@ -44,19 +44,15 @@
     },
     {
       "tool": "lightest_touch",
-      "label": "Reading your measured lightest touch for breakouts"
-    },
-    {
-      "tool": "lightest_touch",
       "label": "Reading your measured lightest touch for dark spots"
     },
     {
       "tool": "lightest_touch",
-      "label": "Reading your measured lightest touch for pores"
+      "label": "Reading your measured lightest touch for breakouts"
     },
     {
-      "tool": "lightest_touch",
-      "label": "Reading your measured lightest touch for fine lines"
+      "tool": "final_answer",
+      "label": "Checking every number in your day plan"
     },
     {
       "tool": "final_answer",
@@ -79,18 +75,19 @@
           }
         },
         "headline": {
-          "text": "On a small gallery tile, breakouts, pores and fine lines stay out of sight.",
+          "text": "On the call, pores, fine lines and breakouts don't come through the video.",
           "refs": [
             "r4"
           ]
         },
         "observeRef": "r4",
         "assumptions": [
-          "I took the laptop camera as about arm's length away and the standup as a team call in a gallery tile."
+          "I took the laptop camera as about arm's length away.",
+          "I took the team standup as a gallery tile among others."
         ],
         "notice": [
           {
-            "text": "Under-eye shadows and under-eye puffiness could still be noticeable, and dark spots about 1 in 11.",
+            "text": "A typical viewer could still pick out under-eye shadows and under-eye puffiness, and some dark spots, at 4 m equivalent.",
             "refs": [
               "r4"
             ]
@@ -98,13 +95,7 @@
         ],
         "outOfSight": [
           {
-            "text": "Breakouts, pores and fine lines are out of sight for a typical viewer at 4 m.",
-            "refs": [
-              "r4"
-            ]
-          },
-          {
-            "text": "The video itself cannot carry 3 of 3 breakouts, 250 of 250 pores or 107 of 107 fine lines.",
+            "text": "Breakouts, pores and fine lines are out of sight for a typical viewer on this call.",
             "refs": [
               "r4"
             ]
@@ -113,7 +104,7 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "Nothing to change here; the tile keeps most detail out of sight.",
+            "text": "Nothing from the tools is needed for the call.",
             "refs": [
               "r4"
             ]
@@ -125,30 +116,31 @@
       {
         "title": "Client lunch",
         "scene": {
-          "scene": "cafe_table",
+          "scene": "dinner_table",
           "light": "daylight",
           "viewer": "typical",
-          "distanceM": 0.8
+          "distanceM": 1.5
         },
         "headline": {
-          "text": "Close by the window, a typical viewer could pick out most things, and distance can't change that.",
+          "text": "By the window, bright daylight shows more of your skin across the table, including dark spots and breakouts.",
           "refs": [
             "r2"
           ]
         },
         "observeRef": "r2",
         "assumptions": [
-          "I took lunch by the window as bright daylight at a small cafe-style table."
+          "I took lunch with a client as a table meal.",
+          "I took by the window as bright daylight at the table distance."
         ],
         "notice": [
           {
-            "text": "At 80 cm in bright daylight, a typical viewer could see all 3 of 3 breakouts and all 53 of 53 dark spots.",
+            "text": "At 1.5 m in bright daylight, a typical viewer could pick out most dark spots and breakouts, about half of fine lines and about 1 in 6 pores.",
             "refs": [
               "r2"
             ]
           },
           {
-            "text": "They could also see 178 of 250 pores, 88 of 107 fine lines, and the under-eye shadows and puffiness.",
+            "text": "Under-eye shadows and under-eye puffiness are also noticeable.",
             "refs": [
               "r2"
             ]
@@ -158,9 +150,11 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "No free change of seat or light is enough here, and there is no measured makeup plan to suggest.",
+            "text": "No change to distance or light hides these, and no measured makeup plan is available for them.",
             "refs": [
-              "r5"
+              "r5",
+              "r7",
+              "r8"
             ]
           }
         },
@@ -176,18 +170,25 @@
           "distanceM": 1.5
         },
         "headline": {
-          "text": "Breakouts and pores stay out of sight across the table in evening light.",
+          "text": "Across the table in evening light, pores and breakouts fade from view.",
           "refs": [
             "r3"
           ]
         },
         "observeRef": "r3",
         "assumptions": [
-          "I took the dinner as evening light at home, across a table."
+          "I took the dinner date as a table dinner.",
+          "I took 7pm as dim evening light at home."
         ],
         "notice": [
           {
-            "text": "A typical viewer could see 24 of 53 dark spots and 6 of 107 fine lines, plus the under-eye shadows and puffiness.",
+            "text": "A typical viewer could pick out about half of dark spots and about 1 in 18 fine lines.",
+            "refs": [
+              "r3"
+            ]
+          },
+          {
+            "text": "Under-eye shadows and under-eye puffiness are noticeable.",
             "refs": [
               "r3"
             ]
@@ -195,7 +196,7 @@
         ],
         "outOfSight": [
           {
-            "text": "At 1.5 m in evening light at home, breakouts (0 of 3) and pores (0 of 250) are out of sight for a typical viewer.",
+            "text": "At 1.5 m in evening light at home, breakouts and pores are out of sight for a typical viewer.",
             "refs": [
               "r3"
             ]
@@ -204,9 +205,10 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "Sitting further away does not fully hide the dark spots, and there is no measured makeup plan to suggest.",
+            "text": "Moving further away does not hide the dark spots here, and no measured makeup plan is available.",
             "refs": [
-              "r6"
+              "r6",
+              "r7"
             ]
           }
         },
@@ -215,7 +217,7 @@
       }
     ],
     "summary": {
-      "text": "Breakouts, pores and fine lines are out of sight on the standup call, and breakouts and pores stay out of sight at dinner; lunch by the window is the closest look.",
+      "text": "Across your day, pores, fine lines and breakouts stay out of sight on the call, and breakouts and pores are out of sight at dinner; lunch by the window shows the most.",
       "refs": [
         "r4",
         "r3",
@@ -356,25 +358,25 @@
       "r2": {
         "ref": "r2",
         "quotes": {
-          "distance": "80 cm",
+          "distance": "1.5 m",
           "light": "bright daylight",
           "viewer": "typical eyes (20/20)",
-          "acne.typical": "all",
-          "acne.typicalCount": "3 of 3",
+          "acne.typical": "most",
+          "acne.typicalCount": "2 of 3",
           "acne.bound": "at most all of them",
           "acne.boundCount": "at most 3 of 3",
-          "age_spot.typical": "all",
-          "age_spot.typicalCount": "53 of 53",
+          "age_spot.typical": "most",
+          "age_spot.typicalCount": "48 of 53",
           "age_spot.bound": "at most all of them",
           "age_spot.boundCount": "at most 53 of 53",
-          "pore.typical": "most",
-          "pore.typicalCount": "178 of 250",
-          "pore.bound": "at most nearly all",
-          "pore.boundCount": "at most 228 of 250",
-          "wrinkle.typical": "most",
-          "wrinkle.typicalCount": "88 of 107",
-          "wrinkle.bound": "at most nearly all",
-          "wrinkle.boundCount": "at most 98 of 107",
+          "pore.typical": "about 1 in 6",
+          "pore.typicalCount": "42 of 250",
+          "pore.bound": "at most 6 in 10",
+          "pore.boundCount": "at most 135 of 250",
+          "wrinkle.typical": "about half",
+          "wrinkle.typicalCount": "48 of 107",
+          "wrinkle.bound": "at most 8 in 10",
+          "wrinkle.boundCount": "at most 85 of 107",
           "dark_circle.typical": "noticeable",
           "dark_circle.typicalCount": "2 of 2",
           "dark_circle.bound": "at most noticeable",
@@ -385,7 +387,7 @@
           "eye_bag.boundCount": "at most 2 of 2"
         },
         "assumptions": [
-          "Distance: Coffee at a small table. Project assumption: a small cafe table puts faces about 0.6 to 1.2 m apart (within Hall's far personal phase, 0.76 to 1.2 m). Not a measured figure.",
+          "Distance: Across a dinner or meeting table. Hall (1966): close phase of social distance, 1.2 to 2.1 m. The site's 'across a table' anchor uses 1.5 m.",
           "Light: bright daylight. Daylight outdoors, in shade or sun, roughly 10,000 to 25,000 lux on the face. Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.",
           "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention.",
           "'About' numbers are for an average observer. 'At most' numbers are for even perfect eyes (a 6 dB margin on top of the average observer), so a real viewer sees the same or less.",
@@ -393,19 +395,19 @@
           "Masks and contrasts come from one photo; hair, glasses, make-up, movement and a different angle will change what is seen."
         ],
         "input": {
-          "scene": "cafe_table",
+          "scene": "dinner_table",
           "light": "daylight",
           "viewer": "typical"
         },
-        "distanceM": 0.8,
+        "distanceM": 1.5,
         "luminanceCdM2": 1000,
         "acuityScale": 1,
         "concerns": [
           {
             "concern": "acne",
             "targetCount": 3,
-            "typicalShare": 1,
-            "typicalCount": 3,
+            "typicalShare": 0.6666666666666666,
+            "typicalCount": 2,
             "boundShare": 1,
             "boundCount": 3,
             "soft": false
@@ -413,8 +415,8 @@
           {
             "concern": "age_spot",
             "targetCount": 53,
-            "typicalShare": 1,
-            "typicalCount": 53,
+            "typicalShare": 0.9056603773584906,
+            "typicalCount": 48,
             "boundShare": 1,
             "boundCount": 53,
             "soft": false
@@ -422,19 +424,19 @@
           {
             "concern": "pore",
             "targetCount": 250,
-            "typicalShare": 0.712,
-            "typicalCount": 178,
-            "boundShare": 0.912,
-            "boundCount": 228,
+            "typicalShare": 0.168,
+            "typicalCount": 42,
+            "boundShare": 0.54,
+            "boundCount": 135,
             "soft": false
           },
           {
             "concern": "wrinkle",
             "targetCount": 107,
-            "typicalShare": 0.822429906542056,
-            "typicalCount": 88,
-            "boundShare": 0.9158878504672897,
-            "boundCount": 98,
+            "typicalShare": 0.4485981308411215,
+            "typicalCount": 48,
+            "boundShare": 0.794392523364486,
+            "boundCount": 85,
             "soft": false
           },
           {
@@ -461,43 +463,43 @@
         "ref": "r5",
         "quotes": {
           "change": "no free change is enough to reach that here",
-          "limit": "even 1.2 m apart in window or overcast light, breakouts (all), dark spots (all), pores (about 1 in 3) and fine lines (most) would still be picked out"
+          "limit": "even 2.1 m apart in window or overcast light, breakouts (about a third), dark spots (most) and fine lines (about 1 in 4) would still be picked out"
         },
         "assumptions": [
           "Goal: a typical viewer picks out at most 1 in 10 of each of these (the same 10% the lightest-touch search aims at), and none of a large soft area.",
-          "Levers tried, in order: sit or stand farther apart (up to 1.2 m, the far end of the range for this kind of moment), then softer light (one step: window or overcast light).",
-          "Range for this moment: Project assumption: a small cafe table puts faces about 0.6 to 1.2 m apart (within Hall's far personal phase, 0.76 to 1.2 m). Not a measured figure.",
+          "Levers tried, in order: sit or stand farther apart (up to 2.1 m, the far end of the range for this kind of moment), then softer light (one step: window or overcast light).",
+          "Range for this moment: Hall (1966): close phase of social distance, 1.2 to 2.1 m. The site's 'across a table' anchor uses 1.5 m.",
           "A free change is one that costs nothing but where you sit, stand or how you set up the call."
         ],
         "reachable": false,
         "lever": null,
         "from": {
-          "scene": "cafe_table",
+          "scene": "dinner_table",
           "light": "daylight"
         },
         "to": null,
         "after": {
           "ref": "r5.after",
           "quotes": {
-            "distance": "80 cm",
+            "distance": "1.5 m",
             "light": "bright daylight",
             "viewer": "typical eyes (20/20)",
-            "acne.typical": "all",
-            "acne.typicalCount": "3 of 3",
+            "acne.typical": "most",
+            "acne.typicalCount": "2 of 3",
             "acne.bound": "at most all of them",
             "acne.boundCount": "at most 3 of 3",
-            "age_spot.typical": "all",
-            "age_spot.typicalCount": "53 of 53",
+            "age_spot.typical": "most",
+            "age_spot.typicalCount": "48 of 53",
             "age_spot.bound": "at most all of them",
             "age_spot.boundCount": "at most 53 of 53",
-            "pore.typical": "most",
-            "pore.typicalCount": "178 of 250",
-            "pore.bound": "at most nearly all",
-            "pore.boundCount": "at most 228 of 250",
-            "wrinkle.typical": "most",
-            "wrinkle.typicalCount": "88 of 107",
-            "wrinkle.bound": "at most nearly all",
-            "wrinkle.boundCount": "at most 98 of 107",
+            "pore.typical": "about 1 in 6",
+            "pore.typicalCount": "42 of 250",
+            "pore.bound": "at most 6 in 10",
+            "pore.boundCount": "at most 135 of 250",
+            "wrinkle.typical": "about half",
+            "wrinkle.typicalCount": "48 of 107",
+            "wrinkle.bound": "at most 8 in 10",
+            "wrinkle.boundCount": "at most 85 of 107",
             "dark_circle.typical": "noticeable",
             "dark_circle.typicalCount": "2 of 2",
             "dark_circle.bound": "at most noticeable",
@@ -508,7 +510,7 @@
             "eye_bag.boundCount": "at most 2 of 2"
           },
           "assumptions": [
-            "Distance: Coffee at a small table. Project assumption: a small cafe table puts faces about 0.6 to 1.2 m apart (within Hall's far personal phase, 0.76 to 1.2 m). Not a measured figure.",
+            "Distance: Across a dinner or meeting table. Hall (1966): close phase of social distance, 1.2 to 2.1 m. The site's 'across a table' anchor uses 1.5 m.",
             "Light: bright daylight. Daylight outdoors, in shade or sun, roughly 10,000 to 25,000 lux on the face. Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.",
             "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention.",
             "'About' numbers are for an average observer. 'At most' numbers are for even perfect eyes (a 6 dB margin on top of the average observer), so a real viewer sees the same or less.",
@@ -516,19 +518,19 @@
             "Masks and contrasts come from one photo; hair, glasses, make-up, movement and a different angle will change what is seen."
           ],
           "input": {
-            "scene": "cafe_table",
+            "scene": "dinner_table",
             "light": "daylight",
             "viewer": "typical"
           },
-          "distanceM": 0.8,
+          "distanceM": 1.5,
           "luminanceCdM2": 1000,
           "acuityScale": 1,
           "concerns": [
             {
               "concern": "acne",
               "targetCount": 3,
-              "typicalShare": 1,
-              "typicalCount": 3,
+              "typicalShare": 0.6666666666666666,
+              "typicalCount": 2,
               "boundShare": 1,
               "boundCount": 3,
               "soft": false
@@ -536,8 +538,8 @@
             {
               "concern": "age_spot",
               "targetCount": 53,
-              "typicalShare": 1,
-              "typicalCount": 53,
+              "typicalShare": 0.9056603773584906,
+              "typicalCount": 48,
               "boundShare": 1,
               "boundCount": 53,
               "soft": false
@@ -545,19 +547,19 @@
             {
               "concern": "pore",
               "targetCount": 250,
-              "typicalShare": 0.712,
-              "typicalCount": 178,
-              "boundShare": 0.912,
-              "boundCount": 228,
+              "typicalShare": 0.168,
+              "typicalCount": 42,
+              "boundShare": 0.54,
+              "boundCount": 135,
               "soft": false
             },
             {
               "concern": "wrinkle",
               "targetCount": 107,
-              "typicalShare": 0.822429906542056,
-              "typicalCount": 88,
-              "boundShare": 0.9158878504672897,
-              "boundCount": 98,
+              "typicalShare": 0.4485981308411215,
+              "typicalCount": 48,
+              "boundShare": 0.794392523364486,
+              "boundCount": 85,
               "soft": false
             },
             {
@@ -584,25 +586,25 @@
       "r5.after": {
         "ref": "r5.after",
         "quotes": {
-          "distance": "80 cm",
+          "distance": "1.5 m",
           "light": "bright daylight",
           "viewer": "typical eyes (20/20)",
-          "acne.typical": "all",
-          "acne.typicalCount": "3 of 3",
+          "acne.typical": "most",
+          "acne.typicalCount": "2 of 3",
           "acne.bound": "at most all of them",
           "acne.boundCount": "at most 3 of 3",
-          "age_spot.typical": "all",
-          "age_spot.typicalCount": "53 of 53",
+          "age_spot.typical": "most",
+          "age_spot.typicalCount": "48 of 53",
           "age_spot.bound": "at most all of them",
           "age_spot.boundCount": "at most 53 of 53",
-          "pore.typical": "most",
-          "pore.typicalCount": "178 of 250",
-          "pore.bound": "at most nearly all",
-          "pore.boundCount": "at most 228 of 250",
-          "wrinkle.typical": "most",
-          "wrinkle.typicalCount": "88 of 107",
-          "wrinkle.bound": "at most nearly all",
-          "wrinkle.boundCount": "at most 98 of 107",
+          "pore.typical": "about 1 in 6",
+          "pore.typicalCount": "42 of 250",
+          "pore.bound": "at most 6 in 10",
+          "pore.boundCount": "at most 135 of 250",
+          "wrinkle.typical": "about half",
+          "wrinkle.typicalCount": "48 of 107",
+          "wrinkle.bound": "at most 8 in 10",
+          "wrinkle.boundCount": "at most 85 of 107",
           "dark_circle.typical": "noticeable",
           "dark_circle.typicalCount": "2 of 2",
           "dark_circle.bound": "at most noticeable",
@@ -613,7 +615,7 @@
           "eye_bag.boundCount": "at most 2 of 2"
         },
         "assumptions": [
-          "Distance: Coffee at a small table. Project assumption: a small cafe table puts faces about 0.6 to 1.2 m apart (within Hall's far personal phase, 0.76 to 1.2 m). Not a measured figure.",
+          "Distance: Across a dinner or meeting table. Hall (1966): close phase of social distance, 1.2 to 2.1 m. The site's 'across a table' anchor uses 1.5 m.",
           "Light: bright daylight. Daylight outdoors, in shade or sun, roughly 10,000 to 25,000 lux on the face. Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.",
           "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention.",
           "'About' numbers are for an average observer. 'At most' numbers are for even perfect eyes (a 6 dB margin on top of the average observer), so a real viewer sees the same or less.",
@@ -621,19 +623,19 @@
           "Masks and contrasts come from one photo; hair, glasses, make-up, movement and a different angle will change what is seen."
         ],
         "input": {
-          "scene": "cafe_table",
+          "scene": "dinner_table",
           "light": "daylight",
           "viewer": "typical"
         },
-        "distanceM": 0.8,
+        "distanceM": 1.5,
         "luminanceCdM2": 1000,
         "acuityScale": 1,
         "concerns": [
           {
             "concern": "acne",
             "targetCount": 3,
-            "typicalShare": 1,
-            "typicalCount": 3,
+            "typicalShare": 0.6666666666666666,
+            "typicalCount": 2,
             "boundShare": 1,
             "boundCount": 3,
             "soft": false
@@ -641,8 +643,8 @@
           {
             "concern": "age_spot",
             "targetCount": 53,
-            "typicalShare": 1,
-            "typicalCount": 53,
+            "typicalShare": 0.9056603773584906,
+            "typicalCount": 48,
             "boundShare": 1,
             "boundCount": 53,
             "soft": false
@@ -650,19 +652,19 @@
           {
             "concern": "pore",
             "targetCount": 250,
-            "typicalShare": 0.712,
-            "typicalCount": 178,
-            "boundShare": 0.912,
-            "boundCount": 228,
+            "typicalShare": 0.168,
+            "typicalCount": 42,
+            "boundShare": 0.54,
+            "boundCount": 135,
             "soft": false
           },
           {
             "concern": "wrinkle",
             "targetCount": 107,
-            "typicalShare": 0.822429906542056,
-            "typicalCount": 88,
-            "boundShare": 0.9158878504672897,
-            "boundCount": 98,
+            "typicalShare": 0.4485981308411215,
+            "typicalCount": 48,
+            "boundShare": 0.794392523364486,
+            "boundCount": 85,
             "soft": false
           },
           {
@@ -683,6 +685,32 @@
             "boundCount": 2,
             "soft": true
           }
+        ]
+      },
+      "r7": {
+        "ref": "r7",
+        "concern": "age_spot",
+        "status": "not_measured",
+        "coveragePct": null,
+        "measuredAtM": null,
+        "baselineShare": null,
+        "afterShare": null,
+        "quotes": {},
+        "assumptions": [
+          "No lightest-touch try-on was run for this concern on this face, so there is no measured coverage to quote."
+        ]
+      },
+      "r8": {
+        "ref": "r8",
+        "concern": "acne",
+        "status": "not_measured",
+        "coveragePct": null,
+        "measuredAtM": null,
+        "baselineShare": null,
+        "afterShare": null,
+        "quotes": {},
+        "assumptions": [
+          "No lightest-touch try-on was run for this concern on this face, so there is no measured coverage to quote."
         ]
       },
       "r3": {
@@ -1019,14 +1047,20 @@
       }
     },
     "verified": true,
-    "issues": [],
+    "issues": [
+      {
+        "momentId": "m2",
+        "code": "banned_word",
+        "detail": "The headline says \"simply\": jargon, a push, or a position the scene does not give. Say what stays out of sight or what they will see, kindly, and offer a tip as an option (\"if you'd like ...\")."
+      }
+    ],
     "stats": {
-      "ms": 17633,
-      "turns": 5,
-      "toolCalls": 11,
-      "inputTokens": 54453,
-      "outputTokens": 2183,
-      "repairs": 0
+      "ms": 31852,
+      "turns": 6,
+      "toolCalls": 10,
+      "inputTokens": 72449,
+      "outputTokens": 3264,
+      "repairs": 1
     }
   }
 }

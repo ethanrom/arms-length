@@ -62,16 +62,10 @@ export function DinnerBack({ uid }: { uid: string }) {
   );
 }
 
-function Candle({ uid }: { uid: string }) {
+function Candle() {
   return (
     <g>
-      <defs>
-        <radialGradient id={`${uid}flame`} cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor={C.paper} stopOpacity="0.34" />
-          <stop offset="1" stopColor={C.paper} stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <Wash d={ellipse(0, -176, 96, 96)} fill={`url(#${uid}flame)`} />
+      <Ink d={ellipse(8, 4, 50, 10)} fill={C.ink} fo={0.1} w={0} />
       <Ink d={ellipse(0, 0, 46, 10)} fill={C.paperDeep} w={W.near} />
       <Ink d="M-30 -2C-26 -14-12 -14-10 -26H10C12 -14 26 -14 30 -2" fill={C.paper} w={W.line} />
       <Ink d="M-12 -26L-14 -34H14L12 -26" fill={C.paper} w={W.line} />
@@ -97,7 +91,7 @@ function Cutlery({ side }: { side: -1 | 1 }) {
   );
 }
 
-export function DinnerFront({ uid }: { uid: string }) {
+export function DinnerFront() {
   const horizon = eyeLineY("dinner_table");
   const planks = [-1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1].map((k) => k * 640 + VX);
   const runnerL = 690;
@@ -129,7 +123,7 @@ export function DinnerFront({ uid }: { uid: string }) {
         <Glass />
       </g>
       <g transform="translate(596 716)">
-        <Candle uid={uid} />
+        <Candle />
       </g>
       <Fade o={0.5}>
         <path d={arc(800, 1500, 1000, 700, 250, 290)} style={{ fill: "none", stroke: "#fff", strokeWidth: 2, strokeOpacity: 0.4 }} />

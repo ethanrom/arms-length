@@ -19,7 +19,9 @@ import { MeetingBack, MeetingFront } from "./art/meeting";
 import { PresentingBack, PresentingFront } from "./art/presenting";
 import type { SceneArtProps, SceneLayout } from "./types";
 
-type ArtPart = ComponentType<{ uid: string; call?: CallGeometry }>;
+/** What a scene's art may use: `photoHeight` is the face's drawn height as a fraction of the stage, when the caller knows it. */
+type ArtPart = ComponentType<{ uid: string; call?: CallGeometry; photoHeight?: number }>;
+type ArtProps = SceneArtProps & { photoHeight?: number };
 
 const BACK: Record<SceneId, ArtPart> = {
   close_talk: CloseBack,
@@ -46,22 +48,22 @@ export function sceneLayout(scene: SceneId, call?: CallGeometry): SceneLayout {
   return layoutFor(scene, call);
 }
 
-export function SceneBack({ scene, call, drawn = 1 }: SceneArtProps) {
+export function SceneBack({ scene, call, drawn = 1, photoHeight }: ArtProps) {
   const uid = useUid();
   const Part = BACK[scene];
   return (
     <Canvas drawn={drawn}>
-      <Part uid={uid} call={call} />
+      <Part uid={uid} call={call} photoHeight={photoHeight} />
     </Canvas>
   );
 }
 
-export function SceneFront({ scene, call, drawn = 1 }: SceneArtProps) {
+export function SceneFront({ scene, call, drawn = 1, photoHeight }: ArtProps) {
   const uid = useUid();
   const Part = FRONT[scene];
   return (
     <Canvas drawn={drawn}>
-      <Part uid={uid} call={call} />
+      <Part uid={uid} call={call} photoHeight={photoHeight} />
     </Canvas>
   );
 }

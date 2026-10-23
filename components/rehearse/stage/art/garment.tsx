@@ -2,8 +2,8 @@
 
 /**
  * A plain crew-neck top in front of the photo: it hides the soft cut at the bottom of the portrait and gives the head a
- * body to sit on. Sized to the photo at the scene's default distance (a photo at another distance still meets it well
- * enough: the neck stays clear and the shoulders land inside the face's feathered edge).
+ * body to sit on. Sized to the photo's displayed height when the caller passes it, else to the scene's default distance (a
+ * photo at another distance still meets it well enough: the neck stays clear and the shoulders land in the feather).
  */
 import { C, Ink, W } from "./ink";
 import { nominalPhotoBox, type InPersonScene } from "./layout";
@@ -11,8 +11,8 @@ import { smooth, type Pt } from "./shapes";
 
 const tone = (pct: number) => `color-mix(in srgb, var(--ink) ${pct}%, var(--stage))`;
 
-export function Garment({ scene, shade = 30 }: { scene: InPersonScene; shade?: number }) {
-  const { cx, top, w, h } = nominalPhotoBox(scene);
+export function Garment({ scene, shade = 30, photoHeight }: { scene: InPersonScene; shade?: number; photoHeight?: number }) {
+  const { cx, top, w, h } = nominalPhotoBox(scene, photoHeight);
   const nk = 0.27 * w;
   const nyTop = top + 0.885 * h;
   const apex = top + 0.985 * h;

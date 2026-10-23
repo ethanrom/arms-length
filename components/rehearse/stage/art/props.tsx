@@ -8,6 +8,7 @@ import { ellipse, leaf, line, smooth } from "./shapes";
 export function Cup({ steam = true }: { steam?: boolean }) {
   return (
     <g>
+      <Ink d={ellipse(8, 8, 128, 30)} fill={C.ink} fo={0.1} w={0} />
       <Ink d={ellipse(0, 0, 118, 28)} fill={C.paper} w={W.near} />
       <Ink d={ellipse(0, -2, 72, 16)} stroke={C.ruleStrong} w={W.hair} />
       <Ink d="M-58 -66C-58 -22-34 -3 0 -3C34 -3 58 -22 58 -66" fill={C.paper} w={W.near} />
@@ -59,6 +60,7 @@ export function BudVase() {
   const petals = Array.from({ length: 8 }, (_, i) => leaf(0, -150, 22, i * 45, 7));
   return (
     <g>
+      <Ink d={ellipse(6, 4, 40, 8)} fill={C.ink} fo={0.1} w={0} />
       <Ink d={smooth([[-26, 0], [-31, -20], [-24, -42], [-9, -60], [-6, -90], [6, -90], [9, -60], [24, -42], [31, -20], [26, 0]]) + "Z"} fill={C.paper} w={W.near} />
       <Ink d="M-21 -12C-21 -24-15 -34-9 -42" stroke={C.ruleStrong} w={W.hair} />
       <Ink d="M0 -88C-3 -112 4 -130 0 -150" w={W.line} />
@@ -75,6 +77,7 @@ export function BudVase() {
 export function Plate({ rxr = 190, ryr = 50 }: { rxr?: number; ryr?: number }) {
   return (
     <g>
+      <Ink d={ellipse(6, 14, rxr * 1.02, ryr * 1.05)} fill={C.ink} fo={0.1} w={0} />
       <Ink d={ellipse(0, 8, rxr, ryr)} fill={C.rule} w={W.line} />
       <Ink d={ellipse(0, 0, rxr, ryr)} fill={C.paper} w={W.near} />
       <Ink d={ellipse(0, 3, rxr * 0.72, ryr * 0.7)} stroke={C.ruleStrong} w={W.hair} o={0.9} />
@@ -91,6 +94,7 @@ export function Glass({ h = 190, fill = 0.38 }: { h?: number; fill?: number }) {
   const wr = rim * (1 - 0.5 * ((wineTop - top) / bowlH) ** 2);
   return (
     <g>
+      <Ink d={ellipse(8, 3, 46, 9)} fill={C.ink} fo={0.1} w={0} />
       <Ink d={ellipse(0, 0, 40, 8)} fill={C.paper} fo={0.9} w={W.line} />
       <Ink d={`M-3 -4L-2.5 ${top + bowlH}M3 -4L2.5 ${top + bowlH}`} w={W.line} />
       <Ink d={`M${-rim} ${top}C${-rim} ${top + bowlH * 0.8} -18 ${top + bowlH} 0 ${top + bowlH}C18 ${top + bowlH} ${rim} ${top + bowlH * 0.8} ${rim} ${top}`} fill={C.paper} fo={0.35} w={W.line} />

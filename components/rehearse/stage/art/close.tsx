@@ -31,10 +31,10 @@ export function CloseBack({ uid }: { uid: string }) {
   );
 }
 
-export function CloseFront() {
+export function CloseFront({ photoHeight }: { photoHeight?: number }) {
   return (
     <Layer at={0.5} to={1}>
-      <Garment scene="close_talk" shade={34} />
+      <Garment scene="close_talk" shade={34} photoHeight={photoHeight} />
     </Layer>
   );
 }

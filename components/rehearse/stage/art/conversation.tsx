@@ -81,10 +81,10 @@ export function ConversationBack({ uid }: { uid: string }) {
   );
 }
 
-export function ConversationFront() {
+export function ConversationFront({ photoHeight }: { photoHeight?: number }) {
   return (
     <Layer at={0.6} to={1}>
-      <Garment scene="conversation" />
+      <Garment scene="conversation" photoHeight={photoHeight} />
     </Layer>
   );
 }

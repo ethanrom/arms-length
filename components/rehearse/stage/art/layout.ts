@@ -108,9 +108,12 @@ export function callRects(call?: CallGeometry): { tile: StageRect; screen: Stage
   return { tile: frac(callTilesPx(call?.layout).tile), screen: frac(LAPTOP.screen) };
 }
 
-/** The photo's box in drawing pixels at the scene's default distance: what props that meet the shoulders are sized to. */
-export function nominalPhotoBox(scene: InPersonScene, aspect = 0.67): { cx: number; top: number; w: number; h: number } {
+/**
+ * The photo's box in drawing pixels: at the scene's default distance, or at `heightFraction` of the stage when the caller
+ * knows how tall the face is drawn. Props that meet the shoulders are sized to it.
+ */
+export function nominalPhotoBox(scene: InPersonScene, heightFraction?: number, aspect = 0.67): { cx: number; top: number; w: number; h: number } {
   const { cx, cy } = inPersonFace(scene);
-  const h = nominalPhotoHeight(scene) * VH;
+  const h = (heightFraction ?? nominalPhotoHeight(scene)) * VH;
   return { cx: cx * VW, top: cy * VH - h / 2, w: h * aspect, h };
 }

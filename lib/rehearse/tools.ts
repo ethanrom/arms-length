@@ -148,6 +148,11 @@ export function worthIt(face: RehearseFace, concern: ConcernId, distanceM: numbe
     "'About' is a typical sharp-eyed viewer looking right at it; 'at most' is for even perfect eyes (a 6 dB margin).",
     "A simulation shows what a change would look like, not what any product or routine would do.",
   ];
+  const first = (boundProfile ?? typicalProfile)![0].distanceM;
+  const last = (boundProfile ?? typicalProfile)!.slice(-1)[0].distanceM;
+  if (distanceM < first - EPS || distanceM > last + EPS) {
+    assumptions.push(`The simulation was measured from ${formatDistance(first)} to ${formatDistance(last)}; outside that range the nearest recorded value is used.`);
+  }
   if (!typicalProfile) assumptions.push("The typical viewer's share is estimated from the perfect-eyes share, as elsewhere on the site.");
   return {
     ref,
@@ -205,8 +210,8 @@ export function receiptAt(face: RehearseFace, input: ReceiptInput, ref: string):
   const assumptions = [
     sentences.size,
     ...(sentences.foundNote ? [sentences.foundNote] : []),
-    `Contrast: ${sentences.contrast}`,
-    sentences.model,
+    sentences.contrast,
+    "The thresholds come from a published model of human contrast sensitivity, checked against lab measurements, not from a guess.",
     ...sceneAssumptions(face, resolved),
   ];
   return {

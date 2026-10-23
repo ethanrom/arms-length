@@ -30,7 +30,8 @@ import {
   videoCallFrame,
   worthIt,
 } from "./index";
-import { measureScene } from "./observe";
+import { isSoftArea } from "../copy/describe";
+import { measureScene, softConcerns } from "./observe";
 
 const loadFace = (id: string): RehearseFace =>
   faceFromBundle(JSON.parse(readFileSync(new URL(`../../public/demo/${id}/bundle.json`, import.meta.url), "utf8")) as ReadingBundle);
@@ -236,9 +237,14 @@ describe("findFreeFix", () => {
     expect(r.after.input.scene).toBe("dinner_table");
     expect(r.after.distanceM).toBe(1.5);
     expect(r.quotes.change).toContain("no free change");
+    // It also says how far the levers got: the same share an observation at their strongest setting gives.
+    const strongest = observeScene(p1a, { scene: "dinner_table", distanceM: 2.1 }, "s");
+    expect(r.quotes.limit).toBe(`even 2.1 m apart, dark spots (${strongest.quotes["age_spot.typical"]}) would still be picked out`);
     // Large soft areas are always in view, so they are never reachable: the model's own statement, not a failure.
     for (const m of [{ scene: "presenting" } as SceneInput, { scene: "video_call", call: laptop } as SceneInput]) {
-      expect(findFreeFix(p1a, { moment: m, concerns: ["dark_circle"] }, "s").reachable).toBe(false);
+      const soft = findFreeFix(p1a, { moment: m, concerns: ["dark_circle"] }, "s");
+      expect(soft.reachable).toBe(false);
+      expect(soft.quotes.limit).toContain("under-eye shadows (noticeable) would still be picked out");
     }
   });
 
@@ -373,6 +379,18 @@ describe("every quote and assumption passes the copy linter", () => {
           check(`${id} fix.after ${concern}`, fix.after);
         }
       }
+    }
+  });
+});
+
+describe("soft areas", () => {
+  it("are read once per face at the site's default light, the same as the results page reads them", () => {
+    for (const id of ["p1a", "p2b", "p3a", "p5a"]) {
+      const face = loadFace(id);
+      const full = buildVisibilityReport(face.measurements, { ...viewingAt(45), acuityScale: 1 });
+      const expected = full.concerns.filter((c) => isSoftArea(c)).map((c) => c.concern).sort();
+      const found = [...softConcerns(face)].filter((c) => full.concerns.some((x) => x.concern === c)).sort();
+      expect(found).toEqual(expected);
     }
   });
 });

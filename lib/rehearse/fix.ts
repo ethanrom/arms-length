@@ -14,12 +14,13 @@
  */
 import { CONCERNS } from "../contracts/concerns";
 import type { ConcernId } from "../contracts/concerns";
-import type { CallGeometry, FreeFixInput, FreeFixResult, FreeLever, LightId, ObserveResult, RehearseFace, SceneInput } from "../contracts/rehearse";
+import type { CallGeometry, ConcernAtScene, FreeFixInput, FreeFixResult, FreeLever, LightId, ObserveResult, RehearseFace, SceneInput } from "../contracts/rehearse";
 import { formatDistance } from "../copy/distance";
 import { DEVICES, type Device } from "./call";
 import { SceneError, hasOwn } from "./errors";
 import { measureScene, observeResolved } from "./observe";
-import { cmText } from "./quotes";
+import { concernNoun } from "../copy/concerns";
+import { cmText, typicalPhrase, typicalSoft } from "./quotes";
 import { LIGHTS, lightLuminance, resolveScene, type ResolvedScene } from "./scenes";
 
 /** typicalShare at or under this counts as out of sight. */
@@ -96,6 +97,14 @@ function partText(p: Part): string {
   }
 }
 
+/** The strongest setting the free levers allow, and how to say it. */
+interface Strongest {
+  input: SceneInput;
+  text: string;
+}
+
+const listWords = (items: readonly string[]) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`);
+
 interface Proposal {
   lever: FreeLever;
   to: SceneInput;
@@ -119,7 +128,17 @@ export function findFreeFix(face: RehearseFace, input: FreeFixInput, ref: string
   };
   const meets = (si: SceneInput) => meetsResolved(resolveScene(si));
 
-  const finish = (proposal: Proposal | null, tried: string[]): FreeFixResult => {
+  /** What the levers reach at their strongest, for the "not enough" answer: the listed concerns still above the goal there. */
+  const limitQuote = (strongest: Strongest): string => {
+    const seen = measureScene(face, resolveScene(strongest.input));
+    const still = concerns
+      .map((c) => seen.find((s) => s.concern === c))
+      .filter((s): s is ConcernAtScene => s !== undefined && s.typicalShare > FREE_FIX_GOAL + EPS)
+      .map((s) => `${concernNoun(s.concern)} (${s.soft ? typicalSoft(true) : typicalPhrase(s.typicalShare)})`);
+    return `even ${strongest.text}, ${listWords(still)} would still be picked out`;
+  };
+
+  const finish = (proposal: Proposal | null, tried: string[], strongest?: Strongest): FreeFixResult => {
     const afterInput = proposal ? proposal.to : from;
     const after: ObserveResult = observeResolved(face, resolveScene(afterInput), `${ref}.after`);
     const goalLine = concerns.length
@@ -130,7 +149,9 @@ export function findFreeFix(face: RehearseFace, input: FreeFixInput, ref: string
       const already = meetsResolved(base);
       return {
         ref,
-        quotes: { change: already ? "nothing needs to change here" : "no free change is enough to reach that here" },
+        quotes: already
+          ? { change: "nothing needs to change here" }
+          : { change: "no free change is enough to reach that here", ...(strongest ? { limit: limitQuote(strongest) } : {}) },
         assumptions,
         reachable: already,
         lever: null,
@@ -178,7 +199,11 @@ export function findFreeFix(face: RehearseFace, input: FreeFixInput, ref: string
         return finish({ lever: "call_layout", to: withCall(gcm, "gallery"), parts: [{ kind: "gallery" }, camPart(gcm)] }, tried);
       }
     }
-    return finish(null, tried);
+    const farthest = Math.max(call.cameraDistanceCm, profile.maxCm);
+    return finish(null, tried, {
+      input: withCall(farthest, "gallery"),
+      text: `with the camera ${cmText(farthest)} away${call.layout === "speaker" ? " and gallery view" : " in gallery view"}`,
+    });
   }
 
   const [, max] = base.scene.rangeM as [number, number];
@@ -202,6 +227,9 @@ export function findFreeFix(face: RehearseFace, input: FreeFixInput, ref: string
       return finish({ lever: "light", to: withDistance(sd, softer), parts: [{ kind: "light", light: softer }, { kind: "distance", deltaM: sd - base.distanceM }] }, tried);
     }
   }
-  return finish(null, tried);
+  return finish(null, tried, {
+    input: { ...from, distanceM: max, ...(softer ? { light: softer } : {}) },
+    text: `${formatDistance(max)} apart${softer ? ` in ${LIGHTS[softer].label}` : ""}`,
+  });
 }
 

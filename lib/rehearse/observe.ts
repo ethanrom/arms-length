@@ -22,7 +22,7 @@ import { formatDistance } from "../copy/distance";
 import { BOUND_TO_NOMINAL_RATIO } from "../copy/profile";
 import { buildVisibilityReport, type VisibilityReportExt } from "../vision/report";
 import { specFromTarget } from "../vision/visibility";
-import { LIGHTS, VIEWER_LABEL, lightLuminance, resolveScene, viewingFor, type ResolvedScene } from "./scenes";
+import { LIGHTS, SKIN_REFLECTANCE_NOTE, VIEWER_LABEL, lightLuminance, resolveScene, viewingFor, type ResolvedScene } from "./scenes";
 import { boundCountText, boundPhrase, boundSoft, countText, mmText, typicalPhrase, typicalSoft } from "./quotes";
 
 const CONCERN_ORDER = Object.keys(CONCERNS) as ConcernId[];
@@ -93,9 +93,12 @@ export function softConcerns(face: RehearseFace): Set<ConcernId> {
   const index = faceIndex(face.measurements);
   if (index.soft) return index.soft;
   const soft = new Set<ConcernId>(["dark_circle", "eye_bag"]);
-  if (face.measurements.regions.some((r) => r.concern === "redness") || face.measurements.features.some((f) => f.concern === "redness")) {
-    const reference = preparedReport(face.measurements, viewingFor("indoor", "typical")).report;
-    const redness = reference.concerns.find((c) => c.concern === "redness");
+  const m = face.measurements;
+  const features = m.features.filter((f) => f.concern === "redness");
+  const regions = m.regions.filter((r) => r.concern === "redness");
+  if (features.length || regions.length) {
+    // A concern's numbers depend on its own targets only, so a report over redness alone gives the same answer for it at a fraction of the cost.
+    const redness = buildVisibilityReport({ ...m, features, regions }, viewingFor("indoor", "typical")).concerns.find((c) => c.concern === "redness");
     if (redness && isSoftArea(redness)) soft.add("redness");
   }
   index.soft = soft;
@@ -158,7 +161,7 @@ export function sceneAssumptions(face: RehearseFace, resolved: ResolvedScene): s
       ? "Distance: the other person sees you on a screen tile, so the moment is judged at the in-person distance your face would look the same size from (see the video call numbers)."
       : `Distance: ${scene.label}. ${scene.source}`,
   );
-  out.push(`Light: ${LIGHTS[light].label}. ${LIGHTS[light].source}`);
+  out.push(`Light: ${LIGHTS[light].label}. ${LIGHTS[light].source}${light === "videoCall" ? "" : ` ${SKIN_REFLECTANCE_NOTE}`}`);
   out.push(
     viewer === "typical"
       ? "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention."

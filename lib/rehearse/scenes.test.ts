@@ -108,9 +108,9 @@ describe("videoCallFrame", () => {
 
   it("states every assumption, and says the estimate is cautious", () => {
     const text = videoCallFrame(laptop, "c").assumptions.join("\n");
-    for (const needle of ["Camera:", "Your distance to the camera:", "other person's screen", "Video size:", "cautious"]) expect(text).toContain(needle);
+    for (const needle of ["webcam", "50 cm", "60 cm from a laptop screen", "17 cm", "720 rows", "cautious"]) expect(text).toContain(needle);
     // Every parameter cites a source or says it is a project assumption.
-    for (const a of videoCallFrame(laptop, "c").assumptions.slice(0, 3)) expect(a).toMatch(/Project assumption|OSHA|et al\./);
+    for (const a of videoCallFrame(laptop, "c").assumptions.slice(0, 5)) expect(a).toMatch(/Project assumption|OSHA|et al\./);
   });
 });
 

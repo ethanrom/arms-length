@@ -31,12 +31,15 @@ export interface LightInfo {
 
 /** The cd/m^2 are LUMINANCE_PRESETS (lib/vision/params.ts, research 7); these are only the words. */
 export const LIGHTS: Record<LightId, LightInfo> = {
-  home: { label: "evening light at home", source: "Evening light at home: lamps, roughly 50 to 150 lux on the face. Skin is modelled as a matte surface that reflects about 35% (research 7)." },
-  indoor: { label: "indoor light", source: "Office or well-lit indoor light, roughly 400 lux on the face. Skin is modelled as a matte surface that reflects about 35% (research 7)." },
-  overcast: { label: "window or overcast light", source: "Overcast sky or light from a window, roughly 1,000 to 5,000 lux on the face. Skin is modelled as a matte surface that reflects about 35% (research 7)." },
-  daylight: { label: "bright daylight", source: "Daylight outdoors in shade or sun, roughly 10,000 to 25,000 lux on the face. Skin is modelled as a matte surface that reflects about 35% (research 7)." },
-  videoCall: { label: "video call light", source: "On a video call the other person's eyes are adapted to a screen of 200 to 300 cd/m2, and a face on it is about 0.35 of white (research 7)." },
+  home: { label: "evening light at home", source: "Lamps in the evening, roughly 50 to 150 lux on the face." },
+  indoor: { label: "indoor light", source: "An office or a well-lit room, roughly 400 lux on the face." },
+  overcast: { label: "window or overcast light", source: "An overcast sky or light from a window, roughly 1,000 to 5,000 lux on the face." },
+  daylight: { label: "bright daylight", source: "Daylight outdoors, in shade or sun, roughly 10,000 to 25,000 lux on the face." },
+  videoCall: { label: "video call light", source: "On a video call the other person's eyes are adapted to a screen of 200 to 300 cd/m2, and a face on it is about 0.35 of white." },
 };
+
+/** Shared by every room and outdoor light: how face illuminance becomes the luminance the model uses. */
+export const SKIN_REFLECTANCE_NOTE = "Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.";
 
 export const VIEWER_LABEL: Record<ViewerId, string> = {
   typical: "typical eyes (20/20)",

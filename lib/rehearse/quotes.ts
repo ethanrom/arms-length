@@ -31,6 +31,8 @@
  *     change                  "move the laptop about 30 cm further back" (always present; says so when nothing is needed or
  *                             nothing free is enough)
  *     to                      "as if you were about 2.1 m away"; only when a change is proposed
+ *     limit                   only when no free change is enough: what the strongest free setting still leaves, e.g. "even with the
+ *                             camera 90 cm away and gallery view, dark spots (about a third) would still be picked out"
  *
  *   LightestTouchResult (lightest_touch)
  *     coverage                "75% coverage" (or "no coverage needed")
@@ -38,6 +40,7 @@
  *     before                  "at most 1 in 3": what even perfect eyes could pick out with no makeup (bound)
  *     after                   "at most 1 in 8": the same with that coverage (bound)
  *     goal                    "at most 1 in 10 picked out by perfect eyes": what "met" means
+ *     result                  "reaches the goal" (met) or "most of the effect, not all of it" (not met)
  *
  *   WorthItResult (worth_it)
  *     distance                "1.5 m"

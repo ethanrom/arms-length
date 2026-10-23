@@ -6,10 +6,11 @@
  */
 import { C, Fade, Ink, Layer, W, Wash } from "./ink";
 import { eyeLineY } from "./layout";
+import { GarmentBack } from "./garment";
 import { Glass, Plate } from "./props";
 import { arc, ellipse, line, rect, smooth } from "./shapes";
 
-const EDGE = 538;
+const EDGE = 562;
 const VX = 800;
 
 /** x at the stage bottom of a table line that leaves the far edge at x. */
@@ -49,9 +50,12 @@ function Pendant({ uid }: { uid: string }) {
   );
 }
 
-export function DinnerBack({ uid }: { uid: string }) {
+export function DinnerBack({ uid, photoHeight }: { uid: string; photoHeight?: number }) {
   return (
     <>
+      <Layer at={0.3} to={0.7}>
+        <GarmentBack scene="dinner_table" photoHeight={photoHeight} />
+      </Layer>
       <Layer at={0} to={0.45}>
         <Picture />
       </Layer>
@@ -109,20 +113,20 @@ export function DinnerFront() {
         fo={0.9}
         w={W.line}
       />
-      <g transform="translate(440 770)">
+      <g transform="translate(440 794)">
         <Plate />
         <Cutlery side={-1} />
         <Cutlery side={1} />
       </g>
-      <g transform="translate(1160 770)">
+      <g transform="translate(1160 794)">
         <Plate />
         <Cutlery side={-1} />
         <Cutlery side={1} />
       </g>
-      <g transform="translate(1004 712)">
+      <g transform="translate(1004 736)">
         <Glass />
       </g>
-      <g transform="translate(596 716)">
+      <g transform="translate(596 740)">
         <Candle />
       </g>
       <Fade o={0.5}>

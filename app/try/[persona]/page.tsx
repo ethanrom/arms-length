@@ -26,7 +26,9 @@ async function Results({ params }: { params: PageProps<"/try/[persona]">["params
   const { persona } = await params;
   const data = loadDemoResults(persona);
   if (!data) notFound();
-  return <ResultsExperience data={data} />;
+  // Read when the page is built (these faces are prerendered), so the flag is set where the build runs. The route enforces it again per request.
+  const rehearse = process.env.AGENT_ENABLED === "1" ? { requestFace: { demoId: persona } } : undefined;
+  return <ResultsExperience data={data} rehearse={rehearse} />;
 }
 
 /** Shown for a moment on client navigation, before the recorded analysis is in hand. */

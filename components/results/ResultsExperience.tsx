@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, type CSSProperties } from "react";
+import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { ConcernExplorer } from "@/components/concerns/ConcernExplorer";
 import { MakeItDisappear } from "@/components/disappear/MakeItDisappear";
+import { RehearseDay } from "@/components/rehearse/RehearseDay";
 import { ShareStudio } from "@/components/share/ShareStudio";
 import { StepBack } from "@/components/step-back/StepBack";
 import { Section } from "@/components/ui/Section";
 import { WorthItReveal } from "@/components/whatif/WorthItReveal";
 import type { ConcernId } from "@/lib/contracts";
+import type { RehearseRequest } from "@/lib/contracts/rehearse";
 import { engineBadge } from "@/lib/integration/copy";
 import { deriveConcernViews } from "./derive";
 import { EngineStrip } from "./EngineStrip";
@@ -23,20 +25,31 @@ interface ResultsExperienceProps {
   back?: { href: string; label: string };
   /** Live sessions: YouCam units this session has used so far, for the engine strip. */
   unitsCharged?: number;
+  /** Adds the "Rehearse your day" section for this face. Absent when the feature is off. */
+  rehearse?: { requestFace: RehearseRequest["face"] };
 }
 
 /**
  * The results page. The face and the Step back slider come first, the rest follows in the order a visitor wants it:
  * the YouCam credit, what others see (relief first, with receipts), the lightest touch, "Worth it?", and the share card.
  */
-export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", label: "Choose another face" }, unitsCharged }: ResultsExperienceProps) {
+export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", label: "Choose another face" }, unitsCharged, rehearse }: ResultsExperienceProps) {
   const views = useMemo(() => deriveConcernViews(data), [data]);
   const { persona, frame, measurements, report, anchors } = data;
+
+  // A moment chosen in "Rehearse your day" moves the Step back slider and brings it into view.
+  const [goTo, setGoTo] = useState<{ distanceM: number; key: number }>();
+  const showMoment = useCallback((distanceM: number) => {
+    setGoTo((g) => ({ distanceM, key: (g?.key ?? 0) + 1 }));
+    document.getElementById("step-back")?.scrollIntoView({ block: "start" });
+    document.querySelector<HTMLElement>("#step-back input[type='range']")?.focus({ preventScroll: true });
+  }, []);
 
   const chapters = [
     { id: "what-others-see", label: "What others see" },
     ...(data.coverage ? [{ id: "make-it-disappear", label: data.coverage.title }] : []),
     ...(data.worthIt ? [{ id: "worth-it", label: "Worth it?" }] : []),
+    ...(rehearse ? [{ id: "rehearse", label: "Rehearse your day" }] : []),
     { id: "share", label: "Share" },
   ];
   const num = (id: string) => String(chapters.findIndex((c) => c.id === id) + 1).padStart(2, "0");
@@ -64,6 +77,7 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
           estimate={data.disclaimers.estimate}
           validation={data.engine.validation}
           loupe={data.loupe}
+          goTo={goTo}
         />
       </section>
 
@@ -160,6 +174,26 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
           }
         >
           <WorthItReveal worthIt={data.worthIt} src={persona.image} frame={frame} anchors={anchors} disclaimer={data.disclaimers.simulation} />
+        </Section>
+      )}
+
+      {rehearse && (
+        <Section
+          id="rehearse"
+          index={num("rehearse")}
+          eyebrow="Your day, through other eyes"
+          title={
+            <>
+              Rehearse <em className="font-normal italic">your day</em>
+            </>
+          }
+          lede="Describe a day and each moment comes back with your face as the people there will see it. Every number comes from the same model as the slider."
+        >
+          <RehearseDay
+            requestFace={rehearse.requestFace}
+            photo={{ src: persona.image, alt: data.alt, frame, scale: measurements.scale }}
+            onSelectMoment={showMoment}
+          />
         </Section>
       )}
 

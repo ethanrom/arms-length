@@ -284,7 +284,7 @@ export const STEP_LABELS = [
   "Working out how you will look on the call",
   "Running the vision model for lunch",
   "Running the vision model for dinner",
-  "Looking for a free change for the call",
+  "Finding the smallest change that helps for the call",
   "Checking each number against the model’s results",
 ];
 

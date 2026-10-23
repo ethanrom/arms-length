@@ -36,11 +36,11 @@
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Client lunch\""
+      "label": "Finding the smallest change that helps for \"Client lunch\""
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Dinner date\""
+      "label": "Finding the smallest change that helps for \"Dinner date\""
     },
     {
       "tool": "lightest_touch",

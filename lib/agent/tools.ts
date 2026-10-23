@@ -127,7 +127,7 @@ export function describeStep(tool: AgentToolName, input: unknown): string {
     case "video_call_frame":
       return `Working out how you will look on the call for ${moment}`;
     case "find_free_fix":
-      return `Looking for a free change for ${moment}`;
+      return `Finding the smallest change that helps for ${moment}`;
     case "lightest_touch":
       return `Reading your measured lightest touch for ${concernName(args.concern)}`;
     case "worth_it":

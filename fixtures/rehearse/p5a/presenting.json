@@ -20,11 +20,11 @@
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Drinks with colleagues\""
+      "label": "Finding the smallest change that helps for \"Drinks with colleagues\""
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Presenting to the team\""
+      "label": "Finding the smallest change that helps for \"Presenting to the team\""
     },
     {
       "tool": "lightest_touch",

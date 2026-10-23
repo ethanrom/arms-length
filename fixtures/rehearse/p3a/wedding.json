@@ -28,15 +28,15 @@
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Outdoor ceremony\""
+      "label": "Finding the smallest change that helps for \"Outdoor ceremony\""
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Wedding dinner\""
+      "label": "Finding the smallest change that helps for \"Wedding dinner\""
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Dancing\""
+      "label": "Finding the smallest change that helps for \"Dancing\""
     },
     {
       "tool": "lightest_touch",

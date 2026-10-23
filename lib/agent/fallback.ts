@@ -383,6 +383,14 @@ function chooseAction(args: { obs: ObserveResult; scene: SceneInput; title: stri
   return { kind: "none", claim: { text: limit ? fit(`${cap(limit)}.`, generic) : generic, refs: [a.limit?.ref ?? obs.ref] } };
 }
 
+/** The template summary for a plan the model wrote, from its moments' own actions (see salvage.ts). */
+export function templateSummary(moments: DraftMoment[]): Claim {
+  return summaryFor(
+    moments.map((moment) => ({ moment, needsChange: moment.action.kind !== "none" })),
+    false,
+  );
+}
+
 function summaryFor(built: BuiltMoment[], followUpNotApplied: boolean): Claim {
   const refs = built.map((b) => b.moment.observeRef).slice(0, 8);
   const lead = followUpNotApplied ? "I could not work out that change just now, so these are your earlier moments, checked again. " : "";

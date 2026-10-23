@@ -9,7 +9,7 @@ import { buildFallbackPlan, type FallbackMoment } from "./fallback";
 import { NUDGE_MESSAGE, buildSystemPrompt, buildUserMessage, repairMessage } from "./prompt";
 import { assemblePlan, observedScene, polishDraft } from "./plan";
 import { isObserve } from "./results";
-import { describeZodIssue, dropNulls, finalAnswerInput, type FinalAnswerInput } from "./schemas";
+import { describeZodIssue, dropNulls, finalAnswerInput, leniently, type FinalAnswerInput } from "./schemas";
 import { TOOL_NAMES, cleanTitle, createToolbox, resolveToolName, stepEvent, toolSpecs } from "./tools";
 import { LlmError, type AgentRequest, type AnyResult, type LlmMessage, type RunAgentOptions } from "./types";
 import { salvage } from "./salvage";
@@ -135,7 +135,7 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
         results.push(resultBlock(use.toolUseId, JSON.stringify({ error: "Call final_answer on its own, after the other tool results are in. Call it again now, alone." }), false));
         continue;
       }
-      const parsed = finalAnswerInput.safeParse(dropNulls(use.input));
+      const parsed = finalAnswerInput.safeParse(leniently(dropNulls(use.input)));
       const issues: VerifierIssue[] = parsed.success
         ? []
         : [{ momentId: null, code: "schema", detail: describeZodIssue(parsed.error) }];

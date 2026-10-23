@@ -32,8 +32,11 @@ const UNSUPPORTED = /\b(?:ordinary|common|commonly|normal|normally|usual|usually
 const BOUND_WORDING = /\b(?:at most|up to|sharpest)\b/i;
 /** A full stop (or ! or ?) followed by a new sentence. A decimal point has no space after it. */
 const ONE_SENTENCE_BREAK = /[.!?]["')\]]*\s+\p{Lu}/u;
-/** Words that shrink what shows. A headline may not use them where most marks of several concerns are in sight (no unsupported reassurance). */
-const MINIMISING = /\b(?:a few|only a few|a little|barely|hardly|faint|faintly|slight|slightly|subtle|gently|mild|mildly|soften|softens|fade|fades)\b/i;
+/**
+ * Quantity words that shrink what shows. A headline may not use them where most marks of several concerns are in sight (no
+ * unsupported reassurance). Words the prompt's own style guides use ("a little", "softens", "fade from view") are not on the list.
+ */
+const MINIMISING = /\b(?:a few|only a few|barely|hardly|faint|faintly|slight|slightly|subtle|mild|mildly)\b/i;
 const BOUND_KEY = /\.bound(?:Count)?$/;
 
 const NUMBER = /\d+(?:\.\d+)?/g;

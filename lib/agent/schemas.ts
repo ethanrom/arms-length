@@ -279,3 +279,33 @@ export const rehearseRequestSchema = z.object({
 });
 
 export type ParsedRehearseRequest = z.infer<typeof rehearseRequestSchema>;
+
+/**
+ * Models sometimes send a sentence as a bare string, a single sentence where a list is wanted, or leave out `refs`. Read each as the
+ * sentence it plainly is, so a slip of shape never costs a repair round. Anything stranger still fails the schema.
+ */
+export function leniently(input: unknown): unknown {
+  if (!input || typeof input !== "object") return input;
+  const claim = (v: unknown): unknown => (typeof v === "string" ? { text: v, refs: [] } : v && typeof v === "object" ? { refs: [], ...(v as object) } : v);
+  const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : v === undefined ? [] : [v]);
+  const a = input as Record<string, unknown>;
+  return {
+    ...a,
+    summary: claim(a.summary),
+    moments: Array.isArray(a.moments)
+      ? a.moments.map((m: unknown) => {
+          if (!m || typeof m !== "object") return m;
+          const x = m as Record<string, unknown>;
+          const action = x.action && typeof x.action === "object" ? { ...(x.action as object), claim: claim((x.action as Record<string, unknown>).claim) } : x.action;
+          return {
+            ...x,
+            headline: claim(x.headline),
+            assumptions: list(x.assumptions),
+            notice: list(x.notice).map(claim),
+            outOfSight: list(x.outOfSight).map(claim),
+            action,
+          };
+        })
+      : a.moments,
+  };
+}

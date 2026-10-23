@@ -31,13 +31,13 @@ describe("salvage", () => {
     expect(d.moments[0].notice).toHaveLength(2);
   });
 
-  it("does not touch a plan whose problem is a headline, an action, the summary or a scene (until headlines are allowed)", () => {
+  it("does not touch a plan whose problem is a headline, an action, the summary or a scene (until templates are allowed)", () => {
     const headline = broken((x) => (x.moments[0].headline = { text: "About 1 in 20 of your pores show.", refs: ["r1"] }));
     expect(run(headline)).toBeNull();
     const action = broken((x) => (x.moments[0].action = { kind: "none", claim: { text: "Nothing, about 4 in 7.", refs: [] } }));
     expect(run(action, true)).toBeNull();
     const summary = broken((x) => (x.summary = { text: "Nobody will ever notice.", refs: ["r1"] }));
-    expect(run(summary, true)).toBeNull();
+    expect(run(summary, false)).toBeNull();
     const scene = broken((x) => (x.moments[0].scene = { scene: "presenting" }));
     expect(run(scene, true)).toBeNull();
     const title = broken((x) => (x.moments[0].title = "Table for 4"));
@@ -53,6 +53,16 @@ describe("salvage", () => {
     expect(headline.refs).toEqual(["r1"]);
     expect(headline.text).toMatch(/^Across the table, your breakouts are out of sight/);
     expect(headline.text.length).toBeLessThanOrEqual(120);
+    expect(verifyPlan(fixed.draft, results, prefs)).toEqual([]);
+  });
+
+  it("gives a still-wrong summary its template once that is allowed", () => {
+    const d = broken((x) => (x.summary = { text: "Across the day all three moments are calm.", refs: ["r1"] }));
+    expect(run(d, false)).toBeNull();
+    const fixed = run(d, true)!;
+    expect(fixed.replaced).toBe(1);
+    expect(fixed.draft.summary.text).not.toContain("three");
+    expect(fixed.draft.summary.refs).toEqual(["r1"]);
     expect(verifyPlan(fixed.draft, results, prefs)).toEqual([]);
   });
 

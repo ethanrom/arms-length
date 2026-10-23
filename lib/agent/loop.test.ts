@@ -481,3 +481,44 @@ describe("runAgent", () => {
     });
   });
 });
+
+describe("runAgent with a slip of shape in final_answer", () => {
+  const face = demoFace("p3a");
+  const request: AgentRequest = { day: "Dinner date at 7, then a team meeting", prefs: { callDevice: "laptop", noMakeup: false } };
+
+  it("reads a sentence sent as a bare string, or without refs, as the sentence it is, with no repair round", async () => {
+    const llm = fakeLlm([
+      () => ({ content: [toolUse("assess_moment", { title: "Dinner date", scene: "dinner_table", light: "home" })] }),
+      ({ last }) => {
+        const v = last[0] as { moment: string; observeRef: string; quotes: Record<string, string> };
+        return {
+          content: [
+            toolUse("final_answer", {
+              moments: [
+                {
+                  title: v.moment,
+                  observeRef: v.observeRef,
+                  headline: "Across the table, you can relax.",
+                  assumptions: "I took dinner as a table across from each other.",
+                  notice: [],
+                  outOfSight: [{ text: `At ${v.quotes.distance}, a typical viewer sees your skin in ${v.quotes.light}.` }],
+                  action: { kind: "none", claim: "Nothing needs doing here." },
+                },
+              ],
+              summary: "Your evening looks relaxed.",
+            }),
+          ],
+        };
+      },
+    ]);
+    const events: RehearseEvent[] = [];
+    const plan = await runAgent({ face, request, llm, engine: realEngine, emit: (e) => events.push(e) });
+    llm.check();
+    expect(plan.verified).toBe(true);
+    expect(plan.stats).toMatchObject({ turns: 2, repairs: 0 });
+    expect(plan.moments[0].headline?.text).toBe("Across the table, you can relax.");
+    expect(plan.moments[0].assumptions).toEqual(["I took dinner as a table across from each other."]);
+    expect(plan.moments[0].scene).toMatchObject({ scene: "dinner_table", light: "home", viewer: "typical" });
+    expect(plan.summary.text).toBe("Your evening looks relaxed.");
+  });
+});

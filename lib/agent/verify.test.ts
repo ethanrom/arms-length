@@ -315,3 +315,22 @@ describe("verifyPlan issues are specific enough to repair from", () => {
     expect(text).toContain("pore.typicalCount");
   });
 });
+
+describe("the minimising rule leaves the prompt's own style words alone", () => {
+  it("allows 'a little', 'softens' and 'fade from view' where many marks show, and still stops 'a few' and 'faint'", () => {
+    const busy = stubObserve("r1");
+    busy.concerns = [
+      { concern: "pore", targetCount: 100, typicalShare: 0.9, typicalCount: 90, boundShare: 1, boundCount: 100, soft: false },
+      { concern: "acne", targetCount: 10, typicalShare: 0.8, typicalCount: 8, boundShare: 1, boundCount: 10, soft: false },
+    ];
+    const results = { r1: busy } as Record<string, AnyResult>;
+    const head = (text: string) => {
+      const d = goodDraft();
+      d.moments[0].headline = { text, refs: [] };
+      return verifyPlan(d, results, prefs).map((i) => i.code);
+    };
+    expect(head("Moving the laptop back a little softens them, and pores fade from view.")).toEqual([]);
+    expect(head("A few marks show up close.")).toEqual(["banned_word"]);
+    expect(head("Up close the marks look faint.")).toEqual(["banned_word"]);
+  });
+});

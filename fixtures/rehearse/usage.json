@@ -823,14 +823,50 @@
       "issues": 1,
       "written": true,
       "phase": "tone"
+    },
+    {
+      "at": "2026-10-23T09:35:08.553Z",
+      "demoId": "p3a",
+      "exampleId": "workday",
+      "ms": 33500,
+      "turns": 6,
+      "toolCalls": 11,
+      "repairs": 1,
+      "inputTokens": 78194,
+      "outputTokens": 3589,
+      "cacheReadTokens": 61473,
+      "cacheWriteTokens": 16707,
+      "costUsd": 0.09,
+      "verified": true,
+      "issues": 1,
+      "written": true,
+      "phase": "tone-2"
+    },
+    {
+      "at": "2026-10-23T09:35:53.860Z",
+      "demoId": "p3a",
+      "exampleId": "wedding",
+      "ms": 20412,
+      "turns": 4,
+      "toolCalls": 12,
+      "repairs": 0,
+      "inputTokens": 49535,
+      "outputTokens": 2328,
+      "cacheReadTokens": 43209,
+      "cacheWriteTokens": 6316,
+      "costUsd": 0.0477,
+      "verified": true,
+      "issues": 0,
+      "written": true,
+      "phase": "tone-2"
     }
   ],
   "totals": {
-    "runs": 47,
-    "spent": 2.2881,
-    "verified": 45,
+    "runs": 49,
+    "spent": 2.4258,
+    "verified": 47,
     "fallback": 2,
-    "medianMs": 19219
+    "medianMs": 19493
   },
   "prices": {
     "inputPerMTokUsd": 2,
@@ -859,6 +895,13 @@
       "verified": 12,
       "fallback": 1,
       "medianMs": 23055
+    },
+    "tone-2": {
+      "runs": 2,
+      "spent": 0.1377,
+      "verified": 2,
+      "fallback": 0,
+      "medianMs": 20412
     }
   }
 }

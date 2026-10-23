@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-10-23T09:19:19.302Z",
+  "recordedAt": "2026-10-23T09:35:08.553Z",
   "model": "Claude Sonnet 5.5 via Amazon Bedrock",
   "steps": [
     {
@@ -57,6 +57,10 @@
     {
       "tool": "final_answer",
       "label": "Checking every number in your day plan"
+    },
+    {
+      "tool": "final_answer",
+      "label": "Checking every number in your day plan"
     }
   ],
   "plan": {
@@ -75,18 +79,19 @@
           }
         },
         "headline": {
-          "text": "On the call, your breakouts, pores and fine lines don't come through the video.",
+          "text": "On the call, breakouts, pores and fine lines don't come through the video.",
           "refs": [
             "r4"
           ]
         },
         "observeRef": "r4",
         "assumptions": [
-          "I took the laptop camera at the usual distance and the team call as a small gallery tile."
+          "I took the laptop camera as the usual distance from your face.",
+          "I took the team standup as a gallery tile."
         ],
         "notice": [
           {
-            "text": "Dark spots (about 1 in 6) and redness could still be picked out, and under-eye shadows and puffiness are noticeable.",
+            "text": "A typical viewer could pick out about 1 in 6 dark spots, plus redness and the under-eye shadows and puffiness.",
             "refs": [
               "r4"
             ]
@@ -94,22 +99,23 @@
         ],
         "outOfSight": [
           {
-            "text": "Breakouts, pores and fine lines are out of sight for a typical viewer in the tile.",
+            "text": "Breakouts, pores and fine lines are out of sight for a typical viewer on this call.",
             "refs": [
               "r4"
             ]
           },
           {
-            "text": "The video itself cannot carry 207 of 207 of your fine lines, 221 of 221 pores and 5 of 5 breakouts.",
+            "text": "The video itself carries nothing finer than 2.4 mm, so it cannot show them whatever the viewer's eyes.",
             "refs": [
-              "r4"
+              "r4",
+              "r1"
             ]
           }
         ],
         "action": {
           "kind": "none",
           "claim": {
-            "text": "No change in camera distance or layout hides the redness, so there is nothing to adjust here.",
+            "text": "Moving the camera back does not hide the redness here, so there is nothing to change.",
             "refs": [
               "r5"
             ]
@@ -127,25 +133,25 @@
           "distanceM": 1.5
         },
         "headline": {
-          "text": "By the bright window, more of your skin shows across the table, and moving further away would not change that.",
+          "text": "By the window in bright daylight, most of your skin shows across the table.",
           "refs": [
-            "r2",
-            "r6"
+            "r2"
           ]
         },
         "observeRef": "r2",
         "assumptions": [
-          "I took the client lunch as a table across from each other, with the window as bright daylight."
+          "I took the client lunch as across a table.",
+          "I took by the window as bright daylight at the table distance."
         ],
         "notice": [
           {
-            "text": "At 1.5 m in bright daylight, a typical viewer could pick out all of your breakouts, nearly all dark spots and most fine lines.",
+            "text": "At 1.5 m in bright daylight, a typical viewer could pick out about a third of pores and most fine lines.",
             "refs": [
               "r2"
             ]
           },
           {
-            "text": "About a third of pores, redness, under-eye shadows and puffiness are also noticeable at that distance.",
+            "text": "Dark spots, breakouts, redness and the under-eye shadows and puffiness are also in sight.",
             "refs": [
               "r2"
             ]
@@ -155,7 +161,7 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "Sitting further away would still leave breakouts, dark spots, fine lines and redness in sight, so no seat change helps.",
+            "text": "Seating changes did not hide these, even 2.1 m apart in window or overcast light.",
             "refs": [
               "r6"
             ]
@@ -173,24 +179,25 @@
           "distanceM": 1.5
         },
         "headline": {
-          "text": "Across the table in evening light, pores fade from view and less shows than at lunch.",
+          "text": "Across the table in evening light, pores are out of sight and less of the rest shows.",
           "refs": [
             "r3"
           ]
         },
         "observeRef": "r3",
         "assumptions": [
-          "I took the dinner date as a table across from each other, in dim evening light at home."
+          "I took the dinner date as across a dinner table.",
+          "I took the evening as dim home light."
         ],
         "notice": [
           {
-            "text": "A typical viewer could pick out about half of dark spots and about 1 in 4 fine lines, plus redness.",
+            "text": "A typical viewer could pick out about half of dark spots and about 1 in 4 fine lines.",
             "refs": [
               "r3"
             ]
           },
           {
-            "text": "Under-eye shadows and puffiness are noticeable too.",
+            "text": "Redness and the under-eye shadows and puffiness are also in sight.",
             "refs": [
               "r3"
             ]
@@ -198,7 +205,7 @@
         ],
         "outOfSight": [
           {
-            "text": "Pores are out of sight for a typical viewer at 1.5 m in evening light at home.",
+            "text": "At 1.5 m in evening light at home, pores are out of sight for a typical viewer.",
             "refs": [
               "r3"
             ]
@@ -207,7 +214,7 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "Sitting further away would still leave dark spots, fine lines and redness in sight, so no seat change helps.",
+            "text": "Sitting further away did not hide these, even 2.1 m apart.",
             "refs": [
               "r7"
             ]
@@ -218,10 +225,10 @@
       }
     ],
     "summary": {
-      "text": "Your day is softest on the call and at dinner, where breakouts, pores and fine lines are out of sight on the call and pores are out of sight at dinner; lunch by the window shows the most.",
+      "text": "Across the day, pores are out of sight at dinner, and on the call breakouts, pores and fine lines are out of sight; lunch in bright daylight shows the most.",
       "refs": [
-        "r4",
         "r3",
+        "r4",
         "r2"
       ]
     },
@@ -369,6 +376,34 @@
             "soft": true,
             "belowCameraCount": 0
           }
+        ]
+      },
+      "r1": {
+        "ref": "r1",
+        "call": {
+          "device": "laptop",
+          "cameraDistanceCm": 50,
+          "layout": "gallery"
+        },
+        "equivalentDistanceM": 3.6383555675108967,
+        "resolutionFloorMm": 2.358193423386693,
+        "quotes": {
+          "device": "laptop",
+          "layout": "a small gallery tile",
+          "cameraDistance": "50 cm",
+          "equivalentDistance": "4 m",
+          "resolutionFloor": "2.4 mm",
+          "viewerDistance": "60 cm",
+          "tileHeight": "7 cm"
+        },
+        "assumptions": [
+          "Project assumption: a built-in laptop webcam is roughly 80 degrees diagonal, which on a 16:9 frame is about 46 degrees vertical.",
+          "Project assumption: about 50 cm, the near end of the 50 to 100 cm usually advised for monitor distance (OSHA computer workstations guidance). The most you can sit back and still reach the keys is taken as 90 cm.",
+          "Project assumption: they sit about 60 cm from a laptop screen, inside the 50 to 100 cm usually advised for monitor distance (OSHA computer workstations guidance).",
+          "Project assumption: on a 15-inch laptop screen (about 19 cm tall) a speaker view fills about 17 cm and a gallery tile of four to nine people about 7 cm.",
+          "Project assumption: calls send about 720 rows to a large tile (HD) and about 360 rows to a small gallery tile, as video-call services scale each person's picture to the tile it fills. The smallest detail the video carries is taken as two rows of pixels.",
+          "The whole camera frame is assumed to fill the height of the tile.",
+          "Video compression hides more than this removes, so the distance is a cautious estimate: the real picture is, if anything, softer."
         ]
       },
       "r5": {
@@ -1429,14 +1464,20 @@
       }
     },
     "verified": true,
-    "issues": [],
+    "issues": [
+      {
+        "momentId": "m1",
+        "code": "stray_number",
+        "detail": "Assumption 1 must not contain numbers. Say it in words."
+      }
+    ],
     "stats": {
-      "ms": 18926,
-      "turns": 5,
-      "toolCalls": 10,
-      "inputTokens": 60858,
-      "outputTokens": 2314,
-      "repairs": 0
+      "ms": 33498,
+      "turns": 6,
+      "toolCalls": 11,
+      "inputTokens": 78194,
+      "outputTokens": 3589,
+      "repairs": 1
     }
   }
 }

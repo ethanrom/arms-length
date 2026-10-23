@@ -113,6 +113,8 @@ async function main(): Promise<void> {
   const phase = arg("phase") ?? "v1";
   const maxRuns = Number(arg("max-runs") ?? 20);
   const maxCost = Number(arg("max-cost") ?? 1.5);
+  /** Stop before a run that could take the phase past its cost cap; --margin lowers it when the cap is tight. */
+  const margin = Number(arg("margin") ?? RUN_MARGIN_USD);
   /** --only p5a/wedding,p3a/workday: exactly these combinations. */
   const only = arg("only")?.split(",");
 
@@ -144,7 +146,7 @@ async function main(): Promise<void> {
         continue;
       }
       const totals = summarise(usage, phase);
-      if (totals.runs >= maxRuns || totals.spent + RUN_MARGIN_USD > maxCost) {
+      if (totals.runs >= maxRuns || totals.spent + margin > maxCost) {
         console.log(`STOP: cap reached (${totals.runs} runs, $${totals.spent} spent).`);
         return finish(usage);
       }

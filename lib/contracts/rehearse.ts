@@ -301,6 +301,13 @@ export interface DayPlan {
   stats: RunStats;
 }
 
+/** The example chips. Replay fixtures are recorded for exactly these texts (fixtures/rehearse/<demoId>/<id>.json). */
+export const EXAMPLE_DAYS = [
+  { id: "workday", chip: "Video standup, client lunch, dinner date", day: "9am video standup on my laptop, lunch with a client by the window, dinner date at 7" },
+  { id: "presenting", chip: "Presenting at work", day: "Presenting to the team at 2pm in the big meeting room, then drinks with colleagues after work" },
+  { id: "wedding", chip: "Wedding guest", day: "Wedding guest: outdoor ceremony in the afternoon sun, then dinner and dancing in the evening" },
+] as const;
+
 export interface RehearsePrefs {
   callDevice: "laptop" | "phone";
   noMakeup: boolean;

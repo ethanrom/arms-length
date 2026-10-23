@@ -20,6 +20,11 @@ export const HEADLINE_FORBIDDEN: ForbiddenPhrase[] = [
   { re: /\b(?:can['’]t|cannot|can not|won['’]t|would not|wouldn['’]t|will not|does not|doesn['’]t|did not|didn['’]t|do not|don['’]t) (?:really )?(?:change|help|hide|alter)\b/i, shown: "\"can't change\", \"doesn't change that\", \"would not help\"" },
   { re: /\bnothing (?:can|will)\b/i, shown: '"nothing can"' },
   { re: /\b(?:back|front) (?:of the room|row)\b|\bby the door\b/i, shown: '"back of the room", "front row" (the scene gives a distance, not a position)' },
+  // How the people there will feel is not measured ("fine lines" is a concern, not a verdict).
+  {
+    re: /\b(?:that['’]s|that is|it['’]s|it is|which is|all|totally|perfectly) (?:fine|okay|ok|normal|natural)\b|\b(?:nothing|no need) to worry\b|\bdon['’]t worry\b|\bno one (?:minds|cares|notices)\b|\bbetween (?:sisters|brothers|friends|family|colleagues)\b/i,
+    shown: '"that\'s fine", "nothing to worry about", "between friends" (how the people there will feel is not measured)',
+  },
 ];
 
 /** Style guides for the prompt. Not templates: the verifier rejects a headline that copies one, and every fact must come from the tools. */

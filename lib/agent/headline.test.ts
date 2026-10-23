@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { polishDraft } from "./plan";
-import { fitHeadline, polishText } from "./headline";
+import { fitHeadline, forbiddenInHeadline, polishText } from "./headline";
 import { goodDraft } from "./test-helpers";
 
 describe("polishText", () => {
@@ -88,5 +88,15 @@ describe("fitHeadline", () => {
     expect(fitHeadline("Short and warm.", 120)).toBe("Short and warm.");
     const noClause = "x".repeat(130);
     expect(fitHeadline(noClause, 120)).toBe(noClause);
+  });
+});
+
+describe("forbiddenInHeadline: unmeasured judgements", () => {
+  it("rejects verdicts on how the people there will feel, and keeps fine lines", () => {
+    expect(forbiddenInHeadline("Up close over coffee, more of your skin shows, and that's fine between sisters.")).not.toBeNull();
+    expect(forbiddenInHeadline("Across the table, nothing to worry about.")).not.toBeNull();
+    expect(forbiddenInHeadline("Dancing close, more shows, which is perfectly natural.")).not.toBeNull();
+    expect(forbiddenInHeadline("On the call, your pores and fine lines don't come through the video.")).toBeNull();
+    expect(forbiddenInHeadline("Across the table in evening light, fine lines soften and pores fade from view.")).toBeNull();
   });
 });

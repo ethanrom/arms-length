@@ -245,7 +245,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
             )}
             <span data-testid="moment-title">{moment.title}</span>
           </p>
-          <button ref={knowButton} type="button" onClick={() => setDrawer(true)} aria-haspopup="dialog" className="inline-flex min-h-11 shrink-0 items-center text-[0.9375rem] text-ink-soft underline decoration-1 underline-offset-4 hover:text-ink">
+          <button ref={knowButton} type="button" onClick={() => setDrawer(true)} aria-haspopup="dialog" className="inline-flex min-h-8 shrink-0 items-center text-[0.9375rem] text-ink-soft underline decoration-1 underline-offset-4 hover:text-ink">
             How we know
           </button>
         </div>
@@ -253,20 +253,20 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
           data-autofocus
           tabIndex={-1}
           data-testid="moment-headline"
-          className={`serif -mt-1 max-w-[46rem] text-balance leading-[1.1] tracking-[-0.018em] outline-none ${headlineSize}`}
+          className={`serif mt-1 max-w-[46rem] text-balance leading-[1.1] tracking-[-0.018em] outline-none ${headlineSize}`}
           style={{ fontWeight: 350 }}
         >
           {headline}
         </h2>
 
         {noNeed && (
-          <p className="mt-2 text-[0.9375rem] leading-snug text-ink-soft" data-testid="no-need">
+          <p className="mt-1.5 text-[0.9375rem] leading-snug text-ink-soft" data-testid="no-need">
             No need to cover here: {noNeed}.
           </p>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
             {chip.claim ? (
               <button
                 type="button"
@@ -274,13 +274,13 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
                 aria-controls={chipId}
                 data-testid="moment-chip"
                 onClick={() => setOpenChip(chipOpen ? null : moment.id)}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-full border border-ink px-4 text-[0.9375rem] transition-colors ${chipOpen ? "bg-ink text-paper" : "hover:bg-ink/5"}`}
+                className={`inline-flex min-h-10 items-center gap-2 rounded-full border border-ink px-4 text-[0.9375rem] transition-colors ${chipOpen ? "bg-ink text-paper" : "hover:bg-ink/5"}`}
               >
                 <span aria-hidden="true" className={`block h-2.5 w-2.5 rounded-full border ${chipOpen ? "border-paper bg-paper" : "border-ink bg-ink"}`} />
                 {chip.label}
               </button>
             ) : (
-              <span data-testid="moment-chip" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rule-strong px-4 text-[0.9375rem] text-ink-soft">
+              <span data-testid="moment-chip" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-rule-strong px-4 text-[0.9375rem] text-ink-soft">
                 <span aria-hidden="true" className="block h-2.5 w-2.5 rounded-full border border-ink" />
                 {chip.label}
               </span>
@@ -297,7 +297,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
                   ).map((o) => (
                     <label key={o.label} className="relative cursor-pointer">
                       <input type="radio" name={toggleName} className="peer sr-only" checked={tipOn === o.on} onChange={() => setTipId(o.on ? moment.id : null)} />
-                      <span className="flex min-h-11 items-center justify-center border-l border-ink px-4 text-[0.9375rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
+                      <span className="flex min-h-10 items-center justify-center border-l border-ink px-4 text-[0.9375rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
                         {o.label}
                       </span>
                     </label>
@@ -327,7 +327,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
                 setMirror(true);
                 pulse.current = window.setTimeout(() => setMirror(false), MIRROR_PULSE_MS);
               }}
-              className="btn btn-ghost touch-none select-none aria-pressed:bg-ink aria-pressed:text-paper"
+              className="btn btn-ghost btn-sm touch-none select-none aria-pressed:!bg-ink aria-pressed:!text-paper"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
                 <ellipse cx="10" cy="9" rx="5.5" ry="7" />
@@ -343,7 +343,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
           </p>
         )}
 
-        <div className="mt-4 flex items-start gap-3">
+        <div className="mt-3 flex items-start gap-3">
           {!calm && (
             <button
               type="button"

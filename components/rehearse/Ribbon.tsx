@@ -44,7 +44,7 @@ export function Ribbon({ moments, positions, current, onPick, size = "compact" }
   const titled = large || moments.some((m) => !m.time);
   return (
     <nav aria-label="The day, moment by moment" data-testid="ribbon" className="px-1">
-      <div className={`relative ${large ? "pb-16" : titled ? "pb-14" : "pb-8"}`}>
+      <div className={`relative [container-type:inline-size] ${large ? "pb-28 sm:pb-16" : titled ? "pb-14" : "pb-8"}`}>
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-11 border border-rule" style={{ background: `linear-gradient(to right, ${SKY})` }} />
         <div aria-hidden="true" className="absolute inset-x-0 top-[1.375rem] h-px bg-ink/70" />
         <ol className="relative h-11">
@@ -52,6 +52,9 @@ export function Ribbon({ moments, positions, current, onPick, size = "compact" }
             const on = current === i;
             const x = positions[i] ?? 0.5;
             const edge = x < 0.12 ? "left" : x > 0.88 ? "right" : "center";
+            // A label may be as wide as the room to its nearest neighbour, so two never run into each other.
+            const room = Math.min(i > 0 ? x - (positions[i - 1] ?? 0) : 1, i < moments.length - 1 ? (positions[i + 1] ?? 1) - x : 1);
+            const labelWidth = `min(${large ? 7 : 6}rem, calc(${(room * 100).toFixed(1)}cqw - 0.4rem))`;
             return (
               <li key={m.id} className="absolute top-1/2" style={{ left: `${x * 100}%` }}>
                 <button
@@ -74,10 +77,11 @@ export function Ribbon({ moments, positions, current, onPick, size = "compact" }
                   aria-hidden="true"
                   className={`pointer-events-none absolute top-[1.9rem] block text-[0.875rem] leading-tight ${
                     edge === "center" ? "-translate-x-1/2 text-center" : edge === "left" ? "-translate-x-[1.25rem] text-left" : "-translate-x-[calc(100%-1.25rem)] text-right"
-                  } ${on ? "text-ink" : "text-ink-soft"} ${titled ? "w-24" : "whitespace-nowrap"}`}
+                  } ${on ? "text-ink" : "text-ink-soft"} ${titled ? "" : "whitespace-nowrap"}`}
+                  style={titled ? { width: labelWidth } : undefined}
                 >
                   {m.time && <span className="num block font-mono">{m.time}</span>}
-                  {(large || !m.time) && <span className="mt-0.5 block">{m.title}</span>}
+                  {(large || !m.time) && <span className="mt-0.5 line-clamp-3">{m.title}</span>}
                 </span>
               </li>
             );

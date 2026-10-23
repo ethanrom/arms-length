@@ -1,14 +1,22 @@
 {
-  "recordedAt": "2026-10-23T08:38:14.808Z",
+  "recordedAt": "2026-10-23T09:06:21.597Z",
   "model": "Claude Sonnet 5.5 via Amazon Bedrock",
   "steps": [
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Presenting to the team\""
+      "label": "Running the vision model for \"Presenting to the team\"",
+      "moment": {
+        "title": "Presenting to the team",
+        "scene": "presenting"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Drinks with colleagues\""
+      "label": "Running the vision model for \"Drinks with colleagues\"",
+      "moment": {
+        "title": "Drinks with colleagues",
+        "scene": "conversation"
+      }
     },
     {
       "tool": "find_free_fix",
@@ -20,15 +28,15 @@
     },
     {
       "tool": "lightest_touch",
+      "label": "Reading your measured lightest touch for redness"
+    },
+    {
+      "tool": "lightest_touch",
       "label": "Reading your measured lightest touch for breakouts"
     },
     {
       "tool": "lightest_touch",
       "label": "Reading your measured lightest touch for dark spots"
-    },
-    {
-      "tool": "lightest_touch",
-      "label": "Reading your measured lightest touch for redness"
     },
     {
       "tool": "lightest_touch",
@@ -43,7 +51,6 @@
     "day": "Presenting to the team at 2pm in the big meeting room, then drinks with colleagues after work",
     "moments": [
       {
-        "time": "2pm",
         "title": "Presenting to the team",
         "scene": {
           "scene": "presenting",
@@ -51,19 +58,25 @@
           "viewer": "typical",
           "distanceM": 4
         },
+        "headline": {
+          "text": "From the back of the room, pores stay out of sight; a few other things show gently.",
+          "refs": [
+            "r1"
+          ]
+        },
         "observeRef": "r1",
         "assumptions": [
-          "I took the big meeting room as the presenting scene in its usual indoor light, with typical eyesight."
+          "I took the big meeting room as presenting to a room in office-style indoor light, seen by typical eyes."
         ],
         "notice": [
           {
-            "text": "At 4 m in indoor light, a typical viewer could pick out about 1 in 8 breakouts and about 1 in 7 dark spots.",
+            "text": "A typical viewer could pick out breakouts (about 1 in 8) and dark spots (about 1 in 7) at this distance.",
             "refs": [
               "r1"
             ]
           },
           {
-            "text": "Fine lines (about 1 in 13), redness, under-eye shadows and under-eye puffiness could also be noticeable.",
+            "text": "Redness, under-eye shadows and under-eye puffiness are noticeable to a typical viewer here.",
             "refs": [
               "r1"
             ]
@@ -71,7 +84,7 @@
         ],
         "outOfSight": [
           {
-            "text": "From 4 m in indoor light, pores stay out of sight for a typical viewer.",
+            "text": "Pores are out of sight for a typical viewer at 4 m in indoor light.",
             "refs": [
               "r1"
             ]
@@ -79,19 +92,19 @@
         ],
         "action": {
           "kind": "lightest_touch",
-          "ref": "r5",
+          "ref": "r6",
           "claim": {
-            "text": "No free change helps, so for breakouts 75% coverage, measured in indoor light at 1.5 m, gives most of the effect, not all of it.",
+            "text": "No free change was enough; for breakouts, 75% coverage gave most of the effect, not all of it, measured in indoor light at 1.5 m.",
             "refs": [
-              "r5",
+              "r6",
               "r3"
             ]
           }
         },
+        "time": null,
         "id": "m1"
       },
       {
-        "time": "after work",
         "title": "Drinks with colleagues",
         "scene": {
           "scene": "conversation",
@@ -99,19 +112,25 @@
           "viewer": "typical",
           "distanceM": 1
         },
+        "headline": {
+          "text": "Up close in evening light more shows, and no free change at that spot hides it.",
+          "refs": [
+            "r2"
+          ]
+        },
         "observeRef": "r2",
         "assumptions": [
-          "I took drinks as a standing conversation in dim evening light, with typical eyesight."
+          "I took drinks as a standing conversation in dim evening light, seen by typical eyes."
         ],
         "notice": [
           {
-            "text": "At 1 m in evening light at home, a typical viewer could pick out about a third of breakouts, most dark spots and about a third of fine lines.",
+            "text": "At 1 m in evening light at home, a typical viewer could pick out breakouts (about a third) and fine lines (about a third).",
             "refs": [
               "r2"
             ]
           },
           {
-            "text": "Pores (about 1 in 12), redness, under-eye shadows and under-eye puffiness could also be noticeable.",
+            "text": "Dark spots (most), pores (about 1 in 12) and redness are in sight, along with under-eye shadows and puffiness.",
             "refs": [
               "r2"
             ]
@@ -120,20 +139,21 @@
         "outOfSight": [],
         "action": {
           "kind": "lightest_touch",
-          "ref": "r6",
+          "ref": "r7",
           "claim": {
-            "text": "No free change helps, so for dark spots 100% coverage, measured in indoor light at 1.5 m, gives most of the effect, not all of it.",
+            "text": "No free change was enough; for dark spots, 100% coverage gave most of the effect, not all of it, measured in indoor light at 1.5 m.",
             "refs": [
-              "r6",
+              "r7",
               "r4"
             ]
           }
         },
+        "time": null,
         "id": "m2"
       }
     ],
     "summary": {
-      "text": "Pores stay out of sight at 4 m in indoor light while you present, and the evening drinks at 1 m in evening light at home leave more in sight.",
+      "text": "Pores stay out of sight when you present at 4 m in indoor light, while up close at drinks more is in sight and no free change hides it.",
       "refs": [
         "r1",
         "r2"
@@ -257,8 +277,8 @@
           }
         ]
       },
-      "r5": {
-        "ref": "r5",
+      "r6": {
+        "ref": "r6",
         "concern": "acne",
         "status": "not_met",
         "coveragePct": 75,
@@ -650,8 +670,8 @@
           }
         ]
       },
-      "r6": {
-        "ref": "r6",
+      "r7": {
+        "ref": "r7",
         "concern": "age_spot",
         "status": "not_met",
         "coveragePct": 100,
@@ -931,11 +951,11 @@
     "verified": true,
     "issues": [],
     "stats": {
-      "ms": 13746,
+      "ms": 16528,
       "turns": 4,
       "toolCalls": 9,
-      "inputTokens": 40341,
-      "outputTokens": 1681,
+      "inputTokens": 42030,
+      "outputTokens": 1720,
       "repairs": 0
     }
   }

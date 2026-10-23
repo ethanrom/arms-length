@@ -235,4 +235,23 @@ describe("verifyPlan headlines", () => {
     expect(codes(verifyPlan(withHeadline("This is very common."), base, prefs))).toEqual(["banned_word"]);
     expect(codes(verifyPlan(withHeadline("Your pores stay out of sight.", ["r9"]), base, prefs))).toEqual(["unknown_ref"]);
   });
+
+  it("does not let a headline shrink what shows when most marks of several concerns are in sight", () => {
+    const busy = stubObserve("r1");
+    busy.concerns = [
+      { concern: "pore", targetCount: 100, typicalShare: 0.9, typicalCount: 90, boundShare: 1, boundCount: 100, soft: false },
+      { concern: "acne", targetCount: 10, typicalShare: 0.8, typicalCount: 8, boundShare: 1, boundCount: 10, soft: false },
+      { concern: "dark_circle", targetCount: 2, typicalShare: 1, typicalCount: 2, boundShare: 1, boundCount: 2, soft: true },
+    ];
+    const results = resultsOf(busy);
+    expect(codes(verifyPlan(withHeadline("In bright sun, a few marks show up close."), results, prefs))).toEqual(["banned_word"]);
+    expect(codes(verifyPlan(withHeadline("Up close the marks are faint."), results, prefs))).toEqual(["banned_word"]);
+    // Plainly saying what shows is fine, and so is a minimiser where the observation backs it.
+    expect(verifyPlan(withHeadline("In bright sun, up close, most of what we measured shows."), results, prefs)).toEqual([]);
+    expect(verifyPlan(withHeadline("In evening light, only a few marks show."), base, prefs)).toEqual([]);
+    // One concern mostly in sight is not enough to forbid it (soft areas do not count).
+    const one = stubObserve("r1");
+    one.concerns[0] = { ...one.concerns[0], typicalShare: 0.9, typicalCount: 90 };
+    expect(verifyPlan(withHeadline("Across the table, a few marks show."), resultsOf(one), prefs)).toEqual([]);
+  });
 });

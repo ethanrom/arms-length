@@ -1,14 +1,22 @@
 {
-  "recordedAt": "2026-10-23T08:37:01.058Z",
+  "recordedAt": "2026-10-23T09:04:30.412Z",
   "model": "Claude Sonnet 5.5 via Amazon Bedrock",
   "steps": [
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Presenting to the team\""
+      "label": "Running the vision model for \"Presenting to the team\"",
+      "moment": {
+        "title": "Presenting to the team",
+        "scene": "presenting"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Drinks with colleagues\""
+      "label": "Running the vision model for \"Drinks with colleagues\"",
+      "moment": {
+        "title": "Drinks with colleagues",
+        "scene": "conversation"
+      }
     },
     {
       "tool": "find_free_fix",
@@ -43,7 +51,6 @@
     "day": "Presenting to the team at 2pm in the big meeting room, then drinks with colleagues after work",
     "moments": [
       {
-        "time": "2pm",
         "title": "Presenting to the team",
         "scene": {
           "scene": "presenting",
@@ -51,9 +58,16 @@
           "viewer": "typical",
           "distanceM": 4
         },
+        "headline": {
+          "text": "Breakouts and pores stay out of sight from the back; a softer light helps with the rest.",
+          "refs": [
+            "r1",
+            "r3"
+          ]
+        },
         "observeRef": "r1",
         "assumptions": [
-          "I took the big meeting room as presenting to a room, in the room's usual indoor light."
+          "I took the big meeting room as presenting to a room in office light."
         ],
         "notice": [
           {
@@ -63,7 +77,7 @@
             ]
           },
           {
-            "text": "Under-eye shadows and under-eye puffiness are noticeable to a typical viewer here.",
+            "text": "Under-eye shadows and under-eye puffiness are noticeable to a typical viewer here; I have no free tip for those.",
             "refs": [
               "r1"
             ]
@@ -81,16 +95,16 @@
           "kind": "free_fix",
           "ref": "r3",
           "claim": {
-            "text": "You could choose softer light (evening light at home) and sit or stand about 1 m further away, which leaves dark spots at about 1 in 13 and fine lines at about 1 in 94.",
+            "text": "Try this: choose softer light (evening light at home) and sit or stand about 1 m further away, which leaves dark spots at about 1 in 13.",
             "refs": [
               "r3"
             ]
           }
         },
+        "time": null,
         "id": "m1"
       },
       {
-        "time": "after work",
         "title": "Drinks with colleagues",
         "scene": {
           "scene": "conversation",
@@ -98,19 +112,27 @@
           "viewer": "typical",
           "distanceM": 1
         },
+        "headline": {
+          "text": "In close chat some marks can show; a light layer of makeup is the only thing that helps here.",
+          "refs": [
+            "r2",
+            "r4",
+            "r5"
+          ]
+        },
         "observeRef": "r2",
         "assumptions": [
-          "I took drinks as a standing conversation in dim evening light."
+          "I took drinks as a standing conversation in evening light at home."
         ],
         "notice": [
           {
-            "text": "At 1 m in evening light at home, a typical viewer could pick out breakouts (about 1 in 4), pores (about 1 in 4) and dark spots (nearly all).",
+            "text": "At 1 m in evening light at home, a typical viewer could pick out breakouts (about 1 in 4) and pores (about 1 in 4).",
             "refs": [
               "r2"
             ]
           },
           {
-            "text": "Fine lines (most) and under-eye shadows and puffiness are also in sight at that distance.",
+            "text": "Dark spots (nearly all) and fine lines (most) could also be picked out, along with under-eye shadows and puffiness.",
             "refs": [
               "r2"
             ]
@@ -121,21 +143,23 @@
           "kind": "lightest_touch",
           "ref": "r5",
           "claim": {
-            "text": "No free change is enough here, so for breakouts 75% coverage, measured in indoor light at 1.5 m, gives most of the effect, not all of it.",
+            "text": "No free change is enough here; for breakouts, 75% coverage gives most of the effect, measured in indoor light at 1.5 m.",
             "refs": [
               "r4",
               "r5"
             ]
           }
         },
+        "time": null,
         "id": "m2"
       }
     ],
     "summary": {
-      "text": "Breakouts and pores are out of sight for a typical viewer while presenting, and a small change in light and distance helps with dark spots and fine lines too.",
+      "text": "Breakouts and pores stay out of sight while you present, and a softer light and a bit more distance help with the rest; drinks are closer, so only light makeup helps.",
       "refs": [
         "r1",
-        "r3"
+        "r3",
+        "r4"
       ]
     },
     "results": {
@@ -833,11 +857,11 @@
     "verified": true,
     "issues": [],
     "stats": {
-      "ms": 13481,
+      "ms": 14862,
       "turns": 4,
       "toolCalls": 9,
-      "inputTokens": 39619,
-      "outputTokens": 1498,
+      "inputTokens": 41390,
+      "outputTokens": 1568,
       "repairs": 0
     }
   }

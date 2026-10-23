@@ -1,22 +1,38 @@
 {
-  "recordedAt": "2026-10-23T08:32:55.184Z",
+  "recordedAt": "2026-10-23T09:06:05.067Z",
   "model": "Claude Sonnet 5.5 via Amazon Bedrock",
   "steps": [
     {
       "tool": "video_call_frame",
-      "label": "Working out how you will look on the call for \"Morning standup\""
+      "label": "Working out how you will look on the call for \"Morning standup\"",
+      "moment": {
+        "title": "Morning standup",
+        "scene": "video_call"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Lunch with client\""
+      "label": "Running the vision model for \"Client lunch\"",
+      "moment": {
+        "title": "Client lunch",
+        "scene": "cafe_table"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Dinner date\""
+      "label": "Running the vision model for \"Dinner date\"",
+      "moment": {
+        "title": "Dinner date",
+        "scene": "dinner_table"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Morning standup\""
+      "label": "Running the vision model for \"Morning standup\"",
+      "moment": {
+        "title": "Morning standup",
+        "scene": "video_call"
+      }
     },
     {
       "tool": "find_free_fix",
@@ -24,7 +40,7 @@
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Lunch with client\""
+      "label": "Looking for a free change for \"Client lunch\""
     },
     {
       "tool": "find_free_fix",
@@ -51,7 +67,6 @@
     "day": "9am video standup on my laptop, lunch with a client by the window, dinner date at 7",
     "moments": [
       {
-        "time": "9am",
         "title": "Morning standup",
         "scene": {
           "scene": "video_call",
@@ -63,13 +78,19 @@
             "layout": "gallery"
           }
         },
+        "headline": {
+          "text": "On a small tile, breakouts, pores and fine lines don't come through the video.",
+          "refs": [
+            "r4"
+          ]
+        },
         "observeRef": "r4",
         "assumptions": [
-          "I took the laptop camera as about arm's length away and the team call as a gallery tile."
+          "Laptop camera at the usual arm's length, in a team call where you are one small tile."
         ],
         "notice": [
           {
-            "text": "A typical viewer could still pick out about 1 in 5 dark spots, plus redness and under-eye shadows and puffiness.",
+            "text": "Dark spots could be picked out, about 1 in 5, along with redness, under-eye shadows and under-eye puffiness.",
             "refs": [
               "r4"
             ]
@@ -77,15 +98,14 @@
         ],
         "outOfSight": [
           {
-            "text": "Breakouts, pores and fine lines come out as none for a typical viewer on this call, which looks like 4 m away.",
+            "text": "Breakouts, pores and fine lines are out of sight for a typical viewer at 4 m.",
             "refs": [
               "r4"
             ]
           },
           {
-            "text": "The video itself carries nothing finer than 2.4 mm, so 450 of 450 pores are below what the camera can show.",
+            "text": "The video cannot carry detail finer than 2.4 mm.",
             "refs": [
-              "r1",
               "r4"
             ]
           }
@@ -93,36 +113,43 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "No free change to the camera or layout hides the redness, so I have nothing to suggest here.",
+            "text": "No free change to the camera or layout is enough to hide redness here.",
             "refs": [
               "r5"
             ]
           }
         },
+        "time": null,
         "id": "m1"
       },
       {
-        "time": "lunch",
-        "title": "Lunch with client by the window",
+        "title": "Client lunch",
         "scene": {
           "scene": "cafe_table",
           "light": "daylight",
           "viewer": "typical",
           "distanceM": 0.8
         },
+        "headline": {
+          "text": "Bright window light at this close table shows detail, and no free change hides it.",
+          "refs": [
+            "r2",
+            "r6"
+          ]
+        },
         "observeRef": "r2",
         "assumptions": [
-          "I took the window seat as bright daylight and a small table as a coffee-table distance."
+          "Lunch by the window taken as bright sun, at a small coffee-style table."
         ],
         "notice": [
           {
-            "text": "At 80 cm in bright daylight a typical viewer could pick out nearly all breakouts, all dark spots, most pores and most fine lines.",
+            "text": "In bright daylight at 80 cm, a typical viewer could pick out breakouts (nearly all) and dark spots (all).",
             "refs": [
               "r2"
             ]
           },
           {
-            "text": "Redness, under-eye shadows and puffiness are also noticeable at that distance.",
+            "text": "Pores and fine lines (most), redness, under-eye shadows and puffiness could also be seen.",
             "refs": [
               "r2"
             ]
@@ -132,16 +159,16 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "No free change of seat distance or light was enough here, so the plan offers nothing for this lunch.",
+            "text": "No free change of seat or light is enough here, so this is simply what is visible.",
             "refs": [
               "r6"
             ]
           }
         },
+        "time": null,
         "id": "m2"
       },
       {
-        "time": "7",
         "title": "Dinner date",
         "scene": {
           "scene": "dinner_table",
@@ -149,9 +176,15 @@
           "viewer": "typical",
           "distanceM": 1.5
         },
+        "headline": {
+          "text": "In evening light across the table, pores are out of sight and most marks are faint.",
+          "refs": [
+            "r3"
+          ]
+        },
         "observeRef": "r3",
         "assumptions": [
-          "I took the dinner as evening light at home, seated across a table."
+          "Dinner taken as evening light at home, across a table."
         ],
         "notice": [
           {
@@ -161,7 +194,7 @@
             ]
           },
           {
-            "text": "Redness, under-eye shadows and puffiness are also noticeable.",
+            "text": "Redness, under-eye shadows and puffiness could also be seen.",
             "refs": [
               "r3"
             ]
@@ -169,7 +202,7 @@
         ],
         "outOfSight": [
           {
-            "text": "At 1.5 m in evening light at home, fewer than 1 in 100 pores can be picked out by a typical viewer.",
+            "text": "Pores are mostly out of sight at 1.5 m in evening light at home, fewer than 1 in 100 showing.",
             "refs": [
               "r3"
             ]
@@ -179,20 +212,21 @@
           "kind": "lightest_touch",
           "ref": "r9",
           "claim": {
-            "text": "If you want, 100% coverage on dark spots, measured in indoor light at 1.5 m, gives most of the effect, though not all of it.",
+            "text": "For dark spots, 100% coverage was measured in indoor light at 1.5 m, giving most of the effect, not all of it.",
             "refs": [
               "r9"
             ]
           }
         },
+        "time": null,
         "id": "m3"
       }
     ],
     "summary": {
-      "text": "Across the day, pores and fine lines are out of sight on the call, and at dinner fewer than 1 in 100 pores can be picked out; the rest is mostly dark spots and redness.",
+      "text": "On the standup call, breakouts, pores and fine lines are out of sight; lunch in bright daylight shows the most, and no free change hides it.",
       "refs": [
-        "r3",
-        "r4"
+        "r4",
+        "r2"
       ]
     },
     "results": {
@@ -339,34 +373,6 @@
             "soft": true,
             "belowCameraCount": 0
           }
-        ]
-      },
-      "r1": {
-        "ref": "r1",
-        "call": {
-          "device": "laptop",
-          "cameraDistanceCm": 50,
-          "layout": "gallery"
-        },
-        "equivalentDistanceM": 3.6383555675108967,
-        "resolutionFloorMm": 2.358193423386693,
-        "quotes": {
-          "device": "laptop",
-          "layout": "a small gallery tile",
-          "cameraDistance": "50 cm",
-          "equivalentDistance": "4 m",
-          "resolutionFloor": "2.4 mm",
-          "viewerDistance": "60 cm",
-          "tileHeight": "7 cm"
-        },
-        "assumptions": [
-          "Project assumption: a built-in laptop webcam is roughly 80 degrees diagonal, which on a 16:9 frame is about 46 degrees vertical.",
-          "Project assumption: about 50 cm, the near end of the 50 to 100 cm usually advised for monitor distance (OSHA computer workstations guidance). The most you can sit back and still reach the keys is taken as 90 cm.",
-          "Project assumption: they sit about 60 cm from a laptop screen, inside the 50 to 100 cm usually advised for monitor distance (OSHA computer workstations guidance).",
-          "Project assumption: on a 15-inch laptop screen (about 19 cm tall) a speaker view fills about 17 cm and a gallery tile of four to nine people about 7 cm.",
-          "Project assumption: calls send about 720 rows to a large tile (HD) and about 360 rows to a small gallery tile, as video-call services scale each person's picture to the tile it fills. The smallest detail the video carries is taken as two rows of pixels.",
-          "The whole camera frame is assumed to fill the height of the tile.",
-          "Video compression hides more than this removes, so the distance is a cautious estimate: the real picture is, if anything, softer."
         ]
       },
       "r5": {
@@ -1198,11 +1204,11 @@
     "verified": true,
     "issues": [],
     "stats": {
-      "ms": 20767,
+      "ms": 19218,
       "turns": 5,
       "toolCalls": 11,
-      "inputTokens": 55734,
-      "outputTokens": 2434,
+      "inputTokens": 57941,
+      "outputTokens": 2375,
       "repairs": 0
     }
   }

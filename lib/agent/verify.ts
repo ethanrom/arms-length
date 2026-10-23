@@ -4,7 +4,7 @@
  * points at a result of the right kind. The model is never trusted with a number; this is what makes "every number comes
  * from the model" true.
  */
-import type { Claim, PlannedMoment, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
+import type { Claim, ObserveResult, PlannedMoment, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
 import { UI_LISTS } from "@/lib/copy/banned";
 import { lintText } from "@/lib/copy/lint";
 import { isFreeFix, isLightestTouch, isObserve, isWorthIt, quotesFor } from "./results";
@@ -30,6 +30,8 @@ const UNSUPPORTED = /\b(?:ordinary|common|commonly|normal|normally|usual|usually
 const BOUND_WORDING = /\b(?:at most|up to|sharpest)\b/i;
 /** A full stop (or ! or ?) followed by a new sentence. A decimal point has no space after it. */
 const ONE_SENTENCE_BREAK = /[.!?]["')\]]*\s+\p{Lu}/u;
+/** Words that shrink what shows. A headline may not use them where most marks of several concerns are in sight (no unsupported reassurance). */
+const MINIMISING = /\b(?:a few|only a few|a little|barely|hardly|faint|faintly|slight|slightly|subtle|gently|mild|mildly|soften|softens|fade|fades)\b/i;
 const BOUND_KEY = /\.bound(?:Count)?$/;
 
 const NUMBER = /\d+(?:\.\d+)?/g;
@@ -164,11 +166,19 @@ function checkScene(m: DraftMoment, momentId: string, results: Results): Verifie
   return [];
 }
 
+/** How many mark-type concerns (not large soft areas) have most of their targets in sight for a typical viewer: the "most" band of the quotes and above. */
+const mostlyInSight = (observed: ObserveResult): number => observed.concerns.filter((c) => !c.soft && c.typicalShare > 0.5).length;
+
 /** A moment's headline is required in a new plan: one short sentence, checked like any claim (its numbers rest on the moment's observation). */
 function checkHeadline(m: DraftMoment, momentId: string, results: Results): VerifierIssue[] {
   if (!m.headline) return [{ momentId, code: "schema", detail: "The moment needs a headline: one warm, short sentence for its picture." }];
   const issues = checkClaim(m.headline, momentId, "The headline", [m.observeRef], results, MAX_HEADLINE_CHARS);
   if (ONE_SENTENCE_BREAK.test(m.headline.text)) issues.push({ momentId, code: "schema", detail: "The headline must be one sentence." });
+  const observed = results[m.observeRef];
+  const minimised = m.headline.text.match(MINIMISING);
+  if (minimised && isObserve(observed) && mostlyInSight(observed) >= 2) {
+    issues.push({ momentId, code: "banned_word", detail: `The headline says "${minimised[0]}", but at this moment most of the marks of ${mostlyInSight(observed)} concerns are in sight for a typical viewer. Say what is out of sight, or say plainly what shows.` });
+  }
   return issues;
 }
 

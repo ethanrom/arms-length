@@ -1,14 +1,22 @@
 {
-  "recordedAt": "2026-10-23T08:38:27.720Z",
+  "recordedAt": "2026-10-23T09:06:34.599Z",
   "model": "Claude Sonnet 5.5 via Amazon Bedrock",
   "steps": [
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Outdoor ceremony\""
+      "label": "Running the vision model for \"Outdoor ceremony\"",
+      "moment": {
+        "title": "Outdoor ceremony",
+        "scene": "conversation"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Dinner and dancing\""
+      "label": "Running the vision model for \"Dinner and dancing\"",
+      "moment": {
+        "title": "Dinner and dancing",
+        "scene": "dinner_table"
+      }
     },
     {
       "tool": "find_free_fix",
@@ -28,15 +36,7 @@
     },
     {
       "tool": "lightest_touch",
-      "label": "Reading your measured lightest touch for fine lines"
-    },
-    {
-      "tool": "lightest_touch",
       "label": "Reading your measured lightest touch for redness"
-    },
-    {
-      "tool": "lightest_touch",
-      "label": "Reading your measured lightest touch for pores"
     },
     {
       "tool": "final_answer",
@@ -47,7 +47,6 @@
     "day": "Wedding guest: outdoor ceremony in the afternoon sun, then dinner and dancing in the evening",
     "moments": [
       {
-        "time": "afternoon",
         "title": "Outdoor ceremony",
         "scene": {
           "scene": "conversation",
@@ -55,19 +54,26 @@
           "viewer": "typical",
           "distanceM": 1
         },
+        "headline": {
+          "text": "In bright sun up close, a few things show; a light touch of makeup is the one option that helps.",
+          "refs": [
+            "r1",
+            "r3"
+          ]
+        },
         "observeRef": "r1",
         "assumptions": [
-          "I took the ceremony as a standing conversation in bright sun outdoors."
+          "I took the afternoon sun as bright daylight and a standing conversation as the closest setting."
         ],
         "notice": [
           {
-            "text": "In bright daylight at 1 m, a typical viewer could pick out most breakouts and most fine lines.",
+            "text": "At 1 m in bright daylight, a typical viewer could pick out most breakouts, all dark spots, most fine lines and noticeable redness.",
             "refs": [
               "r1"
             ]
           },
           {
-            "text": "At that distance and light, all dark spots and redness are noticeable, and under-eye shadows and puffiness are noticeable too.",
+            "text": "Under-eye shadows and under-eye puffiness are also noticeable to a typical viewer here.",
             "refs": [
               "r1"
             ]
@@ -76,19 +82,19 @@
         "outOfSight": [],
         "action": {
           "kind": "lightest_touch",
-          "ref": "r6",
+          "ref": "r5",
           "claim": {
-            "text": "No free change helps here, so for dark spots the lightest touch is 100% coverage, measured in indoor light at 1.5 m, which gives most of the effect, not all of it.",
+            "text": "Moving or changing light does not help, so for breakouts 75% coverage was measured in indoor light at 1.5 m, giving most of the effect, not all of it.",
             "refs": [
-              "r6",
-              "r3"
+              "r3",
+              "r5"
             ]
           }
         },
+        "time": null,
         "id": "m1"
       },
       {
-        "time": "evening",
         "title": "Dinner and dancing",
         "scene": {
           "scene": "dinner_table",
@@ -96,19 +102,25 @@
           "viewer": "typical",
           "distanceM": 1.5
         },
+        "headline": {
+          "text": "Pores are out of sight across the table in evening light, and most other marks are far less clear.",
+          "refs": [
+            "r2"
+          ]
+        },
         "observeRef": "r2",
         "assumptions": [
-          "I took dinner as sitting across a table in dim evening light at home."
+          "I took the dinner as evening light at home, seated across a table."
         ],
         "notice": [
           {
-            "text": "At 1.5 m, a typical viewer could pick out about 1 in 7 breakouts, about half of dark spots and about 1 in 5 fine lines.",
+            "text": "At 1.5 m in evening light at home, a typical viewer could pick out about 1 in 7 breakouts, about half of dark spots and about 1 in 5 fine lines.",
             "refs": [
               "r2"
             ]
           },
           {
-            "text": "Redness, under-eye shadows and under-eye puffiness are noticeable at that distance.",
+            "text": "Redness, under-eye shadows and under-eye puffiness are noticeable to a typical viewer.",
             "refs": [
               "r2"
             ]
@@ -116,7 +128,7 @@
         ],
         "outOfSight": [
           {
-            "text": "In evening light at home at 1.5 m, pores are fewer than 1 in 100 for a typical viewer.",
+            "text": "Pores are mostly out of sight here, with fewer than 1 in 100 picked out by a typical viewer.",
             "refs": [
               "r2"
             ]
@@ -124,22 +136,25 @@
         ],
         "action": {
           "kind": "lightest_touch",
-          "ref": "r5",
+          "ref": "r6",
           "claim": {
-            "text": "No free change helps here, so for breakouts the lightest touch is 75% coverage, measured in indoor light at 1.5 m, which gives most of the effect, not all of it.",
+            "text": "No free change helps, so for dark spots 100% coverage was measured in indoor light at 1.5 m, giving most of the effect, not all of it.",
             "refs": [
-              "r5",
-              "r4"
+              "r4",
+              "r6"
             ]
           }
         },
+        "time": null,
         "id": "m2"
       }
     ],
     "summary": {
-      "text": "Nothing is fully out of sight at either moment, but by the dinner table in evening light at home, pores drop to fewer than 1 in 100 for a typical viewer.",
+      "text": "Across the day little stays fully out of sight up close, though pores fade at dinner in evening light at home; makeup is the only option the tools found.",
       "refs": [
-        "r2"
+        "r2",
+        "r3",
+        "r4"
       ]
     },
     "results": {
@@ -258,29 +273,6 @@
             "boundCount": 5,
             "soft": true
           }
-        ]
-      },
-      "r6": {
-        "ref": "r6",
-        "concern": "age_spot",
-        "status": "not_met",
-        "coveragePct": 100,
-        "measuredAtM": 1.5,
-        "baselineShare": 0.96875,
-        "afterShare": 0.5625,
-        "quotes": {
-          "coverage": "100% coverage",
-          "measuredAt": "measured in indoor light at 1.5 m",
-          "goal": "at most 1 in 10 picked out by perfect eyes",
-          "result": "most of the effect, not all of it",
-          "before": "at most nearly all",
-          "after": "at most 6 in 10"
-        },
-        "assumptions": [
-          "Measured in indoor light, at 1.5 m, with a typical viewer looking right at it.",
-          "This is a virtual try-on of foundation, run once on your photo; real makeup, shade and light will differ.",
-          "Coverage is the try-on's own scale from 0 to 100, not a property of any product on a shelf.",
-          "The goal is that even perfect eyes could pick out at most 1 in 10 of them across a table; where makeup cannot reach that, the coverage shown is where most of the effect is reached."
         ]
       },
       "r3": {
@@ -537,6 +529,29 @@
           }
         ]
       },
+      "r5": {
+        "ref": "r5",
+        "concern": "acne",
+        "status": "not_met",
+        "coveragePct": 75,
+        "measuredAtM": 1.5,
+        "baselineShare": 0.6,
+        "afterShare": 0.3,
+        "quotes": {
+          "coverage": "75% coverage",
+          "measuredAt": "measured in indoor light at 1.5 m",
+          "goal": "at most 1 in 10 picked out by perfect eyes",
+          "result": "most of the effect, not all of it",
+          "before": "at most 6 in 10",
+          "after": "at most 3 in 10"
+        },
+        "assumptions": [
+          "Measured in indoor light, at 1.5 m, with a typical viewer looking right at it.",
+          "This is a virtual try-on of foundation, run once on your photo; real makeup, shade and light will differ.",
+          "Coverage is the try-on's own scale from 0 to 100, not a property of any product on a shelf.",
+          "The goal is that even perfect eyes could pick out at most 1 in 10 of them across a table; where makeup cannot reach that, the coverage shown is where most of the effect is reached."
+        ]
+      },
       "r2": {
         "ref": "r2",
         "quotes": {
@@ -652,29 +667,6 @@
             "boundCount": 5,
             "soft": true
           }
-        ]
-      },
-      "r5": {
-        "ref": "r5",
-        "concern": "acne",
-        "status": "not_met",
-        "coveragePct": 75,
-        "measuredAtM": 1.5,
-        "baselineShare": 0.6,
-        "afterShare": 0.3,
-        "quotes": {
-          "coverage": "75% coverage",
-          "measuredAt": "measured in indoor light at 1.5 m",
-          "goal": "at most 1 in 10 picked out by perfect eyes",
-          "result": "most of the effect, not all of it",
-          "before": "at most 6 in 10",
-          "after": "at most 3 in 10"
-        },
-        "assumptions": [
-          "Measured in indoor light, at 1.5 m, with a typical viewer looking right at it.",
-          "This is a virtual try-on of foundation, run once on your photo; real makeup, shade and light will differ.",
-          "Coverage is the try-on's own scale from 0 to 100, not a property of any product on a shelf.",
-          "The goal is that even perfect eyes could pick out at most 1 in 10 of them across a table; where makeup cannot reach that, the coverage shown is where most of the effect is reached."
         ]
       },
       "r4": {
@@ -930,16 +922,39 @@
             "soft": true
           }
         ]
+      },
+      "r6": {
+        "ref": "r6",
+        "concern": "age_spot",
+        "status": "not_met",
+        "coveragePct": 100,
+        "measuredAtM": 1.5,
+        "baselineShare": 0.96875,
+        "afterShare": 0.5625,
+        "quotes": {
+          "coverage": "100% coverage",
+          "measuredAt": "measured in indoor light at 1.5 m",
+          "goal": "at most 1 in 10 picked out by perfect eyes",
+          "result": "most of the effect, not all of it",
+          "before": "at most nearly all",
+          "after": "at most 6 in 10"
+        },
+        "assumptions": [
+          "Measured in indoor light, at 1.5 m, with a typical viewer looking right at it.",
+          "This is a virtual try-on of foundation, run once on your photo; real makeup, shade and light will differ.",
+          "Coverage is the try-on's own scale from 0 to 100, not a property of any product on a shelf.",
+          "The goal is that even perfect eyes could pick out at most 1 in 10 of them across a table; where makeup cannot reach that, the coverage shown is where most of the effect is reached."
+        ]
       }
     },
     "verified": true,
     "issues": [],
     "stats": {
-      "ms": 12909,
+      "ms": 12999,
       "turns": 4,
-      "toolCalls": 10,
-      "inputTokens": 40728,
-      "outputTokens": 1655,
+      "toolCalls": 8,
+      "inputTokens": 42085,
+      "outputTokens": 1622,
       "repairs": 0
     }
   }

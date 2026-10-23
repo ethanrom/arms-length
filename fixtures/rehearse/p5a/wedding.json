@@ -1,18 +1,30 @@
 {
-  "recordedAt": "2026-10-23T08:38:42.230Z",
+  "recordedAt": "2026-10-23T09:07:22.587Z",
   "model": "Claude Sonnet 5.5 via Amazon Bedrock",
   "steps": [
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Outdoor ceremony\""
+      "label": "Running the vision model for \"Outdoor ceremony\"",
+      "moment": {
+        "title": "Outdoor ceremony",
+        "scene": "conversation"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Dinner\""
+      "label": "Running the vision model for \"Evening dinner\"",
+      "moment": {
+        "title": "Evening dinner",
+        "scene": "dinner_table"
+      }
     },
     {
       "tool": "observe_scene",
-      "label": "Running the vision model for \"Dancing\""
+      "label": "Running the vision model for \"Dancing\"",
+      "moment": {
+        "title": "Dancing",
+        "scene": "close_talk"
+      }
     },
     {
       "tool": "find_free_fix",
@@ -20,7 +32,7 @@
     },
     {
       "tool": "find_free_fix",
-      "label": "Looking for a free change for \"Dinner\""
+      "label": "Looking for a free change for \"Evening dinner\""
     },
     {
       "tool": "find_free_fix",
@@ -58,19 +70,26 @@
           "viewer": "typical",
           "distanceM": 1
         },
+        "headline": {
+          "text": "In bright sun, up close, more shows; no free change hides it, and that is simply what the measurements say.",
+          "refs": [
+            "r1",
+            "r4"
+          ]
+        },
         "observeRef": "r1",
         "assumptions": [
-          "I took the ceremony as a standing conversation in bright sun outdoors."
+          "I took the afternoon sun as bright daylight and a standing conversation as the setting."
         ],
         "notice": [
           {
-            "text": "At 1 m in bright daylight, a typical viewer could pick out breakouts (3 of 3), dark spots (53 of 53) and fine lines (80 of 107).",
+            "text": "At 1 m in bright daylight, a typical viewer could pick out breakouts (all) and dark spots (all).",
             "refs": [
               "r1"
             ]
           },
           {
-            "text": "Under-eye shadows and under-eye puffiness are also in sight at 1 m in bright daylight.",
+            "text": "Pores (about half) and fine lines (most) could also be seen, along with under-eye shadows and under-eye puffiness.",
             "refs": [
               "r1"
             ]
@@ -80,7 +99,7 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "No free change helps here: even 1.2 m apart in window or overcast light, breakouts (all) would still be picked out.",
+            "text": "Even 1.2 m apart in window or overcast light, breakouts (all), dark spots (all), pores (about 1 in 3) and fine lines (most) would still be picked out.",
             "refs": [
               "r4"
             ]
@@ -90,26 +109,26 @@
         "id": "m1"
       },
       {
-        "title": "Dinner",
+        "title": "Evening dinner",
         "scene": {
           "scene": "dinner_table",
           "light": "home",
           "viewer": "typical",
           "distanceM": 1.5
         },
+        "headline": {
+          "text": "Across the table in evening light, breakouts and pores stay out of sight.",
+          "refs": [
+            "r2"
+          ]
+        },
         "observeRef": "r2",
         "assumptions": [
-          "I took dinner as sitting across a table in evening light at home."
+          "I took the dinner as a table seat in dim evening light at home."
         ],
         "notice": [
           {
-            "text": "At 1.5 m, dark spots (24 of 53) could be picked out by a typical viewer, plus under-eye shadows and puffiness.",
-            "refs": [
-              "r2"
-            ]
-          },
-          {
-            "text": "Fine lines are faint, with 6 of 107 in sight.",
+            "text": "At 1.5 m in evening light at home, dark spots (about half) could be picked out, plus under-eye shadows and puffiness.",
             "refs": [
               "r2"
             ]
@@ -117,7 +136,7 @@
         ],
         "outOfSight": [
           {
-            "text": "At 1.5 m in evening light at home, breakouts (0 of 3) and pores (0 of 250) are out of sight for a typical viewer.",
+            "text": "At 1.5 m in evening light at home, a typical viewer would see none of the breakouts and none of the pores.",
             "refs": [
               "r2"
             ]
@@ -126,7 +145,7 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "No free change helps with the dark spots here: even 2.1 m apart, dark spots (about 1 in 9) would still be picked out.",
+            "text": "Even 2.1 m apart, dark spots (about 1 in 9) would still be picked out, so no free change is enough here.",
             "refs": [
               "r5"
             ]
@@ -143,13 +162,26 @@
           "viewer": "typical",
           "distanceM": 0.5
         },
+        "headline": {
+          "text": "Dancing up close, more detail shows, and no free change hides it.",
+          "refs": [
+            "r3",
+            "r6"
+          ]
+        },
         "observeRef": "r3",
         "assumptions": [
-          "I took dancing as close contact in evening light at home."
+          "I took dancing as a close moment in evening light at home."
         ],
         "notice": [
           {
-            "text": "At 50 cm in evening light at home, a typical viewer could pick out breakouts (3 of 3), dark spots (53 of 53), pores (112 of 250) and fine lines (58 of 107).",
+            "text": "At 50 cm in evening light at home, breakouts (all) and dark spots (all) could be seen by a typical viewer.",
+            "refs": [
+              "r3"
+            ]
+          },
+          {
+            "text": "Pores (about half) and fine lines (about half) could also be seen, along with under-eye shadows and puffiness.",
             "refs": [
               "r3"
             ]
@@ -159,7 +191,7 @@
         "action": {
           "kind": "none",
           "claim": {
-            "text": "No free change helps here: even 75 cm apart, breakouts (most) and dark spots (most) would still be picked out.",
+            "text": "Even 75 cm apart, breakouts (most), dark spots (most), pores (about 1 in 8) and fine lines (about a third) would still be picked out.",
             "refs": [
               "r6"
             ]
@@ -170,7 +202,7 @@
       }
     ],
     "summary": {
-      "text": "Dinner is the easiest moment: at 1.5 m in evening light at home, breakouts and pores are out of sight, while the ceremony and dancing are close enough to show more.",
+      "text": "At dinner, breakouts and pores stay out of sight at 1.5 m in evening light at home, while the sunny ceremony and close dancing show more.",
       "refs": [
         "r2"
       ]
@@ -1176,11 +1208,11 @@
     "verified": true,
     "issues": [],
     "stats": {
-      "ms": 14507,
+      "ms": 17046,
       "turns": 4,
       "toolCalls": 11,
-      "inputTokens": 43148,
-      "outputTokens": 1943,
+      "inputTokens": 45208,
+      "outputTokens": 2181,
       "repairs": 0
     }
   }

@@ -226,7 +226,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
             <div
               className={`w-[46%] shrink-0 overflow-hidden rounded-lg border bg-paper transition-shadow duration-150 md:w-full ${mirror ? "border-ink shadow-[0_0_0_2px_var(--ink)]" : "border-ink/30"}`}
             >
-              <Stage key={moment.id} closer scene={shown.input.scene} light={shown.input.light} call={shown.input.call} observe={shown} photo={photo} label={`${moment.title}: as they see it, up close`} />
+              <Stage key={moment.id} closer scene={shown.input.scene} light={shown.input.light} call={shown.input.call ?? moment.scene.call} observe={shown} photo={photo} label={`${moment.title}: as they see it, up close`} />
               <figcaption className="hidden px-2 py-1 text-[0.875rem] leading-tight md:block">As they see it, up close</figcaption>
             </div>
             <p aria-hidden="true" className="text-[0.9375rem] leading-snug text-ink-soft md:hidden">

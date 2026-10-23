@@ -36,7 +36,6 @@ export function renderReadme(s: Summary): string {
   const ci1 = (r: [number, number] | null | undefined): string => (r ? `${pctSmart(r[0])} to ${pctSmart(r[1])}` : "-");
   const fence = "```";
   const noticeableAll = wo.tally.noticeable;
-  const outOfSightAll = wo.tally.outOfSight;
   const absentTotal = un.saidAbsentButFound;
   const e = s.effortCheck;
 

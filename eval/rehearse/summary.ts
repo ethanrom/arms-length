@@ -17,7 +17,7 @@ import { DAYS, FACES, HIGH_EFFORT_DAYS, type EvalDay } from "./days";
 import { CONCERN_IDS, parseReply, type ParsedMoment } from "./prompts";
 import {
   clusterBootstrap, consistency, judgeMoment, pearson, planVerdicts, rates, sumConsistency, tally, truthOf,
-  type Consistency, type Judgment, type MomentChoice, type Rates, type Stand, type Tally,
+  type Consistency, type Judgment, type MomentChoice, type Rates, type Stand,
 } from "./score";
 import { MAX_CALLS, MAX_COST_USD, PRICE_PER_M, RAW_DIR, readJson, spendSoFar, withPath, withoutPath, type Arm, type Meter, type Outcome, type WithRecord, type WithoutRecord } from "./store";
 import { faceOf, sceneInputOf, truthFor } from "./truth";

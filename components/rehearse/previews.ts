@@ -4,7 +4,7 @@ import { defaultCall, resolveScene } from "@/lib/rehearse";
 /** The three pictures on the results page: the same scenes the day uses, at the table's own distances and lights. */
 export const PREVIEW_SCENES: readonly { key: string; label: string; input: SceneInput }[] = [
   { key: "call", label: "On a laptop call", input: { scene: "video_call", call: defaultCall("laptop") } },
-  { key: "lunch", label: "Across a lunch table", input: { scene: "dinner_table", light: "overcast" } },
+  { key: "coffee", label: "Coffee at a small table", input: { scene: "cafe_table", light: "overcast" } },
   { key: "dinner", label: "Dinner at home", input: { scene: "dinner_table", light: "home" } },
 ];
 

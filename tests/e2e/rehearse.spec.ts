@@ -291,6 +291,32 @@ test("holding the button shows your mirror, with the mouse and with the keyboard
   await expect(frame).toHaveAttribute("data-mode", "theirs");
 });
 
+test("beside the stage, the same face as they see it up close; held against your mirror it stays on their view", async ({ page }) => {
+  await serve(page, ndjson(VERIFIED_PLAN));
+  await reachDay(page);
+  const inset = page.getByTestId("closer-inset");
+  await expect(inset).toBeVisible();
+  await expect(inset).toContainText("As they see it, up close");
+  await expect(inset.getByRole("img")).toHaveAccessibleName(/Video standup: as they see it, up close/);
+  const frame = (await stage(page).boundingBox())!;
+  const small = (await inset.boundingBox())!;
+  // About a third of the stage, in its lower right corner.
+  expect(small.width / frame.width).toBeGreaterThan(0.26);
+  expect(small.width / frame.width).toBeLessThan(0.34);
+  expect(small.x + small.width).toBeLessThanOrEqual(frame.x + frame.width);
+  expect(small.y + small.height).toBeLessThanOrEqual(frame.y + frame.height);
+
+  const hold = page.getByRole("button", { name: "Hold to see your mirror" });
+  const box = (await hold.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(page.getByTestId("rehearse-stage")).toHaveAttribute("data-mode", "mirror");
+  await expect(inset).toBeVisible();
+  await expect(inset.getByRole("img")).toHaveAccessibleName(/as they see it, up close/);
+  await page.mouse.up();
+  await expect(page.getByTestId("rehearse-stage")).toHaveAttribute("data-mode", "theirs");
+});
+
 test("a moment with a tip can be seen as is and with the tip", async ({ page }) => {
   await serve(page, ndjson(VERIFIED_PLAN));
   await reachDay(page);
@@ -507,9 +533,12 @@ test.describe("phone", () => {
 
     await askWorkday(page);
     await expect(page.getByTestId("rehearse-day")).toBeVisible();
-    const frame = (await page.getByTestId("rehearse-stage").boundingBox())!;
+    const frame = (await stage(page).boundingBox())!;
     expect(frame.x).toBeLessThanOrEqual(0.5);
     expect(frame.width).toBeGreaterThanOrEqual(389);
+    // The up-close inset sits under the stage on a phone, not over the face.
+    const inset = (await page.getByTestId("closer-inset").boundingBox())!;
+    expect(inset.y).toBeGreaterThanOrEqual(frame.y + frame.height - 1);
 
     const farthest = await page.evaluate(() => Math.max(...Array.from(document.querySelectorAll("dialog *")).map((el) => el.getBoundingClientRect().right)));
     expect(farthest).toBeLessThanOrEqual(390.5);

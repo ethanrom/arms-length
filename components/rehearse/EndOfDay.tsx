@@ -59,7 +59,7 @@ export function EndOfDay({ plan, ribbon, positions, onPick, onReplay, onFollowUp
         <Ribbon moments={ribbon} positions={positions} current={null} onPick={onPick} size="large" />
       </div>
 
-      <p className="serif mt-4 text-[clamp(1.75rem,1.2rem+2.4vw,2.875rem)] leading-[1.12] tracking-[-0.015em]" style={{ fontWeight: 360 }} data-testid="rehearse-summary">
+      <p className={`serif mt-4 leading-[1.12] tracking-[-0.015em] ${plan.summary.text.length > 110 ? "text-[clamp(1.5rem,1.1rem+1.6vw,2.25rem)]" : "text-[clamp(1.75rem,1.2rem+2.4vw,2.875rem)]"}`} style={{ fontWeight: 360 }} data-testid="rehearse-summary">
         {plan.summary.text}
       </p>
 

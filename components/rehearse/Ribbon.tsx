@@ -40,9 +40,11 @@ const words = (m: RibbonMoment, i: number, n: number) => `Moment ${i + 1} of ${n
  */
 export function Ribbon({ moments, positions, current, onPick, size = "compact" }: RibbonProps) {
   const large = size === "large";
+  // Moments the user gave no time for are named by their title instead, in up to two short lines.
+  const titled = large || moments.some((m) => !m.time);
   return (
     <nav aria-label="The day, moment by moment" data-testid="ribbon" className="px-1">
-      <div className={`relative ${large ? "pb-16" : "pb-8"}`}>
+      <div className={`relative ${large ? "pb-16" : titled ? "pb-14" : "pb-8"}`}>
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-11 border border-rule" style={{ background: `linear-gradient(to right, ${SKY})` }} />
         <div aria-hidden="true" className="absolute inset-x-0 top-[1.375rem] h-px bg-ink/70" />
         <ol className="relative h-11">
@@ -72,10 +74,10 @@ export function Ribbon({ moments, positions, current, onPick, size = "compact" }
                   aria-hidden="true"
                   className={`pointer-events-none absolute top-[1.9rem] block text-[0.875rem] leading-tight ${
                     edge === "center" ? "-translate-x-1/2 text-center" : edge === "left" ? "-translate-x-[1.25rem] text-left" : "-translate-x-[calc(100%-1.25rem)] text-right"
-                  } ${on ? "text-ink" : "text-ink-soft"} ${large ? "w-28" : "whitespace-nowrap"}`}
+                  } ${on ? "text-ink" : "text-ink-soft"} ${titled ? "w-24" : "whitespace-nowrap"}`}
                 >
                   {m.time && <span className="num block font-mono">{m.time}</span>}
-                  {large && <span className="mt-0.5 block">{m.title}</span>}
+                  {(large || !m.time) && <span className="mt-0.5 block">{m.title}</span>}
                 </span>
               </li>
             );

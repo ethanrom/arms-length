@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { loopTab } from "./focus";
 import type { DayPlan, PlannedMoment } from "@/lib/contracts/rehearse";
 import { SCENE_FOV_DEG } from "./stage/pov";
 import { HowWeKnow } from "./HowWeKnow";
@@ -32,12 +33,18 @@ export function Drawer({ plan, moment, onClose }: DrawerProps) {
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
   }, [onClose]);
+  const root = useRef<HTMLElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus({ preventScroll: true }), []);
   const call = moment.scene.scene === "video_call";
 
   return (
     <section
+      ref={root}
+      onKeyDown={(e) => {
+        // The drawer is its own trap: the page behind it, and the dialog's cross, are out of reach while it is open.
+        if (root.current && loopTab(e, root.current)) e.stopPropagation();
+      }}
       aria-labelledby="rehearse-know-title"
       data-testid="rehearse-drawer"
       className={`absolute inset-y-0 right-0 z-20 flex w-[min(30rem,100%)] flex-col border-l border-ink bg-paper transition-transform duration-300 ease-out ${shown ? "translate-x-0" : "translate-x-full"}`}

@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
+import { loopTab } from "./focus";
 
 interface ExperienceDialogProps {
   onClose: () => void;
-  /** Moves keyboard focus here when the dialog opens and whenever `focusKey` changes (a new part of the experience). */
   children: ReactNode;
-  /** Changes when the experience moves to a new part (ask, building, the day), so focus and screen readers follow. */
+  /**
+   * Changes when the experience moves to a new part (ask, building, the day). Focus then goes to the first element marked
+   * `data-autofocus`, so a screen reader hears the new part and the keyboard starts in it.
+   */
   focusKey: string;
 }
-
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 /**
  * The full-screen shell. A native modal <dialog> gives the top layer, the inert page behind it and Esc; this adds what it
@@ -48,31 +49,13 @@ export function ExperienceDialog({ onClose, children, focusKey }: ExperienceDial
     target?.focus({ preventScroll: true });
   }, [focusKey]);
 
-  const loop = (e: KeyboardEvent<HTMLDialogElement>) => {
-    if (e.key !== "Tab") return;
-    const dialog = ref.current;
-    if (!dialog) return;
-    const stops = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.closest("[inert]") && el.getClientRects().length > 0);
-    if (stops.length === 0) return;
-    const first = stops[0];
-    const last = stops[stops.length - 1];
-    const at = document.activeElement;
-    if (e.shiftKey && (at === first || !dialog.contains(at))) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && (at === last || !dialog.contains(at))) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
-
   return (
     <dialog
       ref={ref}
       aria-modal="true"
       aria-labelledby={titleId}
       data-testid="rehearse-dialog"
-      onKeyDown={loop}
+      onKeyDown={(e) => ref.current && loopTab(e, ref.current)}
       onCancel={(e) => {
         // Esc: the experience decides what closing means (a drawer first, then the whole thing).
         e.preventDefault();

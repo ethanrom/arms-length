@@ -82,7 +82,7 @@ export function Ask({ prefs, onPrefs, onSubmit, error, day, onDay }: AskProps) {
         aria-describedby={`${ids.hint}${nudge ? ` ${ids.nudge}` : ""}`}
         aria-invalid={nudge || undefined}
         placeholder="9am video call, lunch by the window, dinner at 7"
-        className="mt-8 block w-full resize-none border-0 border-b border-ink bg-transparent px-0 py-3 text-[clamp(1.25rem,1.05rem+0.9vw,1.75rem)] leading-snug text-ink placeholder:text-muted"
+        className="mt-8 block w-full resize-none border-0 border-b border-ink bg-transparent px-0 py-3 text-[clamp(1.25rem,1.05rem+0.9vw,1.75rem)] leading-snug text-ink placeholder:text-muted focus-visible:outline-offset-[10px]"
       />
       <p id={ids.hint} className="mt-3 max-w-[34rem] text-[0.9375rem] leading-relaxed text-ink-soft">
         Times, places and whether you will be on a call all help.

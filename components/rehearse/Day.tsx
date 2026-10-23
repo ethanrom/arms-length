@@ -11,8 +11,8 @@ import { Stage } from "./stage/Stage";
 import type { StagePhoto } from "./stage/types";
 import { useCalm } from "./useCalm";
 
-/** The stage is about 58% of the screen's height, but leaves room (the 24rem) for the caption and the ribbon on a short screen. */
-const STAGE_H = "min(58svh, calc(100svh - 24rem))";
+/** The stage is about 58% of the screen's height, but leaves room (the 25rem) for the caption and the ribbon on a short screen. */
+const STAGE_H = "min(58svh, calc(100svh - 25rem))";
 const AUTOPLAY_MS = 4000;
 const SWIPE_PX = 56;
 const MIRROR_PULSE_MS = 2500;
@@ -170,8 +170,8 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
     >
       <div inert={drawer}>
         {/* the stage: every moment is mounted so the next one is already drawn; only this one shows */}
-        <div className="relative -mx-5 touch-pan-y select-none md:mx-0" onPointerDown={onDown} onPointerUp={onUp} onDragStart={(e) => e.preventDefault()} data-testid="rehearse-stage" data-mode={mirror ? "mirror" : "theirs"}>
-          <div style={{ aspectRatio: "16 / 10" }} className="relative">
+        <div className="relative touch-pan-y select-none" onPointerDown={onDown} onPointerUp={onUp} onDragStart={(e) => e.preventDefault()} data-testid="rehearse-stage" data-mode={mirror ? "mirror" : "theirs"}>
+          <div style={{ aspectRatio: "16 / 10" }} className="relative -mx-5 md:mx-0">
             {moments.map((m, i) => {
               const current = i === index;
               const obs = current ? shown : observes[i];
@@ -208,16 +208,6 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
             })}
             <ArrowButton side="left" label="Previous moment" testId="prev" disabled={index <= 0} onClick={() => go(index - 1)} />
             <ArrowButton side="right" label={index === n - 1 ? "The whole day" : "Next moment"} testId="next" onClick={() => go(index + 1)} />
-            {/* the same face as they see it, enlarged to the mirror's framing: held next to the mirror, it is the whole point */}
-            {shown && (
-              <figure
-                data-testid="closer-inset"
-                className={`absolute bottom-3 right-3 z-10 m-0 w-[38%] overflow-hidden rounded-lg border bg-paper transition-shadow duration-150 md:w-[30%] ${mirror ? "border-ink shadow-[0_0_0_2px_var(--ink)]" : "border-ink/30"}`}
-              >
-                <Stage key={moment.id} closer scene={shown.input.scene} light={shown.input.light} call={shown.input.call} observe={shown} photo={photo} label={`${moment.title}: as they see it, up close`} />
-                <figcaption className="px-2 py-1 text-[0.875rem] leading-tight">As they see it, up close</figcaption>
-              </figure>
-            )}
             {mirror && (
               <span aria-hidden="true" className="pointer-events-none absolute left-3 top-3 z-10 border border-ink/15 bg-paper px-2.5 py-1.5 text-[0.875rem] leading-none">
                 Your mirror, 25 cm
@@ -229,9 +219,24 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
               </span>
             )}
           </div>
+        {/* the same face as they see it, enlarged to the mirror's framing: held next to the mirror, it is the whole point.
+            Over the corner of the stage on a wide screen, under it on a phone. */}
+        {shown && (
+          <figure data-testid="closer-inset" className="m-0 mt-3 flex items-center gap-3 md:absolute md:bottom-3 md:right-3 md:z-10 md:mt-0 md:block md:w-[30%]">
+            <div
+              className={`w-[46%] shrink-0 overflow-hidden rounded-lg border bg-paper transition-shadow duration-150 md:w-full ${mirror ? "border-ink shadow-[0_0_0_2px_var(--ink)]" : "border-ink/30"}`}
+            >
+              <Stage key={moment.id} closer scene={shown.input.scene} light={shown.input.light} call={shown.input.call} observe={shown} photo={photo} label={`${moment.title}: as they see it, up close`} />
+              <figcaption className="hidden px-2 py-1 text-[0.875rem] leading-tight md:block">As they see it, up close</figcaption>
+            </div>
+            <p aria-hidden="true" className="text-[0.9375rem] leading-snug text-ink-soft md:hidden">
+              As they see it, up close
+            </p>
+          </figure>
+        )}
         </div>
 
-        <div className="mt-5 flex items-baseline justify-between gap-4">
+        <div className="mt-3 flex items-baseline justify-between gap-4">
           <p className="eyebrow !text-[0.875rem] !text-ink-soft">
             {moment.time && (
               <>
@@ -240,7 +245,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
             )}
             <span data-testid="moment-title">{moment.title}</span>
           </p>
-          <button ref={knowButton} type="button" onClick={() => setDrawer(true)} aria-haspopup="dialog" className="link inline-flex min-h-11 shrink-0 items-center text-[0.9375rem] text-ink-soft hover:text-ink">
+          <button ref={knowButton} type="button" onClick={() => setDrawer(true)} aria-haspopup="dialog" className="inline-flex min-h-11 shrink-0 items-center text-[0.9375rem] text-ink-soft underline decoration-1 underline-offset-4 hover:text-ink">
             How we know
           </button>
         </div>
@@ -322,7 +327,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
                 setMirror(true);
                 pulse.current = window.setTimeout(() => setMirror(false), MIRROR_PULSE_MS);
               }}
-              className="btn btn-ghost touch-none select-none"
+              className="btn btn-ghost touch-none select-none aria-pressed:bg-ink aria-pressed:text-paper"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
                 <ellipse cx="10" cy="9" rx="5.5" ry="7" />

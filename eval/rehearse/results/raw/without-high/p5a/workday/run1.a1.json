@@ -1,0 +1,27 @@
+{
+  "kind": "without",
+  "face": "p5a",
+  "day": "workday",
+  "run": 1,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-sonnet-5-5",
+  "effort": "high",
+  "at": "2026-10-23T09:07:25.966Z",
+  "imageSha256": "fedf323ad2e299c59a4ee4ad14f97f35b5df9f7845a9b6344ea44748b1d43f04",
+  "latencyMs": 14255,
+  "cache": true,
+  "httpCalls": 1,
+  "stopReason": "end_turn",
+  "meter": {
+    "input": 70,
+    "output": 1633,
+    "cacheRead": 1397,
+    "cacheWrite": 1915
+  },
+  "costUsd": 0.02154,
+  "text": "{\"moments\":[{\"title\":\"Video standup\",\"time\":\"9am\",\"scene\":\"video_call\",\"light\":\"videoCall\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.03,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":false,\"share\":0.08,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.03,\"advice\":\"nothing\"},\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"redness\":null}},{\"title\":\"Client lunch by the window\",\"time\":null,\"scene\":\"cafe_table\",\"light\":\"daylight\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":true,\"share\":0.2,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":true,\"share\":0.4,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.08,\"advice\":\"nothing\"},\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"redness\":null}},{\"title\":\"Dinner date\",\"time\":\"7pm\",\"scene\":\"dinner_table\",\"light\":\"home\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.03,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":false,\"share\":0.07,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.02,\"advice\":\"nothing\"},\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"redness\":null}}]}",
+  "blocks": [
+    "reasoningContent",
+    "text"
+  ]
+}

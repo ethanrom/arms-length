@@ -1,0 +1,26 @@
+{
+  "kind": "without",
+  "face": "p1a",
+  "day": "presenting",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-sonnet-5-5",
+  "effort": "low",
+  "at": "2026-10-23T08:59:46.336Z",
+  "imageSha256": "47c0b50e149393bd9be82b5ce833b8d9b8b7294e7b043b683cd4685abaf9695c",
+  "latencyMs": 6188,
+  "cache": true,
+  "httpCalls": 1,
+  "stopReason": "end_turn",
+  "meter": {
+    "input": 72,
+    "output": 395,
+    "cacheRead": 3663,
+    "cacheWrite": 0
+  },
+  "costUsd": 0.00483,
+  "text": "{\"moments\":[{\"title\":\"Presenting to the team\",\"time\":\"2pm\",\"scene\":\"presenting\",\"light\":\"indoor\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.02,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.25,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}},{\"title\":\"Drinks with colleagues\",\"time\":\"evening\",\"scene\":\"conversation\",\"light\":\"home\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.05,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.4,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}}]}",
+  "blocks": [
+    "text"
+  ]
+}

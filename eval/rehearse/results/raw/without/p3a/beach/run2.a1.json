@@ -1,0 +1,26 @@
+{
+  "kind": "without",
+  "face": "p3a",
+  "day": "beach",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-sonnet-5-5",
+  "effort": "low",
+  "at": "2026-10-23T09:01:20.486Z",
+  "imageSha256": "d75b68d255ee83a879a0137f27334ed8d30c8aa8a130edaa3d9e9fa45a080b2e",
+  "latencyMs": 10011,
+  "cache": true,
+  "httpCalls": 1,
+  "stopReason": "end_turn",
+  "meter": {
+    "input": 66,
+    "output": 402,
+    "cacheRead": 3624,
+    "cacheWrite": 0
+  },
+  "costUsd": 0.00488,
+  "text": "{\"moments\":[{\"title\":\"Beach day with friends\",\"time\":null,\"scene\":\"conversation\",\"light\":\"daylight\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.1,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":true,\"share\":0.6,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":true,\"share\":0.5,\"advice\":\"nothing\"},\"dark_circle\":null,\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"}}},{\"title\":\"Candle-lit dinner for two\",\"time\":null,\"scene\":\"dinner_table\",\"light\":\"home\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":false,\"share\":0.15,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.15,\"advice\":\"nothing\"},\"dark_circle\":null,\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"}}}]}",
+  "blocks": [
+    "text"
+  ]
+}

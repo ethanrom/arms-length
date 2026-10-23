@@ -1,0 +1,26 @@
+{
+  "kind": "without",
+  "face": "p1a",
+  "day": "wedding",
+  "run": 2,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-sonnet-5-5",
+  "effort": "low",
+  "at": "2026-10-23T08:59:52.538Z",
+  "imageSha256": "47c0b50e149393bd9be82b5ce833b8d9b8b7294e7b043b683cd4685abaf9695c",
+  "latencyMs": 6372,
+  "cache": true,
+  "httpCalls": 1,
+  "stopReason": "end_turn",
+  "meter": {
+    "input": 77,
+    "output": 799,
+    "cacheRead": 3663,
+    "cacheWrite": 0
+  },
+  "costUsd": 0.00888,
+  "text": "{\"moments\":[{\"title\":\"Outdoor ceremony, seated among guests\",\"time\":\"afternoon\",\"scene\":\"meeting_room\",\"light\":\"daylight\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.05,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.4,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}},{\"title\":\"Greeting and chatting after the ceremony\",\"time\":\"afternoon\",\"scene\":\"conversation\",\"light\":\"daylight\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":true,\"share\":0.2,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.75,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}},{\"title\":\"Dinner at the table\",\"time\":\"evening\",\"scene\":\"dinner_table\",\"light\":\"home\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.05,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.4,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}},{\"title\":\"Dancing and close conversation\",\"time\":\"night\",\"scene\":\"close_talk\",\"light\":\"home\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":true,\"share\":0.25,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.8,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}}]}",
+  "blocks": [
+    "text"
+  ]
+}

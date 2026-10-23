@@ -79,18 +79,27 @@ describe("POST /api/rehearse guards", () => {
     expect(await errorOf(res)).toBe("kill_switch");
   });
 
-  it("limits each address to 10 runs a day, and everyone to 100", async () => {
-    const d = deps({});
-    for (let i = 0; i < 10; i++) expect((await handleRehearse(post("{"), "2.2.2.2", d)).status).toBe(400);
-    const limited = await handleRehearse(post("{"), "2.2.2.2", d);
+  it("limits each address to 10 model runs a day, and everyone to 100", async () => {
+    const down = fakeLlm(() => {
+      throw new LlmError("upstream", "down");
+    });
+    const d = deps({}, down);
+    const run = async (ip: string) => {
+      const res = await handleRehearse(post({ face: { demoId: "p3a" }, day: "Coffee with Sam", prefs }), ip, d);
+      if (res.status === 200) await res.text();
+      return res;
+    };
+    // Malformed requests never reach the model, so they do not use the day's runs.
+    for (let i = 0; i < 20; i++) expect((await handleRehearse(post("{"), "2.2.2.2", d)).status).toBe(400);
+    for (let i = 0; i < 10; i++) expect((await run("2.2.2.2")).status).toBe(200);
+    const limited = await run("2.2.2.2");
     expect(limited.status).toBe(429);
     expect(Number(limited.headers.get("retry-after"))).toBeGreaterThan(0);
     expect(await errorOf(limited)).toBe("rate_limited");
     // Another address is fine, until the global 100 is spent.
     resetRehearseLimits();
-    for (let i = 0; i < 100; i++) expect((await handleRehearse(post("{"), `10.0.0.${i}`, d)).status).toBe(400);
-    const globalLimited = await handleRehearse(post("{"), "10.9.9.9", d);
-    expect(globalLimited.status).toBe(429);
+    for (let i = 0; i < 100; i++) expect((await run(`10.0.0.${i}`)).status).toBe(200);
+    expect((await run("10.9.9.9")).status).toBe(429);
   });
 
   it("rejects a body over 1.5 MB, declared or streamed", async () => {
@@ -159,7 +168,7 @@ describe("POST /api/rehearse stream", () => {
     const llm = fakeLlm(() => {
       throw new LlmError("upstream", "boom");
     });
-    const res = await handleRehearse(post({ face: { demoId: "p3a" }, day: EXAMPLE_DAYS[0].day, prefs }), "6.6.6.8", deps({}, llm));
+    const res = await handleRehearse(post({ face: { demoId: "p3a" }, day: "Coffee with Sam, then dinner", prefs }), "6.6.6.8", deps({}, llm));
     const list = await events(res);
     const last = list[list.length - 1];
     expect(last.type).toBe("plan");
@@ -223,5 +232,58 @@ describe("POST /api/rehearse replay of the recorded fixtures", () => {
         for (const m of plan.moments) expect(m.headline?.text.length).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe("POST /api/rehearse example days in live mode", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rehearse-cache-"));
+  fs.mkdirSync(path.join(dir, "p3a"));
+  const recorded: DayPlan = { day: EXAMPLE_DAYS[1].day, moments: [], summary: { text: "Recorded.", refs: [] }, results: {}, verified: true, issues: [], stats: { ms: 1, turns: 1, toolCalls: 1, inputTokens: 1, outputTokens: 1, repairs: 0 } };
+  fs.writeFileSync(path.join(dir, "p3a", "presenting.json"), JSON.stringify({ steps: [{ tool: "observe_scene", label: "Running", moment: { title: "Presenting", scene: "presenting" } }], plan: recorded }));
+  const down = () =>
+    fakeLlm(() => {
+      throw new LlmError("upstream", "down");
+    });
+  const ask = (body: Record<string, unknown>, ip: string, d: RehearseDeps) => handleRehearse(post({ face: { demoId: "p3a" }, day: EXAMPLE_DAYS[1].day, prefs, ...body }), ip, d);
+
+  it("serves the recording with its paced steps, never calls the model, and does not count against the day's runs", async () => {
+    const llm = down();
+    const d = deps({ AGENT_REPLAY_DELAY_MS: "0" }, llm, { fixturesDir: dir });
+    for (let i = 0; i < 12; i++) {
+      const list = await events(await ask({}, "9.9.9.9", d));
+      expect(list).toEqual([{ type: "step", tool: "observe_scene", label: "Running", moment: { title: "Presenting", scene: "presenting" } }, { type: "plan", plan: recorded }]);
+    }
+    expect(llm.calls).toHaveLength(0);
+  });
+
+  it("runs the agent when AGENT_CACHE=0, for other settings, for a follow-up, for another day, and for a live face", async () => {
+    const cases: [string, Record<string, unknown>, Record<string, string>][] = [
+      ["cache off", {}, { AGENT_CACHE: "0" }],
+      ["phone", { prefs: { callDevice: "phone", noMakeup: false } }, {}],
+      ["no makeup", { prefs: { callDevice: "laptop", noMakeup: true } }, {}],
+      ["follow-up", { followUp: { question: "What if it is outdoors?", previous: { day: EXAMPLE_DAYS[1].day, moments: [] } } }, {}],
+      ["another day", { day: EXAMPLE_DAYS[1].day + "!" }, {}],
+      ["live face", { face: { live: demoFace("p3a") } }, {}],
+    ];
+    for (const [name, body, env] of cases) {
+      const llm = down();
+      const list = await events(await ask(body, "9.9.9.8", deps({ AGENT_REPLAY_DELAY_MS: "0", ...env }, llm, { fixturesDir: dir })));
+      expect(llm.calls.length, name).toBe(1);
+      expect((list[list.length - 1] as { plan: DayPlan }).plan.verified, name).toBe(false);
+    }
+  });
+
+  it("counts a run that does reach the model, even for an example day when the cache is off", async () => {
+    const d = deps({ AGENT_CACHE: "0" }, down(), { fixturesDir: dir });
+    for (let i = 0; i < 10; i++) expect((await ask({}, "9.9.9.7", d)).status).toBe(200);
+    expect((await ask({}, "9.9.9.7", d)).status).toBe(429);
+  });
+
+  it("serves the real recordings by default", async () => {
+    const llm = down();
+    const list = await events(await handleRehearse(post({ face: { demoId: "p2b" }, day: EXAMPLE_DAYS[0].day, prefs }), "9.9.9.6", deps({ AGENT_REPLAY_DELAY_MS: "0" }, llm)));
+    expect(llm.calls).toHaveLength(0);
+    expect(list.some((e) => e.type === "step" && e.moment)).toBe(true);
+    expect((list[list.length - 1] as { plan: DayPlan }).plan.verified).toBe(true);
   });
 });

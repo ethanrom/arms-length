@@ -4,8 +4,9 @@
  * points at a result of the right kind. The model is never trusted with a number; this is what makes "every number comes
  * from the model" true.
  */
-import type { Claim, ObserveResult, PlannedMoment, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
+import type { Claim, ConcernId, ObserveResult, PlannedMoment, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
 import { UI_LISTS } from "@/lib/copy/banned";
+import { CONCERN_COPY } from "@/lib/copy/concerns";
 import { lintText } from "@/lib/copy/lint";
 import { copiesStyleGuide, forbiddenInHeadline } from "./headline";
 import { isFreeFix, isLightestTouch, isObserve, isWorthIt, quotesFor } from "./results";
@@ -44,6 +45,8 @@ const CLOCK = /\b\d{1,2}(?::\d{2})?\s?(?:am|pm|a\.m\.|p\.m\.)(?![a-z])|\b\d{1,2}
 const SPELLED =
   /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|half|halves|third|thirds|quarter|quarters|dozen|dozens|twice|triple)\b/gi;
 
+const CONCERN_IDS = Object.keys(CONCERN_COPY) as ConcernId[];
+
 const norm = (token: string) => String(Number(token));
 
 /** Numbers written in `text`, clock times excluded, normalised (1.50 and 1.5 are the same number). */
@@ -67,18 +70,27 @@ function wordingIssues(text: string, momentId: string | null, where: string): Ve
 function checkClaim(claim: Claim, momentId: string | null, where: string, implicitRefs: string[], results: Results, maxChars = MAX_CLAIM_CHARS): VerifierIssue[] {
   const issues: VerifierIssue[] = [];
   const text = claim.text ?? "";
+  const at = `${where} ("${text.length > 110 ? `${text.slice(0, 107)}...` : text}")`;
   if (!text.trim() || text.length > maxChars) {
-    issues.push({ momentId, code: "schema", detail: `${where} must be 1 to ${maxChars} characters (it is ${text.length}).` });
+    issues.push({ momentId, code: "schema", detail: `${at} must be 1 to ${maxChars} characters (it is ${text.length}).` });
   }
   for (const ref of claim.refs ?? []) {
-    if (!(ref in results)) issues.push({ momentId, code: "unknown_ref", detail: `${where} cites ${ref}, which is not a tool result in this run.` });
+    if (!(ref in results)) issues.push({ momentId, code: "unknown_ref", detail: `${at} cites ${ref}, which is not a tool result in this run.` });
   }
   issues.push(...wordingIssues(text, momentId, where));
   const unsupported = text.match(UNSUPPORTED);
-  if (unsupported) issues.push({ momentId, code: "banned_word", detail: `${where} says "${unsupported[0]}", which no tool result supports. State only what the measurements show.` });
+  if (unsupported) issues.push({ momentId, code: "banned_word", detail: `${at} says "${unsupported[0]}", which no tool result supports. State only what the measurements show.` });
 
   const cited = [...new Set([...(claim.refs ?? []), ...implicitRefs])].filter((r) => r in results);
   const pool = cited.flatMap((ref) => Object.entries(quotesFor(results, ref)));
+  const allowed = (): string => {
+    const lower = text.toLowerCase();
+    const unprefixed = (key: string) => key.replace("after:", "");
+    const named = CONCERN_IDS.filter((id) => lower.includes(CONCERN_COPY[id].plural) || lower.includes(CONCERN_COPY[id].singular));
+    const relevant = pool.filter(([key, value]) => /[0-9]/.test(value) && (!unprefixed(key).includes(".") || named.length === 0 || named.some((c) => unprefixed(key).startsWith(`${c}.`))));
+    const shown = [...new Set(relevant.map(([key, value]) => `"${value}" (${unprefixed(key)})`))].slice(0, 16);
+    return shown.length ? shown.join("; ") : "none, so leave numbers out";
+  };
   const quoteText = pool.map(([, v]) => v.toLowerCase()).join(" \n ");
 
   // For each number the claim writes: which quote keys of the cited results contain it?
@@ -92,24 +104,24 @@ function checkClaim(claim: Claim, momentId: string | null, where: string, implic
 
   const quotedPairs = new Set(pool.flatMap(([, quote]) => pairsIn(quote)));
   for (const pair of new Set(pairsIn(text.replace(CLOCK, " ")))) {
-    if (!quotedPairs.has(pair)) issues.push({ momentId, code: "stray_number", detail: `${where} says "${pair}", which no quote of the cited results says. Copy the quote verbatim.` });
+    if (!quotedPairs.has(pair)) issues.push({ momentId, code: "stray_number", detail: `${at} says "${pair}", which no quote of the results it cites (${cited.join(", ") || "none"}) says. Quotes with numbers you may copy here, verbatim: ${allowed()}.` });
   }
 
   let boundOnly = false;
   for (const n of new Set(numbersIn(text))) {
     const keys = keysByNumber.get(n);
     if (!keys) {
-      issues.push({ momentId, code: "stray_number", detail: `${where} writes ${n}, which is not in a quote of the results it cites (${cited.join(", ") || "none"}). Copy a quote verbatim or leave the number out.` });
+      issues.push({ momentId, code: "stray_number", detail: `${at} writes ${n}, which is in no quote of the results it cites (${cited.join(", ") || "none"}). Quotes with numbers you may copy here, verbatim: ${allowed()}. Or leave the number out.` });
     } else if (keys.every((k) => BOUND_KEY.test(k))) {
       boundOnly = true;
     }
   }
   if (boundOnly && !BOUND_WORDING.test(text)) {
-    issues.push({ momentId, code: "bound_wording", detail: `${where} uses a number from the sharpest-eyes quote without saying "at most", "up to" or "sharpest".` });
+    issues.push({ momentId, code: "bound_wording", detail: `${at} uses a number from the sharpest-eyes quote without saying "at most", "up to" or "sharpest".` });
   }
   for (const word of new Set(spelledIn(text))) {
     if (!new RegExp(`\\b${word}\\b`).test(quoteText)) {
-      issues.push({ momentId, code: "stray_number", detail: `${where} says "${word}", a quantity in words that no quote of the cited results contains. Use a quote verbatim or leave it out.` });
+      issues.push({ momentId, code: "stray_number", detail: `${at} says "${word}", a quantity in words that no quote of the cited results contains. Use a quote verbatim or leave it out.` });
     }
   }
   return issues;
@@ -188,27 +200,46 @@ function checkHeadline(m: DraftMoment, momentId: string, results: Results): Veri
   return issues;
 }
 
-/** All the problems with a draft plan; empty means it may be shown. */
-export function verifyPlan(draft: PlanDraft, results: Results, prefs: RehearsePrefs): VerifierIssue[] {
-  const issues: VerifierIssue[] = [];
+/** Where in the plan an issue was found, so a deterministic fix can reach exactly the offending sentence. */
+export type PlanField = "plan" | "headline" | "notice" | "outOfSight" | "action" | "summary" | "other";
+export interface Located {
+  issue: VerifierIssue;
+  /** Index into `moments`, or null for the plan as a whole (and the summary). */
+  moment: number | null;
+  field: PlanField;
+  /** Which claim of `notice` or `outOfSight`. */
+  index: number;
+}
+
+/** All the problems with a draft plan, each with its place. */
+export function verifyLocated(draft: PlanDraft, results: Results, prefs: RehearsePrefs): Located[] {
+  const out: Located[] = [];
+  const add = (issues: VerifierIssue[], moment: number | null, field: PlanField, index = 0) => {
+    for (const issue of issues) out.push({ issue, moment, field, index });
+  };
   if (draft.moments.length < 1 || draft.moments.length > MAX_MOMENTS) {
-    issues.push({ momentId: null, code: "schema", detail: `A plan needs 1 to ${MAX_MOMENTS} moments (this has ${draft.moments.length}).` });
+    add([{ momentId: null, code: "schema", detail: `A plan needs 1 to ${MAX_MOMENTS} moments (this has ${draft.moments.length}).` }], null, "plan");
   }
 
   draft.moments.forEach((m, i) => {
     const id = `m${i + 1}`;
-    issues.push(...checkScene(m, id, results));
-    issues.push(...checkAction(m, id, results, prefs));
-    issues.push(...checkHeadline(m, id, results));
-    issues.push(...checkPlainText(m.title, id, "The title", true));
-    if (m.time) issues.push(...wordingIssues(m.time, id, "The time"));
-    m.assumptions.forEach((text, j) => issues.push(...checkPlainText(text, id, `Assumption ${j + 1}`, true)));
-    m.notice.forEach((c, j) => issues.push(...checkClaim(c, id, `notice ${j + 1}`, [m.observeRef], results)));
-    m.outOfSight.forEach((c, j) => issues.push(...checkClaim(c, id, `outOfSight ${j + 1}`, [m.observeRef], results)));
-    issues.push(...checkClaim(m.action.claim, id, "The action sentence", "ref" in m.action && m.action.ref ? [m.action.ref] : [], results));
+    add(checkScene(m, id, results), i, "other");
+    add(checkAction(m, id, results, prefs), i, "action");
+    add(checkHeadline(m, id, results), i, "headline");
+    add(checkPlainText(m.title, id, "The title", true), i, "other");
+    if (m.time) add(wordingIssues(m.time, id, "The time"), i, "other");
+    m.assumptions.forEach((text, j) => add(checkPlainText(text, id, `Assumption ${j + 1}`, true), i, "other"));
+    m.notice.forEach((c, j) => add(checkClaim(c, id, `notice ${j + 1}`, [m.observeRef], results), i, "notice", j));
+    m.outOfSight.forEach((c, j) => add(checkClaim(c, id, `outOfSight ${j + 1}`, [m.observeRef], results), i, "outOfSight", j));
+    add(checkClaim(m.action.claim, id, "The action sentence", "ref" in m.action && m.action.ref ? [m.action.ref] : [], results), i, "action");
   });
-  issues.push(...checkClaim(draft.summary, null, "The summary", [], results));
-  return issues;
+  add(checkClaim(draft.summary, null, "The summary", [], results), null, "summary");
+  return out;
+}
+
+/** All the problems with a draft plan; empty means it may be shown. */
+export function verifyPlan(draft: PlanDraft, results: Results, prefs: RehearsePrefs): VerifierIssue[] {
+  return verifyLocated(draft, results, prefs).map((l) => l.issue);
 }
 
 /** The plan with each claim's implicit refs (the moment's observation, the action's result) made explicit, for the UI. */

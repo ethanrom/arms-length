@@ -289,3 +289,29 @@ describe("verifyPlan headlines", () => {
     expect(verifyPlan(withHeadline("On the call, your pores and fine lines fade from the video."), base, prefs)).toEqual([]);
   });
 });
+
+describe("verifyPlan issues are specific enough to repair from", () => {
+  it("names the sentence, the number and the quotes the claim may use, for the concern it is about", () => {
+    const d = goodDraft();
+    d.moments[0].notice = [{ text: "A typical viewer could pick out about 1 in 20 of your pores.", refs: ["r1"] }];
+    const issues = verifyPlan(d, base, prefs);
+    const text = issues.map((i) => i.detail).join(" | ");
+    expect(text).toContain("notice 1");
+    expect(text).toContain("A typical viewer could pick out about 1 in 20 of your pores.");
+    expect(text).toContain("1 in 20");
+    expect(text).toContain("Quotes with numbers you may copy here, verbatim:");
+    expect(text).toContain('"about 1 in 12" (pore.typical)');
+    expect(text).toContain('"54 of 650" (pore.typicalCount)');
+    expect(text).toContain('"1.5 m" (distance)');
+    // The quotes of a concern the sentence does not mention are left out.
+    expect(text).not.toContain("acne.");
+  });
+
+  it("lists every number quote when the sentence names no concern", () => {
+    const d = goodDraft();
+    d.moments[0].notice = [{ text: "From 3 m you look relaxed.", refs: ["r1"] }];
+    const text = verifyPlan(d, base, prefs).map((i) => i.detail).join(" | ");
+    expect(text).toContain("acne.typicalCount");
+    expect(text).toContain("pore.typicalCount");
+  });
+});

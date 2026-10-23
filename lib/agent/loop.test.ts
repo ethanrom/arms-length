@@ -20,7 +20,7 @@ function run(llm: ReturnType<typeof fakeLlm>, extra: Partial<Parameters<typeof r
 const observe = (label: string, scene: string, extra: Record<string, unknown> = {}) => toolUse("observe_scene", { label, scene, ...extra });
 
 /** A final_answer that rests on the two observe results of the last turn (refs read from what the tools returned). */
-function answerFrom(last: Record<string, unknown>[], overrides: { notice?: string; headline?: string } = {}): ContentBlock {
+function answerFrom(last: Record<string, unknown>[], overrides: { notice?: string; headline?: string; action?: string } = {}): ContentBlock {
   const views = last as unknown as { ref: string; quotes: Record<string, string> }[];
   const titles = ["Dinner date", "Team meeting"];
   const scenes = ["dinner_table", "meeting_room"];
@@ -34,7 +34,7 @@ function answerFrom(last: Record<string, unknown>[], overrides: { notice?: strin
       assumptions: ["I took this moment from your description."],
       notice: overrides.notice && i === 0 ? [{ text: overrides.notice, refs: [v.ref] }] : [],
       outOfSight: [{ text: `At ${v.quotes.distance}, a typical viewer sees your skin in ${v.quotes.light}.`, refs: [v.ref] }],
-      action: { kind: "none", claim: { text: "Nothing needs doing here.", refs: [] } },
+      action: { kind: "none", claim: { text: overrides.action && i === 0 ? overrides.action : "Nothing needs doing here.", refs: [] } },
     })),
     summary: { text: "Your day looks relaxed at the distances you described.", refs: views.map((v) => v.ref) },
   });
@@ -153,7 +153,7 @@ describe("runAgent", () => {
   it("offers the model every tool, with closed schemas", async () => {
     const llm = fakeLlm([parallelObserve, ({ last }) => ({ content: [answerFrom(last)] })]);
     await run(llm).promise;
-    expect(llm.calls[0].tools.map((t) => t.name)).toEqual(["list_scenes", "observe_scene", "video_call_frame", "find_free_fix", "lightest_touch", "worth_it", "receipt", "final_answer"]);
+    expect(llm.calls[0].tools.map((t) => t.name)).toEqual(["list_scenes", "assess_moment", "observe_scene", "video_call_frame", "find_free_fix", "lightest_touch", "worth_it", "receipt", "final_answer"]);
     expect(llm.calls[0].system).toContain("final_answer");
     expect(llm.calls[0].messages[0].content[0].text).toContain("Dinner date at 7");
   });
@@ -190,17 +190,24 @@ describe("runAgent", () => {
     expect(plan.moments[0].scene.distanceM).toBe(1.8);
   });
 
-  it("repairs a plan once: the issues go back as an error result and the corrected plan passes", async () => {
+  const goodViews = [{ ref: "r1", quotes: { distance: "1.5 m", light: "evening light at home" } }, { ref: "r2", quotes: { distance: "2.5 m", light: "indoor light" } }];
+
+  it("repairs a plan once: the issues name the text and the quotes allowed, and the corrected plan passes", async () => {
     const llm = fakeLlm([
       parallelObserve,
-      ({ last }) => ({ content: [answerFrom(last, { notice: "A typical viewer could pick out about 4 in 7 of your dark spots." })] }),
+      ({ last }) => ({ content: [answerFrom(last, { action: "Nothing needs doing; about 4 in 7 of your pores fade." })] }),
       ({ last }) => {
-        expect(JSON.stringify(last)).toMatch(/stray_number/);
-        return { content: [answerFrom([{ ref: "r1", quotes: { distance: "1.5 m", light: "evening light at home" } }, { ref: "r2", quotes: { distance: "2.5 m", light: "indoor light" } }])] };
+        const text = JSON.stringify(last);
+        expect(text).toMatch(/stray_number/);
+        // The repair names the offending sentence and the quotes this claim may use, from its cited results.
+        expect(text).toContain("about 4 in 7 of your pores fade");
+        expect(text).toContain("Quotes with numbers you may copy here");
+        return { content: [answerFrom(goodViews)] };
       },
     ]);
     const { events, promise } = run(llm);
     const plan = await promise;
+    llm.check();
     expect(plan.verified).toBe(true);
     expect(plan.stats.repairs).toBe(1);
     expect(plan.stats.turns).toBe(3);
@@ -209,9 +216,34 @@ describe("runAgent", () => {
     expect(events.filter((e) => e.type === "step" && e.tool === "final_answer")).toHaveLength(2);
   });
 
-  it("falls back, unverified, when the repaired plan still fails", async () => {
-    const bad = ({ last }: { last: Record<string, unknown>[] }) => ({ content: [answerFrom(last, { notice: "Nobody will ever see your 12 dark spots." })] });
-    const stillBad = () => ({ content: [answerFrom([{ ref: "r1", quotes: { distance: "1.5 m", light: "x" } }, { ref: "r2", quotes: { distance: "2.5 m", light: "x" } }], { notice: "Nobody will ever see 12 of them." })] });
+  it("leaves out a failing notice or out-of-sight sentence instead of spending a round trip", async () => {
+    const llm = fakeLlm([parallelObserve, ({ last }) => ({ content: [answerFrom(last, { notice: "A typical viewer could pick out about 4 in 7 of your dark spots." })] })]);
+    const plan = await run(llm).promise;
+    llm.check();
+    expect(plan.verified).toBe(true);
+    expect(plan.stats.repairs).toBe(0);
+    expect(plan.stats.turns).toBe(2);
+    expect(plan.moments[0].notice).toEqual([]);
+    expect(plan.moments[0].headline).toBeDefined();
+    expect(new Set(plan.issues.map((i) => i.code))).toEqual(new Set(["stray_number"]));
+  });
+
+  it("gives a headline that is still wrong after the repair round its template, rather than falling back", async () => {
+    const wrong = ({ last }: { last: Record<string, unknown>[] }) => ({ content: [answerFrom(last, { headline: "No free change hides it." })] });
+    const stillWrong = () => ({ content: [answerFrom(goodViews, { headline: "Distance is the only lever here." })] });
+    const llm = fakeLlm([parallelObserve, wrong, stillWrong]);
+    const plan = await run(llm).promise;
+    llm.check();
+    expect(plan.verified).toBe(true);
+    expect(plan.stats.repairs).toBe(1);
+    expect(plan.moments[0].headline?.text).not.toMatch(/lever|free change/);
+    expect(plan.moments[0].headline?.refs).toEqual(["r1"]);
+    expect(plan.moments[1].headline?.text).toBe("At 2.5 m, your skin looks relaxed.");
+  });
+
+  it("falls back, unverified, when the repaired plan still fails where nothing can be left out", async () => {
+    const bad = ({ last }: { last: Record<string, unknown>[] }) => ({ content: [answerFrom(last, { action: "Nobody will ever see your 12 dark spots." })] });
+    const stillBad = () => ({ content: [answerFrom([{ ref: "r1", quotes: { distance: "1.5 m", light: "x" } }, { ref: "r2", quotes: { distance: "2.5 m", light: "x" } }], { action: "Nobody will ever see 12 of them." })] });
     const llm = fakeLlm([parallelObserve, bad, stillBad]);
     const plan = await run(llm).promise;
     llm.check();
@@ -374,5 +406,78 @@ describe("runAgent", () => {
     for (const label of labels) expect(lintText(label)).toEqual([]);
     // A title with a banned word is not echoed.
     expect(labels[6]).toBe("Running the vision model for this moment");
+  });
+
+  describe("with assess_moment", () => {
+    const assess = (title: string, scene: string, extra: Record<string, unknown> = {}) => toolUse("assess_moment", { title, scene, ...extra });
+    const call = { device: "laptop", cameraDistanceCm: 50, layout: "gallery" };
+
+    /** final_answer built from assess_moment views: observeRef, scene, quotes and the action all come from what the tool returned. */
+    function answerFromAssess(last: Record<string, unknown>[]): ContentBlock {
+      const views = last as unknown as { moment: string; observeRef: string; scene: Record<string, unknown>; quotes: Record<string, string>; freeFix: { ref: string; quotes: { change: string } } | null; lightestTouch: { ref: string; quotes: { coverage: string; measuredAt: string } }[] }[];
+      return toolUse("final_answer", {
+        moments: views.map((v, i) => ({
+          time: null,
+          title: v.moment,
+          scene: v.scene,
+          headline: { text: i === 0 ? "Across the day you look relaxed from here." : "From this distance your skin reads softly.", refs: [] },
+          observeRef: v.observeRef,
+          assumptions: ["I took this moment from your description."],
+          notice: [],
+          outOfSight: [{ text: `At ${v.quotes.distance}, a typical viewer sees your skin in ${v.quotes.light}.`, refs: [v.observeRef] }],
+          action: v.freeFix
+            ? { kind: "free_fix", ref: v.freeFix.ref, claim: { text: `${v.freeFix.quotes.change}.`, refs: [v.freeFix.ref] } }
+            : v.lightestTouch.length
+              ? { kind: "lightest_touch", ref: v.lightestTouch[0].ref, claim: { text: `${v.lightestTouch[0].quotes.coverage}, ${v.lightestTouch[0].quotes.measuredAt}.`, refs: [v.lightestTouch[0].ref] } }
+              : { kind: "none", claim: { text: "Nothing needs doing here.", refs: [] } },
+        })),
+        summary: { text: "Your day looks relaxed at the distances you described.", refs: views.map((v) => v.observeRef) },
+      });
+    }
+
+    it("plans a day in two model turns: every moment assessed together, then final_answer", async () => {
+      const llm = fakeLlm([
+        () => ({ content: [assess("Standup", "video_call", { call }), assess("Lunch", "cafe_table", { light: "daylight" }), assess("Dinner date", "dinner_table")] }),
+        ({ last }) => ({ content: [answerFromAssess(last)] }),
+      ]);
+      const { events, promise } = run(llm);
+      const plan = await promise;
+      llm.check();
+      expect(plan.verified).toBe(true);
+      expect(plan.stats).toMatchObject({ turns: 2, toolCalls: 4, repairs: 0 });
+      expect(plan.moments.map((m) => m.title)).toEqual(["Standup", "Lunch", "Dinner date"]);
+      expect(plan.moments.map((m) => m.scene.scene)).toEqual(["video_call", "cafe_table", "dinner_table"]);
+      // One user message carries all three results; refs run on across the moments.
+      expect(llm.sent[1].at(-1)?.content.filter((b) => b.toolResult)).toHaveLength(3);
+      expect(plan.moments[0].observeRef).toBe("r2");
+      expect(Number(plan.moments[1].observeRef.slice(1))).toBeGreaterThan(2);
+      // The storyboard hears about every moment as it is found, in the contract's own tool names.
+      const named = events.flatMap((e) => (e.type === "step" && e.moment ? [[e.tool, e.moment.title]] : []));
+      expect(named).toEqual([["video_call_frame", "Standup"], ["observe_scene", "Standup"], ["observe_scene", "Lunch"], ["observe_scene", "Dinner date"]]);
+      expect(events.some((e) => e.type === "step" && (e.tool as string) === "assess_moment")).toBe(false);
+      for (const m of plan.moments) if (m.action.kind !== "none") expect(plan.results[m.action.ref]).toBeDefined();
+    });
+
+    it("keeps the moments it assessed when the model then fails", async () => {
+      const llm = fakeLlm([() => ({ content: [assess("Dinner date", "dinner_table", { light: "home" }), assess("Coffee", "cafe_table")] }), () => ({ content: [{ text: "..." }], stopReason: "max_tokens" })]);
+      const plan = await run(llm).promise;
+      expect(plan.verified).toBe(false);
+      expect(plan.moments.map((m) => [m.title, m.scene.scene])).toEqual([["Dinner date", "dinner_table"], ["Coffee", "cafe_table"]]);
+    });
+
+    it("never offers a lightest touch to a user who would rather not wear makeup", async () => {
+      const llm = fakeLlm([
+        () => ({ content: [assess("Dancing", "close_talk")] }),
+        ({ last }) => {
+          expect(last[0]).toHaveProperty("lightestTouch", []);
+          expect(JSON.stringify(last[0])).toContain("rather not wear makeup");
+          return { content: [answerFromAssess(last)] };
+        },
+      ]);
+      const plan = await run(llm, { request: { ...request, prefs: { ...request.prefs, noMakeup: true } } }).promise;
+      llm.check();
+      expect(plan.verified).toBe(true);
+      expect(plan.moments[0].action.kind).not.toBe("lightest_touch");
+    });
   });
 });

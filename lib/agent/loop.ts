@@ -12,7 +12,8 @@ import { isObserve } from "./results";
 import { describeZodIssue, dropNulls, finalAnswerInput, type FinalAnswerInput } from "./schemas";
 import { TOOL_NAMES, cleanTitle, createToolbox, resolveToolName, stepEvent, toolSpecs } from "./tools";
 import { LlmError, type AgentRequest, type LlmMessage, type RunAgentOptions } from "./types";
-import { verifyPlan, type DraftMoment, type PlanDraft } from "./verify";
+import { salvage } from "./salvage";
+import { verifyLocated, type DraftMoment, type Located, type PlanDraft } from "./verify";
 
 export const MAX_TURNS = 12;
 export const BUDGET_MS = 60_000;
@@ -107,14 +108,16 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
         results.push(resultBlock(use.toolUseId, JSON.stringify({ error: "Too many tool calls. Call final_answer now with what you have." }), false));
         continue;
       }
-      emit(stepEvent(tool, use.input));
+      // assess_moment emits the steps of the tools it runs, as it runs them.
+      if (tool !== "assess_moment") emit(stepEvent(tool, use.input));
 
       if (tool !== "final_answer") {
-        const outcome = toolbox.run(tool, use.input);
+        const outcome = toolbox.run(tool, use.input, emit);
         results.push(resultBlock(use.toolUseId, outcome.text, outcome.ok));
-        if (outcome.ok && tool === "observe_scene" && isObserve(outcome.result) && seenMoments.length < 8) {
+        if (outcome.ok && (tool === "observe_scene" || tool === "assess_moment") && isObserve(outcome.result) && seenMoments.length < 8) {
           const r = outcome.result;
-          const label = (use.input as { label?: unknown } | null)?.label;
+          const named = use.input as { label?: unknown; title?: unknown } | null;
+          const label = named?.label ?? named?.title;
           seenMoments.push({
             title: cleanTitle(label),
             time: null,
@@ -134,16 +137,26 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
         ? []
         : [{ momentId: null, code: "schema", detail: describeZodIssue(parsed.error) }];
       let draft: PlanDraft | null = null;
+      let located: Located[] = [];
+      const known = Object.fromEntries(toolbox.results);
       if (parsed.success) {
         draft = polishDraft(toDraft(parsed.data)).draft; // filler words never cost a repair round
         lastDraft = draft;
-        issues.push(...verifyPlan(draft, Object.fromEntries(toolbox.results), request.prefs));
+        located = verifyLocated(draft, known, request.prefs);
+        issues.push(...located.map((l) => l.issue));
       }
       if (issues.length === 0 && draft) {
         accepted = draft;
         break;
       }
       lastIssues = issues;
+      // A plan with a few fewer sentences beats a model round trip, and beats the fallback: leave out the supporting sentences that
+      // fail (and, once the repair round is spent, give a still-wrong headline its template).
+      const salvaged = draft ? salvage(draft, located, known, request.prefs, { replaceHeadlines: stats.repairs >= 1 }) : null;
+      if (salvaged) {
+        accepted = salvaged.draft;
+        break;
+      }
       if (stats.repairs >= 1) return fallback();
       stats.repairs = 1;
       results.push(resultBlock(use.toolUseId, repairMessage(issues), false));

@@ -63,6 +63,7 @@ export const worthItInput = z.object({
   distanceM: z.number().min(0.3).max(6).describe("Viewing distance in metres, from the moment's observe_scene result."),
 });
 export const receiptInput = z.object({ label, ...sceneShape, concern: concernId });
+export const assessMomentInput = z.object({ title: label, ...sceneShape });
 
 // ---------------------------------------------------------------------------------------------------------------
 // final_answer

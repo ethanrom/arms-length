@@ -82,14 +82,6 @@ export async function handleRehearse(request: Request, ip: string, deps: Rehears
   if (env.AGENT_ENABLED?.trim() !== "1") return failure("disabled", "Rehearse your day is switched off on this deployment.", 503);
   if (configFromEnv(env).killSwitch) return failure("kill_switch", "Rehearse your day is paused for now. Please try again later.", 503);
 
-  // Recordings cost nothing, so only a real model call is counted.
-  if (!replay) {
-    const wait = ipLimiter.hit(ip) || globalLimiter.hit("all");
-    if (wait > 0) {
-      return failure("rate_limited", "That is today's limit for Rehearse your day. Please try again tomorrow.", 429, { "retry-after": String(wait) });
-    }
-  }
-
   let text: string;
   try {
     text = await readBoundedText(request, MAX_BODY_BYTES, tooBig);
@@ -114,10 +106,31 @@ export async function handleRehearse(request: Request, ip: string, deps: Rehears
     face = demo;
   }
 
-  return stream(request, body, face, replay, deps);
+  // Recordings cost nothing, so only a real model call is counted: not replay mode, and not an example day served from its recording.
+  const fixture = replay ? null : cachedFixture(body, deps);
+  if (!replay && !fixture) {
+    const wait = ipLimiter.hit(ip) || globalLimiter.hit("all");
+    if (wait > 0) {
+      return failure("rate_limited", "That is today's limit for Rehearse your day. Please try again tomorrow.", 429, { "retry-after": String(wait) });
+    }
+  }
+
+  return stream(request, body, face, replay ? "replay" : fixture ?? "live", deps);
 }
 
-function stream(request: Request, body: ParsedRehearseRequest, face: RehearseFace, replay: boolean, deps: RehearseDeps): Response {
+/**
+ * The recorded plan for an example day on a demo face, served in live mode too: those are real agent plans, so replaying one is honest
+ * caching, and it is free and instant. Only when the request is the one that was recorded (the example day as written, no follow-up,
+ * the settings the recordings used). AGENT_CACHE=0 turns it off.
+ */
+function cachedFixture(body: ParsedRehearseRequest, deps: RehearseDeps): RehearseFixture | null {
+  if (deps.env.AGENT_CACHE?.trim() === "0" || body.followUp || !("demoId" in body.face)) return null;
+  if (body.prefs.callDevice !== "laptop" || body.prefs.noMakeup) return null;
+  const example = EXAMPLE_DAYS.find((e) => e.day === body.day);
+  return example ? readFixture(deps.fixturesDir, body.face.demoId, example.id) : null;
+}
+
+function stream(request: Request, body: ParsedRehearseRequest, face: RehearseFace, source: "live" | "replay" | RehearseFixture, deps: RehearseDeps): Response {
   const cancelled = new AbortController();
   request.signal?.addEventListener("abort", () => cancelled.abort(), { once: true });
   const encoder = new TextEncoder();
@@ -136,7 +149,12 @@ function stream(request: Request, body: ParsedRehearseRequest, face: RehearseFac
       };
       const run = async () => {
         try {
-          const plan = replay ? await replayPlan(body, face, deps, emit, cancelled.signal) : await runAgent({ face, request: body, llm: deps.llm(), engine: deps.engine, emit, signal: cancelled.signal, budgetMs: RUN_BUDGET_MS, now: deps.now });
+          const plan =
+            source === "replay"
+              ? await replayPlan(body, face, deps, emit, cancelled.signal)
+              : source === "live"
+                ? await runAgent({ face, request: body, llm: deps.llm(), engine: deps.engine, emit, signal: cancelled.signal, budgetMs: RUN_BUDGET_MS, now: deps.now })
+                : await playFixture(source, deps, emit, cancelled.signal);
           emit({ type: "plan", plan });
         } catch (error) {
           if (!cancelled.signal.aborted) {
@@ -190,16 +208,19 @@ export function readFixture(dir: string, demoId: string, exampleId: string): Reh
   }
 }
 
+/** The recorded steps, paced so the storyboard fills in as it did when it was recorded, then the recorded plan. */
+async function playFixture(fixture: RehearseFixture, deps: RehearseDeps, emit: (e: RehearseEvent) => void, signal: AbortSignal): Promise<DayPlan> {
+  const delay = Number(deps.env.AGENT_REPLAY_DELAY_MS ?? 150);
+  for (const step of fixture.steps) {
+    emit({ type: "step", tool: step.tool, label: step.label, ...(step.moment ? { moment: step.moment } : {}) });
+    await sleep(Number.isFinite(delay) ? Math.min(delay, 1000) : 150, signal);
+  }
+  return fixture.plan;
+}
+
 async function replayPlan(body: ParsedRehearseRequest, face: RehearseFace, deps: RehearseDeps, emit: (e: RehearseEvent) => void, signal: AbortSignal): Promise<DayPlan> {
   const example = "demoId" in body.face && !body.followUp ? EXAMPLE_DAYS.find((e) => e.day === body.day) : undefined;
   const fixture = example && "demoId" in body.face ? readFixture(deps.fixturesDir, body.face.demoId, example.id) : null;
-  if (fixture) {
-    const delay = Number(deps.env.AGENT_REPLAY_DELAY_MS ?? 150);
-    for (const step of fixture.steps) {
-      emit({ type: "step", tool: step.tool, label: step.label, ...(step.moment ? { moment: step.moment } : {}) });
-      await sleep(Number.isFinite(delay) ? Math.min(delay, 1000) : 150, signal);
-    }
-    return fixture.plan;
-  }
+  if (fixture) return playFixture(fixture, deps, emit, signal);
   return buildFallbackPlan({ request: body, face, engine: deps.engine, stats: ZERO_STATS, emit });
 }

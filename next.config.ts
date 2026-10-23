@@ -36,6 +36,11 @@ const nextConfig: NextConfig = {
     "/api/youcam/status": NO_FIXTURES,
     "/api/youcam/cleanup": NO_FIXTURES,
     "/api/visibility": NO_FIXTURES,
+    "/api/rehearse": [`${PERSONAS}/**`],
+  },
+  // /api/rehearse reads a demo face's bundle.json (lib/integration/demo.ts) and, in replay, fixtures/rehearse at run time.
+  outputFileTracingIncludes: {
+    "/api/rehearse": ["./public/demo/*/bundle.json", "./fixtures/rehearse/**"],
   },
   turbopack: {
     rules: {

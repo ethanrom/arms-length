@@ -87,3 +87,17 @@ export function polishText(text: string): { text: string; removed: number } {
     .trim();
   return removed === 0 ? { text, removed: 0 } : { text: out, removed };
 }
+
+/**
+ * A headline over the limit is cut at its last semicolon (the second clause is the offer, the first is the relief), when that leaves a
+ * sentence that fits. Nothing else is shortened: a long sentence with no clause to spare is left for the verifier.
+ */
+export function fitHeadline(text: string, max: number): string {
+  let out = text;
+  while (out.length > max) {
+    const cut = out.lastIndexOf(";");
+    if (cut < 20) return text;
+    out = `${out.slice(0, cut).trimEnd().replace(/[,:]$/, "")}.`;
+  }
+  return out;
+}

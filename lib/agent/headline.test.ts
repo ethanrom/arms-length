@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { polishDraft } from "./plan";
-import { polishText } from "./headline";
+import { fitHeadline, polishText } from "./headline";
 import { goodDraft } from "./test-helpers";
 
 describe("polishText", () => {
@@ -73,5 +73,20 @@ describe("polishDraft", () => {
     const { draft, removed } = polishDraft(d);
     expect(removed).toBe(0);
     expect(draft).toEqual(d);
+  });
+});
+
+describe("fitHeadline", () => {
+  const long = "In grey daylight at chatting distance, more of your skin shows plainly to everyone near; a touch of makeup is there if you'd like it.";
+
+  it("cuts an over-long headline at its last semicolon, keeping the relief and dropping the offer", () => {
+    expect(long.length).toBeGreaterThan(120);
+    expect(fitHeadline(long, 120)).toBe("In grey daylight at chatting distance, more of your skin shows plainly to everyone near.");
+  });
+
+  it("leaves a headline that fits, and one with no clause to spare, as it is", () => {
+    expect(fitHeadline("Short and warm.", 120)).toBe("Short and warm.");
+    const noClause = "x".repeat(130);
+    expect(fitHeadline(noClause, 120)).toBe(noClause);
   });
 });

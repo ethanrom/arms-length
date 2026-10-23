@@ -7,11 +7,11 @@ import type { ContentBlock } from "@aws-sdk/client-bedrock-runtime";
 import type { DayPlan, RunStats, VerifierIssue } from "@/lib/contracts";
 import { buildFallbackPlan, type FallbackMoment } from "./fallback";
 import { NUDGE_MESSAGE, buildSystemPrompt, buildUserMessage, repairMessage } from "./prompt";
-import { assemblePlan, polishDraft } from "./plan";
+import { assemblePlan, observedScene, polishDraft } from "./plan";
 import { isObserve } from "./results";
 import { describeZodIssue, dropNulls, finalAnswerInput, type FinalAnswerInput } from "./schemas";
 import { TOOL_NAMES, cleanTitle, createToolbox, resolveToolName, stepEvent, toolSpecs } from "./tools";
-import { LlmError, type AgentRequest, type LlmMessage, type RunAgentOptions } from "./types";
+import { LlmError, type AgentRequest, type AnyResult, type LlmMessage, type RunAgentOptions } from "./types";
 import { salvage } from "./salvage";
 import { verifyLocated, type DraftMoment, type Located, type PlanDraft } from "./verify";
 
@@ -26,11 +26,13 @@ const resultBlock = (toolUseId: string, text: string, ok: boolean): ContentBlock
   toolResult: { toolUseId, content: [{ text }], status: ok ? "success" : "error" },
 });
 
-function toDraft(parsed: FinalAnswerInput): PlanDraft {
+function toDraft(parsed: FinalAnswerInput, results: Readonly<Record<string, AnyResult>>): PlanDraft {
   return {
     summary: parsed.summary,
     moments: parsed.moments.map((m) => ({
       ...m,
+      // The scene is whatever was observed; the model need not repeat it (a longer answer is a slower one).
+      scene: observedScene(m.scene ?? { scene: "conversation" }, results[m.observeRef]),
       time: m.time ?? null,
       action: (m.action.kind === "none" ? { kind: "none", claim: m.action.claim } : { kind: m.action.kind, ref: m.action.ref ?? "", claim: m.action.claim }) as DraftMoment["action"],
     })),
@@ -49,6 +51,7 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
   const tools = toolSpecs();
   const messages: LlmMessage[] = [{ role: "user", content: [{ text: buildUserMessage(request) }] }];
 
+  const context = { userText: [request.day, request.followUp?.question, request.followUp?.previous.day].filter(Boolean).join(" ") };
   const stats: RunStats = { ms: 0, turns: 0, toolCalls: 0, inputTokens: 0, outputTokens: 0, repairs: 0 };
   const seenMoments: FallbackMoment[] = [];
   let lastIssues: VerifierIssue[] = [];
@@ -140,9 +143,9 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
       let located: Located[] = [];
       const known = Object.fromEntries(toolbox.results);
       if (parsed.success) {
-        draft = polishDraft(toDraft(parsed.data)).draft; // filler words never cost a repair round
+        draft = polishDraft(toDraft(parsed.data, known)).draft; // filler words never cost a repair round
         lastDraft = draft;
-        located = verifyLocated(draft, known, request.prefs);
+        located = verifyLocated(draft, known, request.prefs, context);
         issues.push(...located.map((l) => l.issue));
       }
       if (issues.length === 0 && draft) {
@@ -152,7 +155,7 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
       lastIssues = issues;
       // A plan with a few fewer sentences beats a model round trip, and beats the fallback: leave out the supporting sentences that
       // fail (and, once the repair round is spent, give a still-wrong headline its template).
-      const salvaged = draft ? salvage(draft, located, known, request.prefs, { replaceHeadlines: stats.repairs >= 1 }) : null;
+      const salvaged = draft ? salvage(draft, located, known, request.prefs, { replaceHeadlines: stats.repairs >= 1, context }) : null;
       if (salvaged) {
         accepted = salvaged.draft;
         break;

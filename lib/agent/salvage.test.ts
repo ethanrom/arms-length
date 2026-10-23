@@ -73,3 +73,23 @@ describe("salvage", () => {
     expect(salvage(d, [{ issue: { momentId: "m1", code: "banned_word", detail: "x" }, moment: 0, field: "headline", index: 0 }], fix, prefs, { replaceHeadlines: true })).toBeNull();
   });
 });
+
+describe("salvage of assumptions", () => {
+  it("leaves out an assumption that fails, keeping the others", () => {
+    const d = goodDraft();
+    d.moments[0].assumptions = ["I took the camera as 50 cm away.", "I took dinner as a table across from each other."];
+    const located = verifyLocated(d, results, prefs, { userText: "dinner date at 7" });
+    expect(located.map((l) => l.field)).toEqual(["assumption"]);
+    const fixed = salvage(d, located, results, prefs, { replaceHeadlines: false, context: { userText: "dinner date at 7" } })!;
+    expect(fixed.draft.moments[0].assumptions).toEqual(["I took dinner as a table across from each other."]);
+  });
+
+  it("lets a title or assumption repeat a number the user said, and no other", () => {
+    const d = goodDraft();
+    d.moments[0].title = "Dinner at 7";
+    d.moments[0].assumptions = ["I took the table as the one you booked for 7."];
+    expect(verifyPlan(d, results, prefs, { userText: "dinner date at 7" })).toEqual([]);
+    expect(verifyPlan(d, results, prefs, { userText: "dinner date at 8" }).length).toBe(2);
+    expect(verifyPlan(d, results, prefs).length).toBe(2);
+  });
+});

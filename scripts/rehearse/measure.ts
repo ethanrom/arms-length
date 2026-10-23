@@ -71,9 +71,13 @@ async function main(): Promise<void> {
   const only = arg("only")?.split(",");
   const bedrock = createBedrockClient(process.env);
   const meter = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+  const turns: string[] = [];
   const llm: LlmClient = {
     async converse(request) {
+      const began = Date.now();
       const res = await bedrock.converse(request);
+      const answer = res.content.find((b) => b.toolUse?.name === "final_answer")?.toolUse?.input;
+      turns.push(`${((Date.now() - began) / 1000).toFixed(1)}s/${res.usage.outputTokens}out${answer ? `/answer ${JSON.stringify(answer).length} chars` : ""}`);
       meter.input += res.usage.inputTokens;
       meter.output += res.usage.outputTokens;
       meter.cacheRead += res.usage.cacheReadTokens ?? 0;
@@ -85,11 +89,13 @@ async function main(): Promise<void> {
   const results: Result[] = [];
   for (const { id, face, day } of DAYS) {
     if (only && !only.includes(id)) continue;
+    turns.length = 0;
     const r = route ? await viaRoute(id, face, day, route) : await direct(id, face, day, llm, meter);
     results.push(r);
     const s = r.plan.stats;
     console.log(`\n== ${id}: ${r.plan.verified ? "VERIFIED" : "FALLBACK"} in ${(r.ms / 1000).toFixed(1)}s | ${s.turns} turns, ${s.toolCalls} tool calls, ${s.inputTokens} in / ${s.outputTokens} out, repairs ${s.repairs} | $${r.costUsd.toFixed(4)}`);
     console.log(`   day: ${day}`);
+    if (!route) console.log(`   model turns (time/output tokens): ${turns.join(", ")}`);
     for (const issue of r.plan.issues) console.log(`   issue ${issue.momentId ?? "-"} [${issue.code}] ${issue.detail.slice(0, 160)}`);
     for (const m of r.plan.moments) {
       console.log(`   [${m.id}] ${m.title} | ${m.scene.scene}/${m.scene.light ?? "-"}${m.scene.call ? ` (call ${m.scene.call.layout})` : ""} | ${m.action.kind}`);

@@ -52,7 +52,7 @@ describe("tool specs", () => {
     const item = final.properties.moments.items;
     expect(item.required).toContain("headline");
     expect(item.properties.headline.required).toEqual(["text", "refs"]);
-    expect(item.properties.headline.properties.text.maxLength).toBe(120);
+    expect(JSON.stringify(item.properties.headline)).toContain("at most 120 characters");
   });
 
   it("states the rules in the system prompt, from the same lists the linter uses", () => {

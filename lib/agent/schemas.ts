@@ -74,12 +74,14 @@ export const MAX_CLAIM_CHARS = 200;
 export const MAX_HEADLINE_CHARS = 120;
 
 const claim = z.object({
-  text: z.string().min(1).max(MAX_CLAIM_CHARS).describe("One sentence. Any number in it must be copied verbatim from a quote of a cited result."),
+  // The length limits are the verifier's to enforce (verify.ts): a sentence that is too long can then be left out alone, where a
+  // schema failure here would send the whole plan back for a repair round.
+  text: z.string().min(1).describe(`One sentence of at most ${MAX_CLAIM_CHARS} characters. Any number in it must be copied verbatim from a quote of a cited result.`),
   refs: z.array(z.string().min(1).max(40)).max(8).describe("The refs (r1, r2, ...) of the tool results this sentence rests on."),
 });
 
 const headline = z.object({
-  text: z.string().min(1).max(MAX_HEADLINE_CHARS).describe("One warm, short sentence for the picture of this moment. Ideally no numbers; any number must be copied verbatim from a quote of a cited result."),
+  text: z.string().min(1).describe(`One warm, short sentence of at most ${MAX_HEADLINE_CHARS} characters for the picture of this moment, with no numbers.`),
   refs: z.array(z.string().min(1).max(40)).max(8).describe("The refs of the tool results this sentence rests on (the observe_scene ref when it uses a quote)."),
 });
 
@@ -94,9 +96,9 @@ const action = z
 const moment = z.object({
   time: z.string().max(40).nullable().optional().describe("As the user said it (9am, after work), or null."),
   title: z.string().min(1).max(60),
-  scene: sceneInput.describe("The same scene, light, viewer and call you passed to observe_scene."),
+  scene: sceneInput.optional().describe("Leave out: it is filled in from the observation."),
   headline: headline.describe("The one sentence shown big under the picture of what the person there sees. Relief first."),
-  observeRef: z.string().min(1).max(40).describe("The ref of this moment's observe_scene result."),
+  observeRef: z.string().min(1).max(40).describe("The observeRef that assess_moment returned for this moment."),
   assumptions: z.array(z.string().min(1).max(160)).max(4).describe("How you mapped the user's words to this scene, in words, with no numbers."),
   notice: z.array(claim).max(4).describe("What a typical viewer could notice here. Empty when nothing."),
   outOfSight: z.array(claim).max(4).describe("What is out of sight here. Put the good news first."),

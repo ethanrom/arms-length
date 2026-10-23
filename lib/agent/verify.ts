@@ -127,11 +127,11 @@ function checkClaim(claim: Claim, momentId: string | null, where: string, implic
   return issues;
 }
 
-/** Text that is not a claim (title, assumptions) carries no numbers except the user's own clock times. */
-function checkPlainText(text: string, momentId: string, where: string, allowClock: boolean): VerifierIssue[] {
+/** Text that is not a claim (title, assumptions) carries no numbers except the user's own: clock times, and numbers they said. */
+function checkPlainText(text: string, momentId: string, where: string, userNumbers: ReadonlySet<string>): VerifierIssue[] {
   const issues = wordingIssues(text, momentId, where);
-  const body = allowClock ? text.replace(CLOCK, " ") : text;
-  if (/\d/.test(body)) issues.push({ momentId, code: "stray_number", detail: `${where} must not contain numbers. Say it in words.` });
+  const strays = [...text.replace(CLOCK, " ").matchAll(NUMBER)].map((m) => norm(m[0])).filter((n) => !userNumbers.has(n));
+  if (strays.length) issues.push({ momentId, code: "stray_number", detail: `${where} ("${text}") contains ${[...new Set(strays)].join(", ")}, which the user did not say. Say it in words.` });
   return issues;
 }
 
@@ -200,20 +200,26 @@ function checkHeadline(m: DraftMoment, momentId: string, results: Results): Veri
   return issues;
 }
 
+/** What the checker knows about the request: the user's own words, whose numbers a title or assumption may repeat. */
+export interface VerifyContext {
+  userText?: string;
+}
+
 /** Where in the plan an issue was found, so a deterministic fix can reach exactly the offending sentence. */
-export type PlanField = "plan" | "headline" | "notice" | "outOfSight" | "action" | "summary" | "other";
+export type PlanField = "plan" | "headline" | "notice" | "outOfSight" | "assumption" | "action" | "summary" | "other";
 export interface Located {
   issue: VerifierIssue;
   /** Index into `moments`, or null for the plan as a whole (and the summary). */
   moment: number | null;
   field: PlanField;
-  /** Which claim of `notice` or `outOfSight`. */
+  /** Which claim of `notice` or `outOfSight`, or which assumption. */
   index: number;
 }
 
 /** All the problems with a draft plan, each with its place. */
-export function verifyLocated(draft: PlanDraft, results: Results, prefs: RehearsePrefs): Located[] {
+export function verifyLocated(draft: PlanDraft, results: Results, prefs: RehearsePrefs, context: VerifyContext = {}): Located[] {
   const out: Located[] = [];
+  const userNumbers = new Set([...(context.userText ?? "").matchAll(NUMBER)].map((m) => norm(m[0])));
   const add = (issues: VerifierIssue[], moment: number | null, field: PlanField, index = 0) => {
     for (const issue of issues) out.push({ issue, moment, field, index });
   };
@@ -226,9 +232,9 @@ export function verifyLocated(draft: PlanDraft, results: Results, prefs: Rehears
     add(checkScene(m, id, results), i, "other");
     add(checkAction(m, id, results, prefs), i, "action");
     add(checkHeadline(m, id, results), i, "headline");
-    add(checkPlainText(m.title, id, "The title", true), i, "other");
+    add(checkPlainText(m.title, id, "The title", userNumbers), i, "other");
     if (m.time) add(wordingIssues(m.time, id, "The time"), i, "other");
-    m.assumptions.forEach((text, j) => add(checkPlainText(text, id, `Assumption ${j + 1}`, true), i, "other"));
+    m.assumptions.forEach((text, j) => add(checkPlainText(text, id, `Assumption ${j + 1}`, userNumbers), i, "assumption", j));
     m.notice.forEach((c, j) => add(checkClaim(c, id, `notice ${j + 1}`, [m.observeRef], results), i, "notice", j));
     m.outOfSight.forEach((c, j) => add(checkClaim(c, id, `outOfSight ${j + 1}`, [m.observeRef], results), i, "outOfSight", j));
     add(checkClaim(m.action.claim, id, "The action sentence", "ref" in m.action && m.action.ref ? [m.action.ref] : [], results), i, "action");
@@ -238,8 +244,8 @@ export function verifyLocated(draft: PlanDraft, results: Results, prefs: Rehears
 }
 
 /** All the problems with a draft plan; empty means it may be shown. */
-export function verifyPlan(draft: PlanDraft, results: Results, prefs: RehearsePrefs): VerifierIssue[] {
-  return verifyLocated(draft, results, prefs).map((l) => l.issue);
+export function verifyPlan(draft: PlanDraft, results: Results, prefs: RehearsePrefs, context: VerifyContext = {}): VerifierIssue[] {
+  return verifyLocated(draft, results, prefs, context).map((l) => l.issue);
 }
 
 /** The plan with each claim's implicit refs (the moment's observation, the action's result) made explicit, for the UI. */

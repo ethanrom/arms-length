@@ -1,21 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Box, ScaleEstimate } from "@/lib/contracts";
-import type { DayPlan, ObserveResult, RehearsePrefs, RehearseRequest, SceneInput } from "@/lib/contracts/rehearse";
-import { AskForm } from "./AskForm";
-import { PlanView } from "./PlanView";
-import { Progress } from "./Progress";
+import type { DayPlan, RehearsePrefs, RehearseRequest } from "@/lib/contracts/rehearse";
+import { Ask } from "./Ask";
+import { Building, type SketchPanel } from "./Building";
+import { Day } from "./Day";
+import { ExperienceDialog } from "./ExperienceDialog";
+import type { StagePhoto } from "./stage/types";
 import { streamRehearse, type ErrorEvent } from "./stream";
+import { Teaser } from "./Teaser";
+import { useCalm } from "./useCalm";
 
 export interface RehearseDayProps {
   requestFace: RehearseRequest["face"];
-  /** `focus` is the cheek and nose patch the Step back loupe magnifies (frame px); each card shows it at the moment's distance. */
-  photo: { src: string; alt: string; frame: { width: number; height: number }; scale: ScaleEstimate; focus?: Box };
-  /** Recomputes a moment for an edited light, viewer or distance, with the model that built the plan. Without it, moments can't be edited. */
-  rerun?: (input: SceneInput, ref: string) => ObserveResult;
-  /** A card was chosen: the page moves its Step back view to this distance (metres). */
-  onSelectMoment?: (distanceM: number) => void;
+  /** The face as the stage draws it. `focus` is the cheek and nose patch the Step back loupe magnifies (frame px). */
+  photo: StagePhoto;
 }
 
 /** Kind sentences for each way a run can end without a plan. */
@@ -30,22 +29,28 @@ const MESSAGES: Record<ErrorEvent["code"], string> = {
   timeout: "That took longer than expected. Try again, or describe a little less of the day.",
 };
 
+/** How long the faces take to arrive in the sketches before the day opens. */
+const LANDING_MS = 1500;
+
 interface Run {
   kind: "ask" | "follow";
-  steps: string[];
+  status: string;
+  panels: SketchPanel[];
+  landed: DayPlan | null;
 }
 
 /**
- * "Rehearse your day": describe a day, and each moment of it comes back with your face as the people there will see it.
- * Everything numeric arrives checked from /api/rehearse; this component only asks, shows progress and lays the plan out.
+ * "Tomorrow, from their side". On the page it is a teaser with one button; the button opens a full-screen experience: ask, the
+ * storyboard sketching itself while the agent works, then the day, one moment at a time. Everything numeric arrives checked from
+ * /api/rehearse; this only asks, shows progress and lays the plan out.
  */
-export function RehearseDay({ requestFace, photo, rerun, onSelectMoment }: RehearseDayProps) {
+export function RehearseDay({ requestFace, photo }: RehearseDayProps) {
   const { src, alt, frame, scale, focus } = photo;
   const { width, height } = frame;
   const { mmPerPx, relSd, source, irisPx } = scale;
   const [fx, fy, fw, fh] = focus ? [focus.x, focus.y, focus.w, focus.h] : [];
   // The renderer restarts when these change identity, so the photo is rebuilt only when a value does.
-  const stable = useMemo(
+  const stable = useMemo<StagePhoto>(
     () => ({
       src,
       alt,
@@ -56,29 +61,27 @@ export function RehearseDay({ requestFace, photo, rerun, onSelectMoment }: Rehea
     [src, alt, width, height, mmPerPx, relSd, source, irisPx, fx, fy, fw, fh],
   );
 
+  const calm = useCalm();
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"ask" | "day">("ask");
+  const [draft, setDraft] = useState("");
   const [prefs, setPrefs] = useState<RehearsePrefs>({ callDevice: "laptop", noMakeup: false });
-  const [current, setCurrent] = useState<{ plan: DayPlan; key: number; steps: string[] } | null>(null);
+  const [current, setCurrent] = useState<{ plan: DayPlan; key: number } | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [error, setError] = useState<{ kind: Run["kind"]; text: string } | null>(null);
   const abort = useRef<AbortController | null>(null);
-  const planRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => abort.current?.abort(), []);
-
-  // A new plan is the answer the visitor is waiting for: bring it into view and let a screen reader announce it.
-  const planKey = current?.key;
-  useEffect(() => {
-    if (planKey) planRef.current?.focus();
-  }, [planKey]);
 
   const start = useCallback(
     async (kind: Run["kind"], day: string, followUp?: NonNullable<RehearseRequest["followUp"]>) => {
       abort.current?.abort();
       const controller = new AbortController();
       abort.current = controller;
-      const steps = [kind === "ask" ? "Reading your day" : "Reading your question"];
+      const panels: SketchPanel[] = [];
+      let status = kind === "ask" ? "Reading your day." : "Reading your question.";
       setError(null);
-      setRun({ kind, steps });
+      setRun({ kind, status, panels: [], landed: null });
 
       const request: RehearseRequest = { face: requestFace, day, prefs, ...(followUp ? { followUp } : {}) };
       try {
@@ -86,14 +89,24 @@ export function RehearseDay({ requestFace, photo, rerun, onSelectMoment }: Rehea
           request,
           (event) => {
             if (event.type !== "step") return;
-            steps.push(event.label);
-            setRun({ kind, steps: [...steps] });
+            status = event.label;
+            const found = event.moment;
+            if (found && !panels.some((p) => p.title === found.title)) panels.push({ key: `${panels.length}`, title: found.title, scene: found.scene });
+            setRun({ kind, status, panels: [...panels], landed: null });
           },
           controller.signal,
         );
         if (controller.signal.aborted) return;
-        if (end.type === "plan") setCurrent((c) => ({ plan: end.plan, key: (c?.key ?? 0) + 1, steps: [...steps] }));
-        else setError({ kind, text: MESSAGES[end.code] ?? MESSAGES.upstream });
+        if (end.type === "error") {
+          setError({ kind, text: MESSAGES[end.code] ?? MESSAGES.upstream });
+          return;
+        }
+        // The plan is in: let your face arrive in each sketch before the day opens.
+        setRun({ kind, status, panels: [...panels], landed: end.plan });
+        await new Promise((resolve) => window.setTimeout(resolve, calm ? 0 : LANDING_MS));
+        if (controller.signal.aborted) return;
+        setCurrent((c) => ({ plan: end.plan, key: (c?.key ?? 0) + 1 }));
+        setView("day");
       } catch {
         // aborted by a newer run or by leaving the page: nothing to show
       } finally {
@@ -103,42 +116,54 @@ export function RehearseDay({ requestFace, photo, rerun, onSelectMoment }: Rehea
         }
       }
     },
-    [requestFace, prefs],
+    [requestFace, prefs, calm],
   );
 
-  const asking = run?.kind === "ask";
-  const following = run?.kind === "follow";
+  const close = useCallback(() => {
+    abort.current?.abort();
+    abort.current = null;
+    setRun(null);
+    setOpen(false);
+  }, []);
+
+  const openIt = () => {
+    setError(null);
+    setView(current ? "day" : "ask");
+    setOpen(true);
+  };
+
+  const followFailed = error?.kind === "follow";
+  const focusKey = run ? `building-${run.kind}` : view === "day" && current ? `day-${current.key}` : "ask";
 
   return (
     <div>
-      <AskForm busy={!!run} prefs={prefs} onPrefs={setPrefs} onSubmit={(day) => start("ask", day)} />
+      <Teaser photo={stable} onOpen={openIt} />
 
-      {asking && (
-        <div className="mt-10 max-w-xl">
-          <Progress steps={run.steps} active label="Progress" />
-        </div>
-      )}
-      {error?.kind === "ask" && (
-        <p role="alert" data-testid="rehearse-error" className="mt-8 max-w-xl border-l-2 border-ink pl-4 text-[1rem] leading-relaxed">
-          {error.text}
-        </p>
-      )}
-
-      {current && (
-        <div className="mt-14 md:mt-16">
-          <PlanView
-            key={current.key}
-            ref={planRef}
-            plan={current.plan}
-            photo={stable}
-            steps={current.steps}
-            rerun={rerun}
-            onSelectMoment={onSelectMoment}
-            onFollowUp={(question) => start("follow", current.plan.day, { question, previous: current.plan })}
-            followUp={{ busy: following, error: error?.kind === "follow" ? error.text : null }}
-            progress={following ? <Progress steps={run.steps} active label="Progress on your question" /> : undefined}
-          />
-        </div>
+      {open && (
+        <ExperienceDialog onClose={close} focusKey={focusKey}>
+          {run ? (
+            <Building photo={stable} panels={run.panels} status={run.status} landed={run.landed} />
+          ) : view === "day" && current ? (
+            <Day
+              key={current.key}
+              plan={current.plan}
+              photo={stable}
+              startKey={current.key}
+              startAtEnd={followFailed}
+              onFollowUp={(question) => start("follow", current.plan.day, { question, previous: current.plan })}
+              followUpError={followFailed ? error.text : null}
+              onStartOver={() => {
+                setError(null);
+                setDraft(current.plan.day);
+                setCurrent(null);
+                setView("ask");
+              }}
+              onClose={close}
+            />
+          ) : (
+            <Ask prefs={prefs} onPrefs={setPrefs} onSubmit={(day) => start("ask", day)} error={error?.kind === "ask" ? error.text : null} day={draft} onDay={setDraft} />
+          )}
+        </ExperienceDialog>
       )}
     </div>
   );

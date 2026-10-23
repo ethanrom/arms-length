@@ -51,8 +51,6 @@ interface StepBackProps {
   /** The patch of cheek and nose the loupe magnifies, in frame px. */
   loupe: Box;
   stops?: readonly number[];
-  /** Moves the slider and tape to `distanceM` each time `key` changes (a card elsewhere on the page was chosen). */
-  goTo?: { distanceM: number; key: number };
 }
 
 const clampPct = (v: number) => Math.min(100, Math.max(0, v));
@@ -108,7 +106,6 @@ export function StepBack({
   validation,
   loupe,
   stops = DEFAULT_STOPS,
-  goTo,
 }: StepBackProps) {
   const reduce = useCalm();
   const frames = useDistanceFrames(src, scale, viewing, stops);
@@ -155,14 +152,6 @@ export function StepBack({
     },
     [stopIntro],
   );
-
-  // Only a new key moves the slider, so a remount with an old request doesn't replay it.
-  const handledGo = useRef(goTo?.key);
-  useEffect(() => {
-    if (!goTo || goTo.key === handledGo.current) return;
-    handledGo.current = goTo.key;
-    pick(goTo.distanceM);
-  }, [goTo, pick]);
 
   const opacities = useMemo(() => layerOpacities(stops, distance), [stops, distance]);
   const { near, below, above } = locateAmongAnchors(anchors, distance);

@@ -32,7 +32,7 @@ export function HowWeKnow({ plan, moment }: { plan: DayPlan; moment: PlannedMome
     <div className="space-y-5 text-[0.9375rem] leading-relaxed">
       {moment.assumptions.length > 0 && (
         <section>
-          <h5 className="eyebrow">What we assumed</h5>
+          <h4 className="eyebrow">What we assumed</h4>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-ink-soft marker:text-ink">
             {moment.assumptions.map((a) => (
               <li key={a}>{a}</li>
@@ -42,7 +42,7 @@ export function HowWeKnow({ plan, moment }: { plan: DayPlan; moment: PlannedMome
       )}
       {blocks.map(({ r, assumptions }) => (
         <section key={r.ref}>
-          <h5 className="eyebrow">{headingOf(r)}</h5>
+          <h4 className="eyebrow">{headingOf(r)}</h4>
           {isReceipt(r) && <ReceiptNumbers result={r} />}
           {assumptions.length > 0 && (
             <ul className="mt-2 list-disc space-y-1 pl-5 text-ink-soft marker:text-ink">

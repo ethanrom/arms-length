@@ -289,3 +289,48 @@ describe("verifyPlan headlines", () => {
     expect(verifyPlan(withHeadline("On the call, your pores and fine lines fade from the video."), base, prefs)).toEqual([]);
   });
 });
+
+describe("verifyPlan issues are specific enough to repair from", () => {
+  it("names the sentence, the number and the quotes the claim may use, for the concern it is about", () => {
+    const d = goodDraft();
+    d.moments[0].notice = [{ text: "A typical viewer could pick out about 1 in 20 of your pores.", refs: ["r1"] }];
+    const issues = verifyPlan(d, base, prefs);
+    const text = issues.map((i) => i.detail).join(" | ");
+    expect(text).toContain("notice 1");
+    expect(text).toContain("A typical viewer could pick out about 1 in 20 of your pores.");
+    expect(text).toContain("1 in 20");
+    expect(text).toContain("Quotes with numbers you may copy here, verbatim:");
+    expect(text).toContain('"about 1 in 12" (pore.typical)');
+    expect(text).toContain('"54 of 650" (pore.typicalCount)');
+    expect(text).toContain('"1.5 m" (distance)');
+    // The quotes of a concern the sentence does not mention are left out.
+    expect(text).not.toContain("acne.");
+  });
+
+  it("lists every number quote when the sentence names no concern", () => {
+    const d = goodDraft();
+    d.moments[0].notice = [{ text: "From 3 m you look relaxed.", refs: ["r1"] }];
+    const text = verifyPlan(d, base, prefs).map((i) => i.detail).join(" | ");
+    expect(text).toContain("acne.typicalCount");
+    expect(text).toContain("pore.typicalCount");
+  });
+});
+
+describe("the minimising rule leaves the prompt's own style words alone", () => {
+  it("allows 'a little', 'softens' and 'fade from view' where many marks show, and still stops 'a few' and 'faint'", () => {
+    const busy = stubObserve("r1");
+    busy.concerns = [
+      { concern: "pore", targetCount: 100, typicalShare: 0.9, typicalCount: 90, boundShare: 1, boundCount: 100, soft: false },
+      { concern: "acne", targetCount: 10, typicalShare: 0.8, typicalCount: 8, boundShare: 1, boundCount: 10, soft: false },
+    ];
+    const results = { r1: busy } as Record<string, AnyResult>;
+    const head = (text: string) => {
+      const d = goodDraft();
+      d.moments[0].headline = { text, refs: [] };
+      return verifyPlan(d, results, prefs).map((i) => i.code);
+    };
+    expect(head("Moving the laptop back a little softens them, and pores fade from view.")).toEqual([]);
+    expect(head("A few marks show up close.")).toEqual(["banned_word"]);
+    expect(head("Up close the marks look faint.")).toEqual(["banned_word"]);
+  });
+});

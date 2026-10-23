@@ -1,6 +1,7 @@
 /** Turning a checked draft into the DayPlan the UI receives: ids, the observed scene, explicit refs, and the results cited. */
 import type { Claim, DayPlan, MomentAction, PlannedMoment, RunStats, SceneInput, VerifierIssue } from "@/lib/contracts";
-import { polishText } from "./headline";
+import { fitHeadline, polishText } from "./headline";
+import { MAX_HEADLINE_CHARS } from "./schemas";
 import { afterRef, isFreeFix, isObserve } from "./results";
 import type { AnyResult } from "./types";
 import { withExplicitRefs, type PlanDraft } from "./verify";
@@ -19,11 +20,16 @@ export function polishDraft(draft: PlanDraft): { draft: PlanDraft; removed: numb
     removed += out.removed;
     return out.removed ? { ...claim, text: out.text } : claim;
   };
+  const trimmed = (claim: Claim): Claim => {
+    const text = fitHeadline(claim.text, MAX_HEADLINE_CHARS);
+    if (text !== claim.text) removed++;
+    return text === claim.text ? claim : { ...claim, text };
+  };
   const polished: PlanDraft = {
     summary: polish(draft.summary),
     moments: draft.moments.map((m) => ({
       ...m,
-      headline: m.headline && polish(m.headline),
+      headline: m.headline && trimmed(polish(m.headline)),
       notice: m.notice.map(polish),
       outOfSight: m.outOfSight.map(polish),
       action: { ...m.action, claim: polish(m.action.claim) } as typeof m.action,
@@ -33,7 +39,7 @@ export function polishDraft(draft: PlanDraft): { draft: PlanDraft; removed: numb
 }
 
 /** The scene as it was actually observed, so a re-run from the plan reproduces the numbers. */
-function observedScene(draftScene: SceneInput, observe: AnyResult | undefined): SceneInput {
+export function observedScene(draftScene: SceneInput, observe: AnyResult | undefined): SceneInput {
   if (!isObserve(observe)) return draftScene;
   const { scene, light, viewer, call } = observe.input;
   return call ? { scene, light, viewer, call } : { scene, light, viewer, distanceM: observe.distanceM };

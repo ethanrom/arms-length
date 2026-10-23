@@ -52,7 +52,7 @@ describe("tool specs", () => {
     const item = final.properties.moments.items;
     expect(item.required).toContain("headline");
     expect(item.properties.headline.required).toEqual(["text", "refs"]);
-    expect(item.properties.headline.properties.text.maxLength).toBe(120);
+    expect(JSON.stringify(item.properties.headline)).toContain("at most 120 characters");
   });
 
   it("states the rules in the system prompt, from the same lists the linter uses", () => {
@@ -63,6 +63,8 @@ describe("tool specs", () => {
     expect(prompt).toContain("character for character");
     expect(prompt).toContain("at most");
     expect(prompt).toContain("headline");
+    expect(prompt).toContain("assess_moment");
+    expect(prompt).toContain("SECOND turn");
     expect(prompt).toContain("120 characters");
     expect(buildSystemPrompt()).toBe(prompt);
   });
@@ -205,5 +207,92 @@ describe("stepEvent", () => {
     expect(stepEvent("observe_scene", { label: "a flaw", scene: "dinner_table" })).not.toHaveProperty("moment");
     expect(stepEvent("observe_scene", { label: "Dinner", scene: "the moon" })).not.toHaveProperty("moment");
     expect(stepEvent("observe_scene", null)).not.toHaveProperty("moment");
+  });
+});
+
+describe("assess_moment", () => {
+  const steps = (box: ReturnType<typeof toolbox>, input: unknown) => {
+    const events: { tool: string; moment?: unknown }[] = [];
+    const outcome = box.run("assess_moment", input, (e) => events.push({ tool: e.tool, ...(e.moment ? { moment: e.moment } : {}) }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { outcome, events, view: outcome.ok ? (parse(outcome.text) as Record<string, any>) : null };
+  };
+
+  it("does the observation, the free-fix search and the lightest touch in one call, filing every result under its own ref", () => {
+    const box = toolbox();
+    const { outcome, view, events } = steps(box, { title: "Lunch", scene: "cafe_table", light: "daylight" });
+    expect(outcome.ok).toBe(true);
+    expect(view!.observeRef).toBe("r1");
+    expect(outcome.ref).toBe("r1");
+    expect(view!.moment).toBe("Lunch");
+    expect(view!.scene).toMatchObject({ scene: "cafe_table", light: "daylight", viewer: "typical", distanceM: 0.8 });
+    // The same results the single tools give: the observation is the engine's, byte for byte.
+    expect(box.results.get("r1")).toEqual(realEngine.observeScene(demoFace("p3a"), { scene: "cafe_table", light: "daylight" }, "r1"));
+    const refs = [...box.results.keys()];
+    expect(refs[0]).toBe("r1");
+    expect(refs.length).toBeGreaterThan(1);
+    // Steps: the observation names the moment; the searches follow.
+    expect(events[0]).toEqual({ tool: "observe_scene", moment: { title: "Lunch", scene: "cafe_table" } });
+    expect(events.map((e) => e.tool)).toEqual(expect.arrayContaining(["observe_scene", "find_free_fix"]));
+    expect(events.some((e) => e.tool === "assess_moment")).toBe(false);
+  });
+
+  it("returns the quotes grouped per concern, compactly", () => {
+    const { view, outcome } = steps(toolbox(), { title: "Dinner", scene: "dinner_table" });
+    expect(view!.quotes).toMatchObject({ distance: "1.5 m" });
+    expect(view!.concerns.pore).toEqual(expect.objectContaining({ typical: expect.any(String), typicalCount: expect.any(String), bound: expect.stringContaining("at most"), boundCount: expect.stringContaining("at most") }));
+    expect(Object.keys(view!)).toEqual(expect.arrayContaining(["inSight", "outOfSight", "needsAChange", "freeFix", "limit", "lightestTouch", "makeup", "action"]));
+    expect(outcome.text.length).toBeLessThan(6500);
+    expect(outcome.text).not.toMatch(/typicalShare|boundShare|luminanceCdM2/);
+  });
+
+  it("runs the call frame first for a video call, and names the moment on both steps", () => {
+    const box = toolbox();
+    const call = { device: "laptop", cameraDistanceCm: 50, layout: "gallery" };
+    const { view, events } = steps(box, { title: "Standup", scene: "video_call", call });
+    expect(events.slice(0, 2)).toEqual([
+      { tool: "video_call_frame", moment: { title: "Standup", scene: "video_call" } },
+      { tool: "observe_scene", moment: { title: "Standup", scene: "video_call" } },
+    ]);
+    expect(view!.callFrame.ref).toBe("r1");
+    expect(view!.observeRef).toBe("r2");
+    expect(view!.callFrame.quotes).toHaveProperty("equivalentDistance");
+    expect(view!.quotes).toHaveProperty("floor");
+    expect(view!.scene.call).toEqual(call);
+  });
+
+  it("finds a free change where one exists, and the lightest touch only for what none reaches", () => {
+    const withFix = steps(toolbox(), { title: "Dinner", scene: "dinner_table", light: "home" });
+    const noFix = steps(toolbox(), { title: "Close", scene: "close_talk" });
+    for (const { view } of [withFix, noFix]) {
+      expect(view!.freeFix === null || view!.freeFix.reaches.length > 0).toBe(true);
+      if (view!.freeFix) expect(view!.freeFix.quotes.change).toBeTruthy();
+      if (view!.lightestTouch.length) expect(view!.stillInSightAfterAFreeChange.length).toBeGreaterThan(0);
+    }
+    // Every touch cited has a coverage quote and says where it was measured.
+    for (const t of [...withFix.view!.lightestTouch, ...noFix.view!.lightestTouch]) expect(t.quotes).toMatchObject({ coverage: expect.any(String), measuredAt: expect.any(String) });
+  });
+
+  it("offers no lightest touch when the user would rather not wear makeup", () => {
+    const { view, events } = steps(toolbox(true), { title: "Close", scene: "close_talk" });
+    expect(view!.lightestTouch).toEqual([]);
+    expect(events.some((e) => e.tool === "lightest_touch")).toBe(false);
+    expect(view!.makeup).toMatch(/rather not wear makeup|Nothing is left/);
+  });
+
+  it("keeps the same refs and results as running the single tools in order", () => {
+    const assessBox = toolbox();
+    steps(assessBox, { title: "Dinner", scene: "dinner_table", light: "home" });
+    const direct = realEngine.observeScene(demoFace("p3a"), { scene: "dinner_table", light: "home" }, "r1");
+    expect(assessBox.results.get("r1")).toEqual(direct);
+  });
+
+  it("names the valid range for a scene it cannot resolve, and spends no ref", () => {
+    const box = toolbox();
+    const { outcome } = steps(box, { title: "x", scene: "dinner_table", distanceM: 9 });
+    expect(outcome.ok).toBe(false);
+    expect(parse(outcome.text).error).toContain("between 1.2 and 2.1 m");
+    expect(box.results.size).toBe(0);
+    expect(steps(box, { title: "x", scene: "video_call" }).outcome.ok).toBe(false);
   });
 });

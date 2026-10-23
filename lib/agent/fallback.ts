@@ -8,6 +8,7 @@ import { SCENES } from "@/lib/contracts";
 import { UI_LISTS } from "@/lib/copy/banned";
 import { CONCERN_COPY } from "@/lib/copy/concerns";
 import { lintText } from "@/lib/copy/lint";
+import { assessObserved } from "./assess";
 import { assemblePlan } from "./plan";
 import { createRunStore } from "./results";
 import { MAX_CLAIM_CHARS, MAX_HEADLINE_CHARS, MAX_MOMENTS } from "./schemas";
@@ -306,6 +307,13 @@ export function buildFallbackPlan(input: FallbackInput): DayPlan {
   return assemblePlan({ day: request.day, draft, results: store.results, verified: false, issues: input.issues ?? [], stats: input.stats });
 }
 
+/** The template headline for a moment the model wrote, from its own observation and chosen action (see salvage.ts). */
+export function templateHeadline(observe: ObserveResult, action: DraftMoment["action"], position: number): Claim {
+  const measured = observe.concerns.filter((c) => c.targetCount > 0);
+  const out = measured.filter((c) => c.typicalCount === 0).map((c) => c.concern);
+  return headlineClaim(observe, out, action.kind !== "none", measured.some((c) => c.typicalCount > 0), position);
+}
+
 const LIGHT_WORDS: Record<LightId, string> = {
   home: "dim home light",
   indoor: "indoor light",
@@ -328,7 +336,7 @@ function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string
   const floorClaim = scene.call ? videoFloorClaim(obs) : null;
   if (floorClaim) outOfSight.unshift(floorClaim);
 
-  const action = chooseAction({ obs, scene, needs, title, input, store, step });
+  const action = chooseAction({ obs, scene, title, input, store, step });
   const call = scene.call;
   const assumptions = [
     `I took this moment as: ${SCENES.find((s) => s.id === scene.scene)?.label ?? scene.scene}.`,
@@ -343,51 +351,44 @@ function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string
 }
 
 /**
- * One action per moment. A free change first: the largest group of the concerns in sight (easiest first) that one change puts
- * out of sight. Then the measured lightest touch, unless the user would rather not wear makeup. Otherwise none, said plainly.
+ * One action per moment, from the same assessment the agent's assess_moment tool makes: a free change first (the largest group of
+ * the concerns in sight that one change puts out of sight), then the measured lightest touch, unless the user would rather not wear
+ * makeup. Otherwise none, said plainly.
  */
-function chooseAction(args: { obs: ObserveResult; scene: SceneInput; needs: ConcernAtScene[]; title: string; input: FallbackInput; store: Store; step: Step }): DraftMoment["action"] {
-  const { obs, scene, needs, title, input, store, step } = args;
+function chooseAction(args: { obs: ObserveResult; scene: SceneInput; title: string; input: FallbackInput; store: Store; step: Step }): DraftMoment["action"] {
+  const { obs, scene, title, input, store, step } = args;
   const { face, engine, request } = input;
-  if (needs.length === 0) return { kind: "none", claim: { text: "Nothing needs doing for this moment.", refs: [obs.ref] } };
+  const a = assessObserved({ observe: obs, scene, title, face, engine, noMakeup: request.prefs.noMakeup, store, step });
+  if (a.needs.length === 0) return { kind: "none", claim: { text: "Nothing needs doing for this moment.", refs: [obs.ref] } };
 
-  const easiestFirst = [...needs].sort((a, b) => a.typicalShare - b.typicalShare).map((c) => c.concern);
-  let group: ConcernId[] = [];
-  for (let k = 1; k <= easiestFirst.length; k++) {
-    const probe = engine.findFreeFix(face, { moment: scene, concerns: easiestFirst.slice(0, k) }, "probe");
-    if (!probe.reachable || !probe.lever) break;
-    group = easiestFirst.slice(0, k);
-  }
-  if (group.length) {
-    step("find_free_fix", { label: title });
-    const fix = engine.findFreeFix(face, { moment: scene, concerns: group }, store.nextRef());
-    store.commit(fix);
+  if (a.freeFix && a.freeFix.quotes.change) {
+    const fix = a.freeFix;
     const where = fix.quotes.to && fix.lever !== "light" ? ` (${fix.quotes.to})` : "";
     const text = fit(
-      `${cap(fix.quotes.change)}${where} to put your ${names(group)} out of sight for a typical viewer.`,
+      `${cap(fix.quotes.change)}${where} to put your ${names(a.group)} out of sight for a typical viewer.`,
       `${cap(fix.quotes.change)}${where} to put these out of sight for a typical viewer.`,
     );
     return { kind: "free_fix", ref: fix.ref, claim: { text, refs: [fix.ref] } };
   }
 
-  if (!request.prefs.noMakeup) {
-    for (const concern of easiestFirst) {
-      step("lightest_touch", { concern });
-      const touch = engine.lightestTouch(face, concern, store.nextRef());
-      store.commit(touch);
-      if ((touch.status === "met" || touch.status === "not_met") && touch.quotes.coverage && touch.quotes.measuredAt) {
-        const extra = touch.status === "not_met" && touch.quotes.result ? ` (${touch.quotes.result})` : "";
-        const text = `Your measured lightest touch for ${CONCERN_COPY[concern].plural}: ${touch.quotes.coverage}${extra}, ${touch.quotes.measuredAt}.`;
-        return { kind: "lightest_touch", ref: touch.ref, claim: { text, refs: [touch.ref] } };
-      }
-    }
+  const touch = a.touches.find((t) => t.quotes.coverage && t.quotes.measuredAt);
+  if (touch) {
+    const extra = touch.status === "not_met" && touch.quotes.result ? ` (${touch.quotes.result})` : "";
+    const text = `Your measured lightest touch for ${CONCERN_COPY[touch.concern].plural}: ${touch.quotes.coverage}${extra}, ${touch.quotes.measuredAt}.`;
+    return { kind: "lightest_touch", ref: touch.ref, claim: { text, refs: [touch.ref] } };
   }
-  step("find_free_fix", { label: title });
-  const all = engine.findFreeFix(face, { moment: scene, concerns: easiestFirst }, store.nextRef());
-  store.commit(all);
-  const limit = all.quotes.limit;
+
+  const limit = a.limit?.quotes.limit;
   const generic = "A free change would not bring these fully out of sight here, so the list above is what a typical viewer could pick out.";
-  return { kind: "none", claim: { text: limit ? fit(`${cap(limit)}.`, generic) : generic, refs: [all.ref] } };
+  return { kind: "none", claim: { text: limit ? fit(`${cap(limit)}.`, generic) : generic, refs: [a.limit?.ref ?? obs.ref] } };
+}
+
+/** The template summary for a plan the model wrote, from its moments' own actions (see salvage.ts). */
+export function templateSummary(moments: DraftMoment[]): Claim {
+  return summaryFor(
+    moments.map((moment) => ({ moment, needsChange: moment.action.kind !== "none" })),
+    false,
+  );
 }
 
 function summaryFor(built: BuiltMoment[], followUpNotApplied: boolean): Claim {

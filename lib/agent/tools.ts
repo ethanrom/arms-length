@@ -5,8 +5,11 @@
  */
 import { SCENES, VIEWER_ACUITY, type CallGeometry, type ConcernId, type RehearseEvent, type RehearseFace, type RehearsePrefs, type SceneInput, type ToolName } from "@/lib/contracts";
 import { CONCERN_COPY } from "@/lib/copy/concerns";
+import { FREE_FIX_GOAL } from "@/lib/rehearse";
 import { lintText } from "@/lib/copy/lint";
+import { assessMoment, type StepFn } from "./assess";
 import {
+  assessMomentInput,
   callGeometry,
   describeZodIssue,
   dropNulls,
@@ -25,12 +28,17 @@ import {
 } from "./schemas";
 import { afterRef, createRunStore, isFreeFix, isObserve } from "./results";
 import { isSceneError, type AnyResult, type LlmTool, type RehearseEngine } from "./types";
+import { assessView } from "./views";
 
 /** The share of a concern a typical viewer may still see for it to count as out of sight (the lightest-touch goal). */
-export const OUT_OF_SIGHT_SHARE = 0.1;
+export const OUT_OF_SIGHT_SHARE = FREE_FIX_GOAL;
 
-export const TOOL_NAMES: readonly ToolName[] = [
+/** The contract's ToolName plus the combined tool. assess_moment never appears in a step event: it emits the steps of the tools it runs. */
+export type AgentToolName = ToolName | "assess_moment";
+
+export const TOOL_NAMES: readonly AgentToolName[] = [
   "list_scenes",
+  "assess_moment",
   "observe_scene",
   "video_call_frame",
   "find_free_fix",
@@ -40,15 +48,17 @@ export const TOOL_NAMES: readonly ToolName[] = [
   "final_answer",
 ];
 
-const DESCRIPTIONS: Record<ToolName, string> = {
+const DESCRIPTIONS: Record<AgentToolName, string> = {
+  assess_moment:
+    "Everything the plan needs about one moment, in one call: for a call the video frame, then the vision model's observation, then a search for the free change that puts what a typical viewer can pick out out of sight, then, only where no free change reaches, the measured lightest touch. Returns refs and the quotes grouped per concern: the only numbers you may write. Call it once per moment, all moments in the same turn, then call final_answer.",
   list_scenes:
     "Lists the scenes (id, label, default distance and allowed range, default light, source), the lights with their luminance, and the viewers. Optional: the scene ids are also in your instructions.",
   observe_scene:
-    "Runs the vision model for one moment: how much of each skin concern a typical viewer, and the sharpest eyes, could see at that distance, light and viewer. Returns a ref and quotes, the only numbers you may write. Call it once per moment, all moments in the same turn. For video_call, call video_call_frame first and pass the same call.",
+    "Runs the vision model for one moment: how much of each skin concern a typical viewer, and the sharpest eyes, could see at that distance, light and viewer. Returns a ref and quotes, the only numbers you may write. Prefer assess_moment, which does this and more. Use this one for a follow-up or a special case. For video_call, call video_call_frame first and pass the same call.",
   video_call_frame:
     "For a video call: how large your face looks to the other person and the smallest detail the video can carry. Call it before observe_scene for a video_call moment.",
   find_free_fix:
-    "Searches the free levers (seat or camera distance, call layout, light) for the smallest change that puts the listed concerns out of sight for a typical viewer. Returns whether that is reachable, the change as quotes, and the scene re-observed after it.",
+    "Searches the free levers (seat or camera distance, call layout, light) for the smallest change that puts the listed concerns out of sight for a typical viewer. Returns whether that is reachable, the change as quotes, and the scene re-observed after it. Prefer assess_moment; use this one for a follow-up or a special case.",
   lightest_touch:
     "The user's measured least makeup coverage for one concern (already measured, nothing new is run). Only when no free fix works and the user has not said no makeup.",
   worth_it:
@@ -60,6 +70,7 @@ const DESCRIPTIONS: Record<ToolName, string> = {
 
 const INPUT_SCHEMAS = {
   list_scenes: listScenesInput,
+  assess_moment: assessMomentInput,
   observe_scene: observeSceneInput,
   video_call_frame: videoCallFrameInput,
   find_free_fix: findFreeFixInput,
@@ -74,7 +85,7 @@ export function toolSpecs(): LlmTool[] {
 }
 
 /** Near-misses are accepted when only one tool can be meant: "observeScene", "functions.observe_scene", "Observe-Scene". */
-export function resolveToolName(raw: string): ToolName | null {
+export function resolveToolName(raw: string): AgentToolName | null {
   const squash = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
   const wanted = squash(raw);
   if (!wanted) return null;
@@ -102,13 +113,15 @@ function concernName(value: unknown): string {
   return typeof value === "string" && value in CONCERN_COPY ? CONCERN_COPY[value as ConcernId].plural : "this concern";
 }
 
-export function describeStep(tool: ToolName, input: unknown): string {
+export function describeStep(tool: AgentToolName, input: unknown): string {
   const args = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
   const title = cleanTitle(args.label);
   const moment = title ? `"${title}"` : "this moment";
   switch (tool) {
     case "list_scenes":
       return "Looking up the scenes and lights";
+    case "assess_moment":
+      return `Assessing ${moment}`;
     case "observe_scene":
       return `Running the vision model for ${moment}`;
     case "video_call_frame":
@@ -158,7 +171,7 @@ export interface Toolbox {
   /** Every result of the run by ref, including `${ref}.after` for free fixes. */
   results: Map<string, AnyResult>;
   /** Runs any tool except final_answer. Never throws. */
-  run(tool: ToolName, input: unknown): ToolOutcome;
+  run(tool: AgentToolName, input: unknown, onStep?: (event: Extract<RehearseEvent, { type: "step" }>) => void): ToolOutcome;
   /** For the fallback: run an engine tool with typed input (same refs, same storage). */
   engine: RehearseEngine;
   face: RehearseFace;
@@ -182,7 +195,8 @@ function toSceneInput(args: { scene: SceneInput["scene"]; light?: SceneInput["li
 
 export function createToolbox(opts: { face: RehearseFace; engine: RehearseEngine; prefs: RehearsePrefs }): Toolbox {
   const { face, engine } = opts;
-  const { results, nextRef, commit } = createRunStore();
+  const store = createRunStore();
+  const { results, nextRef, commit } = store;
 
   function guardedScene(args: SceneInput): string | null {
     if (args.scene === "video_call" && !args.call) {
@@ -200,8 +214,9 @@ export function createToolbox(opts: { face: RehearseFace; engine: RehearseEngine
     return fail("That tool could not run. Continue without it.");
   }
 
-  function run(tool: ToolName, rawInput: unknown): ToolOutcome {
+  function run(tool: AgentToolName, rawInput: unknown, onStep?: (event: Extract<RehearseEvent, { type: "step" }>) => void): ToolOutcome {
     if (tool === "final_answer") return fail("final_answer is handled separately.");
+    const step: StepFn = (t, i) => onStep?.(stepEvent(t, i));
     const parsed = INPUT_SCHEMAS[tool].safeParse(dropNulls(rawInput ?? {}));
     if (!parsed.success) return fail(`Invalid input for ${tool}: ${describeZodIssue(parsed.error)}.`);
 
@@ -217,6 +232,15 @@ export function createToolbox(opts: { face: RehearseFace; engine: RehearseEngine
               note: "For choosing only. Do not write these numbers in the plan.",
             }),
           };
+
+        case "assess_moment": {
+          const { title, ...rest } = parsed.data as ReturnType<typeof assessMomentInput.parse>;
+          const input = toSceneInput(rest);
+          const problem = guardedScene(input);
+          if (problem) return fail(problem);
+          const assessment = assessMoment({ scene: input, title, face, engine, noMakeup: opts.prefs.noMakeup, store, step });
+          return { ok: true, ref: assessment.observe.ref, result: assessment.observe, text: JSON.stringify(assessView(assessment, title)) };
+        }
 
         case "observe_scene": {
           const args = parsed.data as ReturnType<typeof observeSceneInput.parse>;

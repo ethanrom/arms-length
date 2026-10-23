@@ -6,7 +6,7 @@
 import { SCENES, type VerifierIssue } from "@/lib/contracts";
 import { BANNED_CLAIMS, BANNED_MEDICAL, BANNED_SHAMING, BANNED_UI } from "@/lib/copy/banned";
 import { CONCERN_COPY } from "@/lib/copy/concerns";
-import { MAX_CLAIM_CHARS, MAX_MOMENTS, VISIBLE_CONCERN_IDS } from "./schemas";
+import { MAX_CLAIM_CHARS, MAX_HEADLINE_CHARS, MAX_MOMENTS, VISIBLE_CONCERN_IDS } from "./schemas";
 import type { AgentRequest } from "./types";
 
 const LIGHTS = [
@@ -49,6 +49,8 @@ Video calls: use the user's device from the settings. Unless they say otherwise 
 - On video calls, the quotes floor and <concern>.belowCamera say what the video itself cannot carry whatever the other person's eyes. That is good news: put it under outOfSight.
 - Use the quote for the scene's distance and light (observe_scene quotes distance and light) whenever you mention them.
 - Per moment: outOfSight first (what stays out of sight, the good news), then notice (what a typical viewer could pick out). outOfSight lists only what really is out of sight for a typical viewer in the result: leave it empty rather than hedge. Leave notice empty when nothing is in sight.
+- A moment's title in final_answer is the same short title you gave as label to its tools, so the picture sketched while you work matches the finished moment.
+- headline (every moment): the one sentence shown big under the picture of what the people there will see. At most ${MAX_HEADLINE_CHARS} characters, warm and short, ideally with no numbers. Relief first: what stays out of sight, or what they will simply see. If something does show, say so gently and point at the tip (the action). The same rules as every claim: only what the tool results show, no unsupported reassurance, no banned words, no absolutes. If you do use a number, copy it from a quote and list the observe_scene ref.
 - Action: none when nothing needs doing; free_fix (ref of a find_free_fix with reachable true) with a sentence that says the change using its quotes; lightest_touch (ref of a lightest_touch with status met or not_met) only when no free fix works, always together with the distance and light it was measured at; worth_it only when asked.
 - Say only what the tool results support. Do not say what is common, ordinary or normal, what guests, colleagues or anyone else will look at, notice or think, or anything about movement, crowds, mood or the setting beyond the assumptions you state. Do not give advice about clothes, sunglasses, posture or behaviour: the only actions are the ones the tools returned. Reassure by stating what the measurements show: what is out of sight, and from how far.
 - Describe the light only with the quote for light (for example evening light at home); do not call it candlelit, warm or golden unless the user did.

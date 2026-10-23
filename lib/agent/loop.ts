@@ -10,7 +10,7 @@ import { NUDGE_MESSAGE, buildSystemPrompt, buildUserMessage, repairMessage } fro
 import { assemblePlan } from "./plan";
 import { isObserve } from "./results";
 import { describeZodIssue, dropNulls, finalAnswerInput, type FinalAnswerInput } from "./schemas";
-import { TOOL_NAMES, cleanTitle, createToolbox, describeStep, resolveToolName, toolSpecs } from "./tools";
+import { TOOL_NAMES, cleanTitle, createToolbox, resolveToolName, stepEvent, toolSpecs } from "./tools";
 import { LlmError, type AgentRequest, type LlmMessage, type RunAgentOptions } from "./types";
 import { verifyPlan, type DraftMoment, type PlanDraft } from "./verify";
 
@@ -107,7 +107,7 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
         results.push(resultBlock(use.toolUseId, JSON.stringify({ error: "Too many tool calls. Call final_answer now with what you have." }), false));
         continue;
       }
-      emit({ type: "step", tool, label: describeStep(tool, use.input) });
+      emit(stepEvent(tool, use.input));
 
       if (tool !== "final_answer") {
         const outcome = toolbox.run(tool, use.input);

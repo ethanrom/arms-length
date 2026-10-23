@@ -198,3 +198,41 @@ describe("verifyPlan", () => {
     });
   });
 });
+
+describe("verifyPlan headlines", () => {
+  const withHeadline = (text: string | null, refs = ["r1"]): PlanDraft => {
+    const d = goodDraft();
+    if (text === null) delete d.moments[0].headline;
+    else d.moments[0].headline = { text, refs };
+    return d;
+  };
+
+  it("needs one in a new plan", () => {
+    const issues = verifyPlan(withHeadline(null), base, prefs);
+    expect(codes(issues)).toEqual(["schema"]);
+    expect(issues[0].detail).toContain("headline");
+    expect(issues[0].momentId).toBe("m1");
+  });
+
+  it("accepts a short warm sentence, with or without a quoted number", () => {
+    expect(verifyPlan(withHeadline("Across the table, your breakouts stay out of sight."), base, prefs)).toEqual([]);
+    expect(verifyPlan(withHeadline("From 1.5 m, only about 1 in 12 of your pores show.", []), base, prefs)).toEqual([]);
+  });
+
+  it("holds the headline to 120 characters, one sentence", () => {
+    const long = "Across the table your breakouts stay out of sight, and the rest is just what they will see from where they sit, nothing more.";
+    expect(long.length).toBeGreaterThan(120);
+    expect(codes(verifyPlan(withHeadline(long), base, prefs))).toEqual(["schema"]);
+    expect(codes(verifyPlan(withHeadline("Across the table, you look relaxed. Nothing shows."), base, prefs))).toEqual(["schema"]);
+    expect(verifyPlan(withHeadline("At 1.5 m, only 54 of 650 pores show."), base, prefs)).toEqual([]);
+  });
+
+  it("checks the headline like every claim: numbers, bounds, banned words, absolutes, unsupported reassurance, refs", () => {
+    expect(codes(verifyPlan(withHeadline("About 1 in 20 of your pores show."), base, prefs))).toEqual(["stray_number"]);
+    expect(codes(verifyPlan(withHeadline("Someone could pick out 81 of your pores."), base, prefs))).toEqual(["bound_wording"]);
+    expect(codes(verifyPlan(withHeadline("Every flaw stays out of sight."), base, prefs))).toContain("banned_word");
+    expect(codes(verifyPlan(withHeadline("Nobody will see a thing."), base, prefs))).toContain("absolute");
+    expect(codes(verifyPlan(withHeadline("This is very common."), base, prefs))).toEqual(["banned_word"]);
+    expect(codes(verifyPlan(withHeadline("Your pores stay out of sight.", ["r9"]), base, prefs))).toEqual(["unknown_ref"]);
+  });
+});

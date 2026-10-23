@@ -8,7 +8,7 @@ import type { Claim, PlannedMoment, RehearsePrefs, VerifierIssue } from "@/lib/c
 import { UI_LISTS } from "@/lib/copy/banned";
 import { lintText } from "@/lib/copy/lint";
 import { isFreeFix, isLightestTouch, isObserve, isWorthIt, quotesFor } from "./results";
-import { MAX_CLAIM_CHARS, MAX_MOMENTS } from "./schemas";
+import { MAX_CLAIM_CHARS, MAX_HEADLINE_CHARS, MAX_MOMENTS } from "./schemas";
 import type { AnyResult } from "./types";
 
 export type DraftMoment = Omit<PlannedMoment, "id">;
@@ -28,6 +28,8 @@ const ABSOLUTES = /\b(?:nobody|never|promise|promised|promises|guarantee|guarant
 const UNSUPPORTED = /\b(?:ordinary|common|commonly|normal|normally|usual|usually|sunglasses|(?:guests|people|colleagues|others) will)\b/i;
 /** A number matched only by a bound quote must be worded as one. */
 const BOUND_WORDING = /\b(?:at most|up to|sharpest)\b/i;
+/** A full stop (or ! or ?) followed by a new sentence. A decimal point has no space after it. */
+const ONE_SENTENCE_BREAK = /[.!?]["')\]]*\s+\p{Lu}/u;
 const BOUND_KEY = /\.bound(?:Count)?$/;
 
 const NUMBER = /\d+(?:\.\d+)?/g;
@@ -59,11 +61,11 @@ function wordingIssues(text: string, momentId: string | null, where: string): Ve
   return out;
 }
 
-function checkClaim(claim: Claim, momentId: string | null, where: string, implicitRefs: string[], results: Results): VerifierIssue[] {
+function checkClaim(claim: Claim, momentId: string | null, where: string, implicitRefs: string[], results: Results, maxChars = MAX_CLAIM_CHARS): VerifierIssue[] {
   const issues: VerifierIssue[] = [];
   const text = claim.text ?? "";
-  if (!text.trim() || text.length > MAX_CLAIM_CHARS) {
-    issues.push({ momentId, code: "schema", detail: `${where} must be 1 to ${MAX_CLAIM_CHARS} characters (it is ${text.length}).` });
+  if (!text.trim() || text.length > maxChars) {
+    issues.push({ momentId, code: "schema", detail: `${where} must be 1 to ${maxChars} characters (it is ${text.length}).` });
   }
   for (const ref of claim.refs ?? []) {
     if (!(ref in results)) issues.push({ momentId, code: "unknown_ref", detail: `${where} cites ${ref}, which is not a tool result in this run.` });
@@ -162,6 +164,14 @@ function checkScene(m: DraftMoment, momentId: string, results: Results): Verifie
   return [];
 }
 
+/** A moment's headline is required in a new plan: one short sentence, checked like any claim (its numbers rest on the moment's observation). */
+function checkHeadline(m: DraftMoment, momentId: string, results: Results): VerifierIssue[] {
+  if (!m.headline) return [{ momentId, code: "schema", detail: "The moment needs a headline: one warm, short sentence for its picture." }];
+  const issues = checkClaim(m.headline, momentId, "The headline", [m.observeRef], results, MAX_HEADLINE_CHARS);
+  if (ONE_SENTENCE_BREAK.test(m.headline.text)) issues.push({ momentId, code: "schema", detail: "The headline must be one sentence." });
+  return issues;
+}
+
 /** All the problems with a draft plan; empty means it may be shown. */
 export function verifyPlan(draft: PlanDraft, results: Results, prefs: RehearsePrefs): VerifierIssue[] {
   const issues: VerifierIssue[] = [];
@@ -173,6 +183,7 @@ export function verifyPlan(draft: PlanDraft, results: Results, prefs: RehearsePr
     const id = `m${i + 1}`;
     issues.push(...checkScene(m, id, results));
     issues.push(...checkAction(m, id, results, prefs));
+    issues.push(...checkHeadline(m, id, results));
     issues.push(...checkPlainText(m.title, id, "The title", true));
     if (m.time) issues.push(...wordingIssues(m.time, id, "The time"));
     m.assumptions.forEach((text, j) => issues.push(...checkPlainText(text, id, `Assumption ${j + 1}`, true)));
@@ -191,6 +202,7 @@ export function withExplicitRefs(draft: PlanDraft): PlanDraft {
     summary: draft.summary,
     moments: draft.moments.map((m) => ({
       ...m,
+      headline: m.headline && add(m.headline, [m.observeRef]),
       notice: m.notice.map((c) => add(c, [m.observeRef])),
       outOfSight: m.outOfSight.map((c) => add(c, [m.observeRef])),
       action: { ...m.action, claim: add(m.action.claim, ["ref" in m.action ? m.action.ref : undefined]) } as DraftMoment["action"],

@@ -2,7 +2,7 @@
 // model, the engine and the environment. Bedrock is only ever called from here, server-side. Never logs request bodies.
 import fs from "node:fs";
 import path from "node:path";
-import { EXAMPLE_DAYS, type DayPlan, type RehearseEvent, type RehearseFace, type RunStats, type ToolName } from "@/lib/contracts";
+import { EXAMPLE_DAYS, type DayPlan, type RehearseEvent, type RehearseFace, type RunStats, type SceneId, type ToolName } from "@/lib/contracts";
 import { buildFallbackPlan } from "@/lib/agent/fallback";
 import { createBedrockClient } from "@/lib/agent/llm";
 import { runAgent } from "@/lib/agent/loop";
@@ -168,7 +168,7 @@ function stream(request: Request, body: ParsedRehearseRequest, face: RehearseFac
 // ---------------------------------------------------------------------------------------------------------------
 
 export interface RehearseFixture {
-  steps: { tool: ToolName; label: string }[];
+  steps: { tool: ToolName; label: string; moment?: { title: string; scene: SceneId } }[];
   plan: DayPlan;
 }
 
@@ -196,7 +196,7 @@ async function replayPlan(body: ParsedRehearseRequest, face: RehearseFace, deps:
   if (fixture) {
     const delay = Number(deps.env.AGENT_REPLAY_DELAY_MS ?? 150);
     for (const step of fixture.steps) {
-      emit({ type: "step", tool: step.tool, label: step.label });
+      emit({ type: "step", tool: step.tool, label: step.label, ...(step.moment ? { moment: step.moment } : {}) });
       await sleep(Number.isFinite(delay) ? Math.min(delay, 1000) : 150, signal);
     }
     return fixture.plan;

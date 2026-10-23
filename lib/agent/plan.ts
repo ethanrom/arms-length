@@ -32,7 +32,7 @@ export function assemblePlan(args: {
 
   const moments: PlannedMoment[] = draft.moments.map((m, i) => {
     cite(m.observeRef);
-    [...m.notice, ...m.outOfSight, m.action.claim].flatMap(refsOfClaim).forEach(cite);
+    [...m.notice, ...m.outOfSight, m.action.claim, ...(m.headline ? [m.headline] : [])].flatMap(refsOfClaim).forEach(cite);
     if ("ref" in m.action) cite(m.action.ref);
     return { ...m, id: `m${i + 1}`, time: m.time ?? null, scene: observedScene(m.scene, args.results.get(m.observeRef)), action: m.action as MomentAction };
   });

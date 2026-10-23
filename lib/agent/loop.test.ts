@@ -29,6 +29,7 @@ function answerFrom(last: Record<string, unknown>[], overrides: { notice?: strin
       time: i === 0 ? "7pm" : null,
       title: titles[i],
       scene: { scene: scenes[i] },
+      headline: { text: `At ${v.quotes.distance}, your skin looks relaxed.`, refs: [v.ref] },
       observeRef: v.ref,
       assumptions: ["I took this moment from your description."],
       notice: overrides.notice && i === 0 ? [{ text: overrides.notice, refs: [v.ref] }] : [],
@@ -66,6 +67,51 @@ describe("runAgent", () => {
       ["observe_scene", 'Running the vision model for "Team meeting"'],
       ["final_answer", "Checking every number in your day plan"],
     ]);
+  });
+
+  it("names the moment on the steps that find it, and keeps the headline with its refs", async () => {
+    const llm = fakeLlm([
+      () => ({
+        content: [
+          toolUse("video_call_frame", { label: "Morning standup", device: "laptop", cameraDistanceCm: 50, layout: "gallery" }),
+          observe("Dinner date", "dinner_table"),
+          observe("flaw night", "cafe_table"),
+          toolUse("find_free_fix", { label: "Dinner date", moment: { scene: "dinner_table" }, concerns: ["pore"] }),
+        ],
+      }),
+      () => ({ content: [{ text: "stop" }] }),
+    ]);
+    const { events, promise } = run(llm, { maxTurns: 1 });
+    await promise;
+    const steps = events.flatMap((e) => (e.type === "step" ? [e] : []));
+    expect(steps.map((s) => s.moment ?? null)).toEqual([{ title: "Morning standup", scene: "video_call" }, { title: "Dinner date", scene: "dinner_table" }, null, null]);
+  });
+
+  it("keeps the headline, with the moment's observation made explicit", async () => {
+    const llm = fakeLlm([parallelObserve, ({ last }) => ({ content: [answerFrom(last)] })]);
+    const plan = await run(llm).promise;
+    expect(plan.moments[0].headline).toEqual({ text: "At 1.5 m, your skin looks relaxed.", refs: ["r1"] });
+    expect(plan.moments[1].headline?.refs).toEqual(["r2"]);
+  });
+
+  it("asks for a missing headline as a schema issue and accepts the repaired plan", async () => {
+    const llm = fakeLlm([
+      parallelObserve,
+      ({ last }) => {
+        const answer = answerFrom(last);
+        for (const m of (answer.toolUse?.input as { moments: Record<string, unknown>[] }).moments) delete m.headline;
+        return { content: [answer] };
+      },
+      ({ last }) => {
+        expect(JSON.stringify(last)).toContain("headline");
+        return { content: [answerFrom([{ ref: "r1", quotes: { distance: "1.5 m", light: "a" } }, { ref: "r2", quotes: { distance: "2.5 m", light: "b" } }])] };
+      },
+    ]);
+    const plan = await run(llm).promise;
+    llm.check();
+    expect(plan.verified).toBe(true);
+    expect(plan.stats.repairs).toBe(1);
+    expect(plan.issues[0].code).toBe("schema");
   });
 
   it("returns all parallel results in one user message and passes assistant blocks back unchanged", async () => {

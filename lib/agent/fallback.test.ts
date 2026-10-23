@@ -14,7 +14,7 @@ const stats: RunStats = { ms: 0, turns: 0, toolCalls: 0, inputTokens: 0, outputT
 function visibleText(plan: DayPlan): string[] {
   return [
     plan.summary.text,
-    ...plan.moments.flatMap((m) => [m.title, m.time ?? "", ...m.assumptions, ...m.notice.map((c) => c.text), ...m.outOfSight.map((c) => c.text), m.action.claim.text]),
+    ...plan.moments.flatMap((m) => [m.title, m.time ?? "", m.headline?.text ?? "", ...m.assumptions, ...m.notice.map((c) => c.text), ...m.outOfSight.map((c) => c.text), m.action.claim.text]),
   ].filter(Boolean);
 }
 
@@ -31,6 +31,12 @@ function check(plan: DayPlan, request: AgentRequest) {
   for (const m of plan.moments) {
     for (const ref of [m.observeRef, ...[...m.notice, ...m.outOfSight, m.action.claim].flatMap((c) => c.refs)]) expect(plan.results[ref], ref).toBeDefined();
     if (m.action.kind === "free_fix") expect(plan.results[`${m.action.ref}.after`]).toBeDefined();
+    // One short numberless sentence under the picture, resting on the moment's observation.
+    expect(m.headline, m.title).toBeDefined();
+    expect(m.headline!.text.length).toBeLessThanOrEqual(120);
+    expect(m.headline!.text).not.toMatch(/\d/);
+    expect(m.headline!.text).not.toMatch(/[.!?]\s+\p{Lu}/u);
+    expect(m.headline!.refs).toEqual([m.observeRef]);
     if (request.prefs.noMakeup) expect(m.action.kind).not.toBe("lightest_touch");
   }
 }
@@ -83,6 +89,15 @@ describe("buildFallbackPlan", () => {
     expect(plan.moments[0].scene.distanceM).toBe(1.5);
   });
 
+  it("writes a relief-first headline from what the observation shows", () => {
+    const request: AgentRequest = { day: EXAMPLE_DAYS[1].day, prefs: { callDevice: "laptop", noMakeup: false } };
+    const plan = buildFallbackPlan({ request, face: demoFace("p3a"), engine: realEngine, stats });
+    const first = plan.moments[0];
+    expect(first.headline?.text).toMatch(/^From the front of the room, your .* out of sight/);
+    // A moment with something showing and a tip points at the tip.
+    expect(plan.moments.some((m) => m.action.kind !== "none" && /tip/.test(m.headline?.text ?? ""))).toBe(true);
+  });
+
   it("builds a call for the user's device", () => {
     const request: AgentRequest = { day: "a video call", prefs: { callDevice: "phone", noMakeup: false } };
     const plan = buildFallbackPlan({ request, face: demoFace("p3a"), engine: realEngine, stats });
@@ -96,7 +111,9 @@ describe("buildFallbackPlan", () => {
     buildFallbackPlan({ request, face: demoFace("p2b"), engine: realEngine, stats, emit: (e) => events.push(e) });
     const steps = events.flatMap((e) => (e.type === "step" ? [e] : []));
     expect(steps.length).toBeGreaterThanOrEqual(3);
-    expect(steps[0]).toMatchObject({ tool: "observe_scene", label: 'Running the vision model for "Video call"' });
+    expect(steps[0]).toMatchObject({ tool: "observe_scene", label: 'Running the vision model for "Video call"', moment: { title: "Video call", scene: "video_call" } });
+    expect(steps.filter((s) => s.tool === "observe_scene").map((s) => s.moment?.scene)).toEqual(["video_call", "dinner_table", "dinner_table"]);
+    expect(steps.filter((s) => s.tool !== "observe_scene").every((s) => s.moment === undefined)).toBe(true);
     for (const s of steps) expect(lintText(s.label)).toEqual([]);
   });
 

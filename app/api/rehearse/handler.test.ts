@@ -46,6 +46,7 @@ const dinner = (llmDay = DAY) =>
                 time: "7pm",
                 title: "Dinner date",
                 scene: { scene: "dinner_table" },
+                headline: { text: "Across the table, you can relax.", refs: [v.ref] },
                 observeRef: v.ref,
                 assumptions: [`I took ${llmDay.length > 0 ? "dinner" : "it"} as a table.`],
                 notice: [],
@@ -139,6 +140,7 @@ describe("POST /api/rehearse stream", () => {
     expect(res.headers.get("content-type")).toBe("application/x-ndjson");
     const list = await events(res);
     expect(list.map((e) => e.type)).toEqual(["step", "step", "plan"]);
+    expect(list[0]).toMatchObject({ tool: "observe_scene", moment: { title: "Dinner date", scene: "dinner_table" } });
     const plan = (list[2] as { type: "plan"; plan: DayPlan }).plan;
     expect(plan.verified).toBe(true);
     expect(plan.day).toBe(DAY);
@@ -178,13 +180,17 @@ describe("POST /api/rehearse replay", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rehearse-"));
   fs.mkdirSync(path.join(dir, "p3a"));
   const recorded: DayPlan = { day: EXAMPLE_DAYS[1].day, moments: [], summary: { text: "Recorded.", refs: [] }, results: {}, verified: true, issues: [], stats: { ms: 1, turns: 1, toolCalls: 1, inputTokens: 1, outputTokens: 1, repairs: 0 } };
-  fs.writeFileSync(path.join(dir, "p3a", "presenting.json"), JSON.stringify({ steps: [{ tool: "observe_scene", label: 'Running the vision model for "Presenting"' }], plan: recorded }));
+  fs.writeFileSync(path.join(dir, "p3a", "presenting.json"), JSON.stringify({ steps: [{ tool: "observe_scene", label: 'Running the vision model for "Presenting"', moment: { title: "Presenting", scene: "presenting" } }, { tool: "final_answer", label: "Checking every number in your day plan" }], plan: recorded }));
 
   it("serves the recorded plan for an example day, re-emitting its steps, with no model call and no rate limit", async () => {
     const d = deps({ AGENT_MODE: "replay", AGENT_REPLAY_DELAY_MS: "0" }, undefined, { fixturesDir: dir });
     for (let i = 0; i < 12; i++) {
       const list = await events(await handleRehearse(post({ face: { demoId: "p3a" }, day: EXAMPLE_DAYS[1].day, prefs }), "7.7.7.7", d));
-      expect(list).toEqual([{ type: "step", tool: "observe_scene", label: 'Running the vision model for "Presenting"' }, { type: "plan", plan: recorded }]);
+      expect(list).toEqual([
+        { type: "step", tool: "observe_scene", label: 'Running the vision model for "Presenting"', moment: { title: "Presenting", scene: "presenting" } },
+        { type: "step", tool: "final_answer", label: "Checking every number in your day plan" },
+        { type: "plan", plan: recorded },
+      ]);
     }
   });
 
@@ -211,6 +217,10 @@ describe("POST /api/rehearse replay of the recorded fixtures", () => {
         expect(list.slice(0, -1).every((e) => e.type === "step"), `${demoId}/${example.id}`).toBe(true);
         expect(plan.verified).toBe(true);
         expect(plan.day).toBe(example.day);
+        // The recorded steps name each moment, so the picture can be sketched as it is found.
+        const named = list.flatMap((e) => (e.type === "step" && e.moment ? [e.moment.title] : []));
+        expect(named.length, `${demoId}/${example.id}`).toBeGreaterThanOrEqual(plan.moments.length);
+        for (const m of plan.moments) expect(m.headline?.text.length).toBeGreaterThan(0);
       }
     }
   });

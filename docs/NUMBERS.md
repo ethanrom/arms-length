@@ -29,6 +29,8 @@ Each row is a value from a section below (the last column), picked up by the gen
 | AI run-to-run spread, same question | CV 27% (median); highest of five asks 1.4x to 2.1x the lowest | 4 |
 | AI against our distance | 1.33x off (geometric mean); 23 of 45 answers inside our range | 4 |
 | AI on real faces | pores 0.8 m on all 4 faces; breakouts null on 3 faces where YouCam found 18, 5, 3 | 4 |
+| Rehearse: the same model without our numbers, against our model | contradicts it on 60% of concern-moments (the agent's plans: 4.2%); over-cover 0 of 138 unaided, 0 of 64 with numbers | 4.1 |
+| Rehearse: numbers in shipped plans that no cited quote carries | 0 of 402 | 4.1 |
 | YouCam units | 16 per analysis, 26 per full session | 5 |
 | Measured route latency | 821 ms | 5 |
 
@@ -277,6 +279,31 @@ Claude Opus 5.5 on Amazon Bedrock (`global.anthropic.claude-opus-5-5`) against o
 
 <!-- generated:ai:end -->
 
+### 4.1 Rehearse: with and without our numbers
+
+<!-- generated:rehearse-eval:start -->
+
+The same model (Claude Sonnet 5.5 on Amazon Bedrock) on the four demo faces and 6 days, with our numbers (the Rehearse agent) and without (the photo and the day only), both scored against our model on the scene each chose. "Noticeable" means the model's typical share is above 10%. The truth is our own model, so the agent's low disagreement is close to guaranteed; the unaided model's disagreement is the finding, and the unaided model does not over-cover. Every number is in `eval/rehearse/results/summary.json`; the write-up, the prompts and the limits are in `eval/rehearse/README.md`. `npx tsx eval/rehearse/run.ts --offline` rebuilds the file and the README from the cached replies, with no network and no spend.
+
+| Number | Value | Source | Reproduce |
+| --- | --- | --- | --- |
+| Calls (an agent run or an unaided call each) and cap | 68 of 70: 12 agent runs and 56 unaided calls (8 of them at high effort); 12 more agent plans are the recorded fixtures | `eval/rehearse/results/summary.json` `meta`, `effortCheck.calls` | `npx tsx eval/rehearse/run.ts --offline` |
+| Model requests and estimated cost | 109 requests, $0.93 at list price ($2 in, $10 out per million tokens, cache reads 0.1x, cache writes 1.25x; cap $5; Bedrock billing may differ) | `eval/rehearse/results/summary.json` `meta.modelRequests`, `meta.estimatedCostUsd` | `npx tsx eval/rehearse/run.ts --offline` |
+| Concern-moments scored, unaided / agent | 768 / 332 (630 of the unaided ones are noticeable per the model) | `eval/rehearse/results/summary.json` `headline.without.tally`, `headline.with.tally` | `npx tsx eval/rehearse/run.ts --offline` |
+| Contradiction with our model, unaided | 60% (95% interval 56% to 63%) | `eval/rehearse/results/summary.json` `headline.without.rates.contradiction`, `headline.intervals` | `npx tsx eval/rehearse/run.ts --offline` |
+| Contradiction with our model, only where the unaided model gave a judgment (leaving out "not on this face") | 45% over 499 concern-moments; 269 answers were "not on this face" where the masks found the mark | `eval/rehearse/results/summary.json` `headline.withoutJudgedOnly`, `unaided.saidAbsentButFound` | `npx tsx eval/rehearse/run.ts --offline` |
+| Contradiction with our model, the agent's plans | 4.2% (95% interval 2.1% to 6.6%); gap to the unaided model 51% to 59% | `eval/rehearse/results/summary.json` `headline.with.rates.contradiction`, `headline.intervals` | `npx tsx eval/rehearse/run.ts --offline` |
+| Unaided model: said "not noticeable" where the model says a typical viewer can pick it out | 73% of 630; marks only (large soft areas left out) 70% | `eval/rehearse/results/summary.json` `headline.without.rates.miss`, `headline.marksOnly` | `npx tsx eval/rehearse/run.ts --offline` |
+| Over-cover ("cover" advised where the model says out of sight) | 0 of 138 unaided; 0 of 64 with numbers | `eval/rehearse/results/summary.json` `headline.without.tally`, `headline.with.tally` | `npx tsx eval/rehearse/run.ts --offline` |
+| Unaided model: mean absolute share error on marks, and correlation with the model's share | 0.33 and r = 0.43 | `eval/rehearse/results/summary.json` `headline.marksOnly.without.rates`, `headline.shareCorrelation` | `npx tsx eval/rehearse/run.ts --offline` |
+| Unaided model asked twice: `noticeable` differs, where it chose the same scene, light and viewer | 9 of 331 (2.7%); same choice in 51 of 59 moments | `eval/rehearse/results/summary.json` `unaided.consistency` | `npx tsx eval/rehearse/run.ts --offline` |
+| Unaided model at high effort against the default effort, contradiction on the same 8 pairs | 55% against 61% | `eval/rehearse/results/summary.json` `effortCheck` | `npx tsx eval/rehearse/run.ts --offline` |
+| Agent plans: verified first time / after one repair / fallback | 21 / 3 / 0 of 24 | `eval/rehearse/results/summary.json` `agent.outcomes` | `npx tsx eval/rehearse/run.ts --offline` |
+| Agent plans: numbers shipped that no cited quote carries (`verifyPlan` re-run on every shipped plan) | 0 of 402 (0 issues of any kind) | `eval/rehearse/results/summary.json` `agent.verifier` | `npx tsx eval/rehearse/run.ts --offline` |
+| Median time and mean cost per answer, agent / unaided | 15.1 s and $0.041 / 6.9 s and $0.006 | `eval/rehearse/results/summary.json` `agent.perf`, `unaided.perf` | `npx tsx eval/rehearse/run.ts --offline` |
+
+<!-- generated:rehearse-eval:end -->
+
 ## 5. YouCam
 
 <!-- generated:youcam:start -->
@@ -328,18 +355,20 @@ Source: `internal/LEDGER.md` (gitignored; the project's own ledger, cross-checke
 | Number | Value | Source | Reproduce |
 | --- | --- | --- | --- |
 | YouCam API endpoints called | 6 | `lib/youcam/client.ts` (see section 5) | `npx tsx scripts/docs/numbers.ts --section youcam` |
-| Our own API routes | 6 (`/api/visibility`, `/api/youcam/analysis`, `/api/youcam/cleanup`, `/api/youcam/makeup`, `/api/youcam/simulate`, `/api/youcam/status`) | `app/api/**/route.ts` | `find app/api -name route.ts` |
-| Axe accessibility scan in the e2e specs | 0 violations asserted on 14 routes: `/`, `/for-brands`, `/how-it-works`, `/privacy`, `/science`, `/self-test`, `/share/p3a`, `/try`, `/try/live`, `/try/not-a-face`, `/try/p1a`, `/try/p2b`, `/try/p3a`, `/try/p5a` | static scan of `tests/e2e/*.spec.ts`: tests that call the axe helper and the pages they `goto` (7 of 7 spec files assert it). The specs require an empty violations list; this table does not record a run | `npx tsx scripts/docs/numbers.ts --section engineering-misc`; `npm run e2e` |
+| Our own API routes | 7 (`/api/rehearse`, `/api/visibility`, `/api/youcam/analysis`, `/api/youcam/cleanup`, `/api/youcam/makeup`, `/api/youcam/simulate`, `/api/youcam/status`) | `app/api/**/route.ts` | `find app/api -name route.ts` |
+| Axe accessibility scan in the e2e specs | 0 violations asserted on 14 routes: `/`, `/for-brands`, `/how-it-works`, `/privacy`, `/science`, `/self-test`, `/share/p3a`, `/try`, `/try/live`, `/try/not-a-face`, `/try/p1a`, `/try/p2b`, `/try/p3a`, `/try/p5a` | static scan of `tests/e2e/*.spec.ts`: tests that call the axe helper and the pages they `goto` (8 of 8 spec files assert it). The specs require an empty violations list; this table does not record a run | `npx tsx scripts/docs/numbers.ts --section engineering-misc`; `npm run e2e` |
 
 Source lines of TypeScript per `lib/` module (physical lines, as `wc -l` counts them; test files separate).
 
 | Module | Source files | Source lines | Test files | Test lines |
 | --- | --- | --- | --- | --- |
+| `lib/agent` | 16 | 2,569 | 8 | 1,740 |
 | `lib/capture` | 9 | 845 | 3 | 359 |
-| `lib/contracts` | 6 | 449 | 0 | 0 |
+| `lib/contracts` | 7 | 784 | 0 | 0 |
 | `lib/copy` | 11 | 1,551 | 1 | 907 |
 | `lib/coverage` | 7 | 571 | 3 | 429 |
 | `lib/integration` | 17 | 2,222 | 6 | 541 |
+| `lib/rehearse` | 9 | 1,177 | 3 | 610 |
 | `lib/scale` | 4 | 345 | 2 | 206 |
 | `lib/science` | 11 | 952 | 1 | 370 |
 | `lib/selftest` | 4 | 203 | 1 | 85 |
@@ -347,7 +376,7 @@ Source lines of TypeScript per `lib/` module (physical lines, as `wc -l` counts 
 | `lib/util` | 0 | 0 | 1 | 5 |
 | `lib/vision` | 14 | 1,969 | 8 | 844 |
 | `lib/youcam` | 17 | 2,030 | 8 | 1,475 |
-| **Total** | **111** | **13,360** | **39** | **5,743** |
+| **Total** | **137** | **17,441** | **50** | **8,093** |
 
 Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.test.ts`). Reproduce: `find lib/vision -name '*.ts' ! -name '*.test.ts' | xargs cat | wc -l` for one module, or `npx tsx scripts/docs/numbers.ts --section engineering-lines`.
 
@@ -359,8 +388,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 | Number | Value | Source | Reproduce |
 | --- | --- | --- | --- |
-| Unit tests (vitest) | 437 in 44 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
-| End-to-end tests (Playwright) | 67 in 7 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
+| Unit tests (vitest) | 750 in 61 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
+| End-to-end tests (Playwright) | 91 in 8 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
 
 <!-- generated:engineering-tests:end -->
 
@@ -389,8 +418,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 Slow tables (3.2, 3.3 and 6.1) are not recomputed by `npm test`. Instead `lib/vision/numbers.doc.test.ts` checks two hashes:
 
-- inputs: `396fd62d16ded2da`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
-- slow tables: `c2c4fa616b07c971`. The tables above as committed, so a hand edit differs.
+- inputs: `b43ecfe082e1e2fe`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
+- slow tables: `de10ba6d43781948`. The tables above as committed, so a hand edit differs.
 
 When either test fails, run `npx tsx scripts/docs/numbers.ts --write` and commit. `--check` recomputes everything, including the slow tables.
 

@@ -1,0 +1,26 @@
+{
+  "kind": "without",
+  "face": "p3a",
+  "day": "teaching",
+  "run": 1,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-sonnet-5-5",
+  "effort": "low",
+  "at": "2026-10-23T09:01:13.781Z",
+  "imageSha256": "d75b68d255ee83a879a0137f27334ed8d30c8aa8a130edaa3d9e9fa45a080b2e",
+  "latencyMs": 6689,
+  "cache": true,
+  "httpCalls": 1,
+  "stopReason": "end_turn",
+  "meter": {
+    "input": 66,
+    "output": 404,
+    "cacheRead": 3624,
+    "cacheWrite": 0
+  },
+  "costUsd": 0.0049,
+  "text": "{\"moments\":[{\"title\":\"Teaching the class\",\"time\":\"Morning\",\"scene\":\"presenting\",\"light\":\"indoor\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":false,\"share\":0.1,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.1,\"advice\":\"nothing\"},\"dark_circle\":null,\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"}}},{\"title\":\"Parent video calls on phone\",\"time\":\"Afternoon\",\"scene\":\"video_call\",\"light\":\"videoCall\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"age_spot\":{\"noticeable\":false,\"share\":0.15,\"advice\":\"nothing\"},\"acne\":null,\"wrinkle\":{\"noticeable\":false,\"share\":0.15,\"advice\":\"nothing\"},\"dark_circle\":null,\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"}}}]}",
+  "blocks": [
+    "text"
+  ]
+}

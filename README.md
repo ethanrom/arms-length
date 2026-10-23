@@ -30,6 +30,14 @@ Built for Perfect Corp's YouCam API Skin AI & eCommerce VTO Hackathon (Skin AI t
   same vision model. Would anyone notice the change, and from where?
 - **The lightest touch.** YouCam Makeup Virtual Try-On renders foundation at several coverage levels, and we measure
   each render to find the lightest coverage that does most of the job.
+- **Tomorrow, from their side.** Describe your day ("video standup, client lunch, dinner date"). An agent splits it into
+  moments and runs the same vision model for each one through tools, then shows each moment as the person there sees
+  you:
+  - your face at its true size in their view, in a line-art scene and that light;
+  - on a video call, inside the call tile at the stream's resolution, so you can see what the video can't carry;
+  - one checked sentence per moment, a held "your mirror" to compare, and what needs no cover all day.
+
+  Every number comes from a tool result; a verifier rejects any other. It uses no YouCam units.
 - **Check it with your own eyes.** The walk-back self-test shows a spot at its true size on your screen and predicts
   where it disappears.
 - **For brands, a drop-in layer.** `POST /api/visibility` takes any YouCam Skin Analysis result and its photo, and
@@ -37,6 +45,7 @@ Built for Perfect Corp's YouCam API Skin AI & eCommerce VTO Hackathon (Skin AI t
 - **Kind by design.**
   - No scores or grades.
   - Deterministic sentence templates; a test blocks any wording on our banned lists (health claims, shaming words).
+    The agent's sentences are checked against the same lists before anyone sees them.
   - No photos kept; the session's YouCam tasks are deleted when you leave. A Content-Security-Policy lets pages
     connect only to this server, so the face check runs in your browser and nothing else phones home.
 
@@ -74,6 +83,16 @@ the ledger drifts.
 
 ![A frontier AI model's five answers per test spot scatter around our model's range; doubling the spot doubles our distance exactly](docs/img/ai-comparison.png)
 
+- **Relief you can trust.** We ran the same model with and without our numbers on the four demo faces and six days,
+  scored against our model on the scene each one chose:
+  - From the photo alone, it called **73%** of the moments where a typical viewer can pick a mark out "not
+    noticeable", and said "not on this face" 269 times where YouCam had found the mark.
+  - It contradicted our model on **60%** of concern-moments; the agent with our numbers, on 4.2%.
+  - **0 of 402** numbers in the agent's plans lacked a tool result behind them.
+
+  Our model is the reference here, so this measures disagreement with the measurement, not with people. The method,
+  prompts and raw answers are in [`eval/rehearse/`](eval/rehearse/README.md).
+
 ## How it works
 
 ```
@@ -88,9 +107,16 @@ YouCam Skin Simulation (0.5) ─► the difference, same detector ─► Worth i
 YouCam Makeup Virtual Try-On (foundation coverage) ─► registered renders, same detector ─► the lightest touch
                                                                         │
                                          deterministic sentence templates ─► Step back, cards, receipts
+
+your day ─► agent (Claude Sonnet 5.5, Amazon Bedrock, tool use) ─► moments: scene, light, viewer, call
+            │   tools: the same model per moment, call geometry, a free-fix solver, the measured lightest touch
+            └─► plan ─► verifier (every number traced to a tool result, banned words) ─► Tomorrow, from their side
 ```
 
-- **No LLM in the product.** Every number and sentence comes from deterministic code and templates.
+- **One language model, and it never makes a number.** Everything above the agent line is deterministic code and
+  templates. The agent turns your day into moments and words the plan; our tools do the measuring, and a verifier
+  checks every number against the tool results before you see it (one repair round, then a plan built directly from
+  the results). It reads the measurements as numbers, never the photo.
 - **The Step-back picture** uses Peli's band-limited contrast pyramid, so what you see as you drag is the same idea as
   the numbers, not a blur filter.
 - **Full model specification:** [`docs/MODEL.md`](docs/MODEL.md). Validation: [`docs/EVAL.md`](docs/EVAL.md). YouCam
@@ -125,7 +151,8 @@ npm run dev            # http://localhost:3000. With no .env at all, the demo fa
 ```
 
 For live analysis of your own photo, copy `.env.example` to `.env` and set `YOUCAM_API_KEY` and `LIVE_ACCESS_CODES`.
-Every variable is explained in that file. It deploys to Vercel as a standard Next.js app; a public deploy should
+Every variable is explained in that file. "Tomorrow, from their side" needs `AGENT_ENABLED=1` and Amazon Bedrock
+credentials (`CLAUDE_AWS_*`); `AGENT_MODE=replay` serves recorded plans with no model calls. It deploys to Vercel as a standard Next.js app; a public deploy should
 start keyless (demo faces only), and anyone can still use their own YouCam API key on it.
 
 **Checks:**
@@ -136,6 +163,7 @@ npm run lint
 npm run e2e                        # Playwright + axe; builds and serves on port 3100
 npx tsx eval/run.ts --detector=standard     # ModelFest replication, about 10 s
 npx tsx eval/llm-baseline/run.ts --offline  # the AI comparison, rebuilt from cached replies (no network)
+npx tsx eval/rehearse/run.ts --offline      # with and without our numbers, rebuilt from cached replies
 npx tsx scripts/docs/numbers.ts --check     # re-measures every number in docs/NUMBERS.md
 ```
 
@@ -148,9 +176,11 @@ lib/vision/   contrast-sensitivity models, detection, visibility distance, the S
 lib/skin/     mask decoding, mark features, contrast, regions
 lib/scale/    the iris ruler and its uncertainty
 lib/coverage/ the lightest-touch search
+lib/rehearse/ the day tools: a scene's visibility, video-call geometry, the free-fix solver
+lib/agent/    the day agent: Bedrock tool-use loop, verifier, fallback
 lib/copy/     deterministic sentence templates and the banned-word lists
 lib/youcam/   server client: upload, tasks, polling, ledger, breaker, replay
-eval/         ModelFest replication and the AI comparison
+eval/         ModelFest replication, the AI comparison, and with-and-without numbers
 fixtures/     recorded YouCam responses for the demo faces
 docs/         MODEL, EVAL, YOUCAM, DEPLOY, NUMBERS
 ```
@@ -169,6 +199,9 @@ Read [`docs/MODEL.md`](docs/MODEL.md#limitations) before relying on a number. Th
   visible from far on everyone.
 - **Worth it? and the lightest touch** rest on single renders per face, at a strength and shade we chose.
 - **We measure what the analysis marks**, so its outlines carry through to our numbers.
+- **Tomorrow, from their side** rests on stated assumptions: the picture stands for the middle 40° of the viewer's
+  view; video calls assume a camera field of view, screen and tile size, and viewing distance (compression would hide
+  more); the light levels are presets; Worth it? and the lightest touch are quoted as measured, indoors at 1.5 m.
 - **The demo faces are synthetic**, generated for this project and labelled as such.
 
 It measures how visible a mark is, not what it is. If a spot is new, changing or worrying you, ask a doctor or
@@ -178,6 +211,7 @@ pharmacist.
 
 - **Built with [Claude Code](https://claude.com/claude-code)** as an AI pair-programming assistant.
 - **YouCam API** by Perfect Corp: HD Skin Analysis, Skin Simulation, Makeup Virtual Try-On.
+- **Claude Sonnet 5.5 on Amazon Bedrock** plans and words "Tomorrow, from their side".
 - **Vision science:**
   - Watson & Ahumada (2005), *J. Vision* 5(9):6, and the ModelFest data;
   - Ashraf, Mantiuk, Chapiro & Wuerger (2024), castleCSF;

@@ -1,0 +1,680 @@
+{
+  "recordedAt": "2026-10-23T09:20:44.321Z",
+  "model": "Claude Sonnet 5.5 via Amazon Bedrock",
+  "steps": [
+    {
+      "tool": "observe_scene",
+      "label": "Running the vision model for \"Presenting to the team\"",
+      "moment": {
+        "title": "Presenting to the team",
+        "scene": "presenting"
+      }
+    },
+    {
+      "tool": "observe_scene",
+      "label": "Running the vision model for \"Drinks with colleagues\"",
+      "moment": {
+        "title": "Drinks with colleagues",
+        "scene": "conversation"
+      }
+    },
+    {
+      "tool": "find_free_fix",
+      "label": "Finding the smallest change that helps for \"Presenting to the team\""
+    },
+    {
+      "tool": "find_free_fix",
+      "label": "Finding the smallest change that helps for \"Drinks with colleagues\""
+    },
+    {
+      "tool": "lightest_touch",
+      "label": "Reading your measured lightest touch for redness"
+    },
+    {
+      "tool": "lightest_touch",
+      "label": "Reading your measured lightest touch for dark spots"
+    },
+    {
+      "tool": "lightest_touch",
+      "label": "Reading your measured lightest touch for breakouts"
+    },
+    {
+      "tool": "final_answer",
+      "label": "Checking every number in your day plan"
+    }
+  ],
+  "plan": {
+    "day": "Presenting to the team at 2pm in the big meeting room, then drinks with colleagues after work",
+    "moments": [
+      {
+        "time": "2pm",
+        "title": "Presenting to the team",
+        "scene": {
+          "scene": "presenting",
+          "light": "indoor",
+          "viewer": "typical",
+          "distanceM": 4
+        },
+        "headline": {
+          "text": "From the room, pores stay out of view and fine lines are few; some marks and under-eye areas do show.",
+          "refs": [
+            "r1"
+          ]
+        },
+        "observeRef": "r1",
+        "assumptions": [
+          "I took the big meeting room as presenting to a room, in the usual indoor light."
+        ],
+        "notice": [
+          {
+            "text": "At 4 m in indoor light, about 1 in 8 breakouts and about 1 in 7 dark spots can be picked out, and fine lines about 1 in 13.",
+            "refs": [
+              "r1"
+            ]
+          },
+          {
+            "text": "Redness, under-eye shadows and under-eye puffiness are noticeable to a typical viewer at this distance.",
+            "refs": [
+              "r1"
+            ]
+          }
+        ],
+        "outOfSight": [
+          {
+            "text": "Pores are out of sight for a typical viewer at 4 m in indoor light.",
+            "refs": [
+              "r1"
+            ]
+          }
+        ],
+        "action": {
+          "kind": "none",
+          "claim": {
+            "text": "No free change reaches the goal here, so there is nothing you need to do for this moment.",
+            "refs": [
+              "r3"
+            ]
+          }
+        },
+        "id": "m1"
+      },
+      {
+        "time": "after work",
+        "title": "Drinks with colleagues",
+        "scene": {
+          "scene": "conversation",
+          "light": "indoor",
+          "viewer": "typical",
+          "distanceM": 1
+        },
+        "headline": {
+          "text": "Up close at a standing chat, more of your skin shows; a light touch on breakouts is there if you'd like it.",
+          "refs": [
+            "r2",
+            "r7"
+          ]
+        },
+        "observeRef": "r2",
+        "assumptions": [
+          "I took drinks while standing as a standing conversation, in indoor light."
+        ],
+        "notice": [
+          {
+            "text": "At 1 m in indoor light, a typical viewer can pick out most breakouts and nearly all dark spots, plus about a third of pores and most fine lines.",
+            "refs": [
+              "r2"
+            ]
+          },
+          {
+            "text": "Redness, under-eye shadows and under-eye puffiness are also noticeable at this distance.",
+            "refs": [
+              "r2"
+            ]
+          }
+        ],
+        "outOfSight": [],
+        "action": {
+          "kind": "lightest_touch",
+          "ref": "r7",
+          "claim": {
+            "text": "For breakouts, 75% coverage, measured in indoor light at 1.5 m, brings sharpest-eye visibility to at most 3 in 10.",
+            "refs": [
+              "r7"
+            ]
+          }
+        },
+        "id": "m2"
+      }
+    ],
+    "summary": {
+      "text": "Pores are out of sight while you present at 4 m in indoor light; at drinks at 1 m in indoor light more shows, and a light touch on breakouts is an option.",
+      "refs": [
+        "r1",
+        "r2",
+        "r7"
+      ]
+    },
+    "results": {
+      "r1": {
+        "ref": "r1",
+        "quotes": {
+          "distance": "4 m",
+          "light": "indoor light",
+          "viewer": "typical eyes (20/20)",
+          "acne.typical": "about 1 in 8",
+          "acne.typicalCount": "5 of 40",
+          "acne.bound": "at most 1 in 8",
+          "acne.boundCount": "at most 5 of 40",
+          "age_spot.typical": "about 1 in 7",
+          "age_spot.typicalCount": "9 of 64",
+          "age_spot.bound": "at most 4 in 10",
+          "age_spot.boundCount": "at most 23 of 64",
+          "pore.typical": "none",
+          "pore.typicalCount": "0 of 450",
+          "pore.bound": "at most 1 in 100",
+          "pore.boundCount": "at most 1 of 450",
+          "wrinkle.typical": "about 1 in 13",
+          "wrinkle.typicalCount": "7 of 93",
+          "wrinkle.bound": "at most 1 in 5",
+          "wrinkle.boundCount": "at most 17 of 93",
+          "dark_circle.typical": "noticeable",
+          "dark_circle.typicalCount": "2 of 2",
+          "dark_circle.bound": "at most noticeable",
+          "dark_circle.boundCount": "at most 2 of 2",
+          "eye_bag.typical": "noticeable",
+          "eye_bag.typicalCount": "2 of 2",
+          "eye_bag.bound": "at most noticeable",
+          "eye_bag.boundCount": "at most 2 of 2",
+          "redness.typical": "noticeable",
+          "redness.typicalCount": "5 of 5",
+          "redness.bound": "at most noticeable",
+          "redness.boundCount": "at most 5 of 5"
+        },
+        "assumptions": [
+          "Distance: Presenting to a room. Hall (1966): public distance begins at 3.7 m. The model's profiles end at 6 m.",
+          "Light: indoor light. An office or a well-lit room, roughly 400 lux on the face. Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.",
+          "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention.",
+          "'About' numbers are for an average observer. 'At most' numbers are for even perfect eyes (a 6 dB margin on top of the average observer), so a real viewer sees the same or less.",
+          "Sizes in millimetres use your iris as the ruler (about 4% uncertainty), so they carry that uncertainty too.",
+          "Masks and contrasts come from one photo; hair, glasses, make-up, movement and a different angle will change what is seen."
+        ],
+        "input": {
+          "scene": "presenting",
+          "light": "indoor",
+          "viewer": "typical"
+        },
+        "distanceM": 4,
+        "luminanceCdM2": 45,
+        "acuityScale": 1,
+        "concerns": [
+          {
+            "concern": "acne",
+            "targetCount": 40,
+            "typicalShare": 0.125,
+            "typicalCount": 5,
+            "boundShare": 0.125,
+            "boundCount": 5,
+            "soft": false
+          },
+          {
+            "concern": "age_spot",
+            "targetCount": 64,
+            "typicalShare": 0.140625,
+            "typicalCount": 9,
+            "boundShare": 0.359375,
+            "boundCount": 23,
+            "soft": false
+          },
+          {
+            "concern": "pore",
+            "targetCount": 450,
+            "typicalShare": 0,
+            "typicalCount": 0,
+            "boundShare": 0.0022222222222222222,
+            "boundCount": 1,
+            "soft": false
+          },
+          {
+            "concern": "wrinkle",
+            "targetCount": 93,
+            "typicalShare": 0.07526881720430108,
+            "typicalCount": 7,
+            "boundShare": 0.1827956989247312,
+            "boundCount": 17,
+            "soft": false
+          },
+          {
+            "concern": "dark_circle",
+            "targetCount": 2,
+            "typicalShare": 1,
+            "typicalCount": 2,
+            "boundShare": 1,
+            "boundCount": 2,
+            "soft": true
+          },
+          {
+            "concern": "eye_bag",
+            "targetCount": 2,
+            "typicalShare": 1,
+            "typicalCount": 2,
+            "boundShare": 1,
+            "boundCount": 2,
+            "soft": true
+          },
+          {
+            "concern": "redness",
+            "targetCount": 5,
+            "typicalShare": 1,
+            "typicalCount": 5,
+            "boundShare": 1,
+            "boundCount": 5,
+            "soft": true
+          }
+        ]
+      },
+      "r3": {
+        "ref": "r3",
+        "quotes": {
+          "change": "no free change is enough to reach that here",
+          "limit": "even 6 m apart in evening light at home, redness (noticeable) would still be picked out"
+        },
+        "assumptions": [
+          "Goal: a typical viewer picks out at most 1 in 10 of each of these (the same 10% the lightest-touch search aims at), and none of a large soft area.",
+          "Levers tried, in order: sit or stand farther apart (up to 6 m, the far end of the range for this kind of moment), then softer light (one step: evening light at home).",
+          "Range for this moment: Hall (1966): public distance begins at 3.7 m. The model's profiles end at 6 m.",
+          "A free change is one that costs nothing but where you sit, stand or how you set up the call."
+        ],
+        "reachable": false,
+        "lever": null,
+        "from": {
+          "scene": "presenting"
+        },
+        "to": null,
+        "after": {
+          "ref": "r3.after",
+          "quotes": {
+            "distance": "4 m",
+            "light": "indoor light",
+            "viewer": "typical eyes (20/20)",
+            "acne.typical": "about 1 in 8",
+            "acne.typicalCount": "5 of 40",
+            "acne.bound": "at most 1 in 8",
+            "acne.boundCount": "at most 5 of 40",
+            "age_spot.typical": "about 1 in 7",
+            "age_spot.typicalCount": "9 of 64",
+            "age_spot.bound": "at most 4 in 10",
+            "age_spot.boundCount": "at most 23 of 64",
+            "pore.typical": "none",
+            "pore.typicalCount": "0 of 450",
+            "pore.bound": "at most 1 in 100",
+            "pore.boundCount": "at most 1 of 450",
+            "wrinkle.typical": "about 1 in 13",
+            "wrinkle.typicalCount": "7 of 93",
+            "wrinkle.bound": "at most 1 in 5",
+            "wrinkle.boundCount": "at most 17 of 93",
+            "dark_circle.typical": "noticeable",
+            "dark_circle.typicalCount": "2 of 2",
+            "dark_circle.bound": "at most noticeable",
+            "dark_circle.boundCount": "at most 2 of 2",
+            "eye_bag.typical": "noticeable",
+            "eye_bag.typicalCount": "2 of 2",
+            "eye_bag.bound": "at most noticeable",
+            "eye_bag.boundCount": "at most 2 of 2",
+            "redness.typical": "noticeable",
+            "redness.typicalCount": "5 of 5",
+            "redness.bound": "at most noticeable",
+            "redness.boundCount": "at most 5 of 5"
+          },
+          "assumptions": [
+            "Distance: Presenting to a room. Hall (1966): public distance begins at 3.7 m. The model's profiles end at 6 m.",
+            "Light: indoor light. An office or a well-lit room, roughly 400 lux on the face. Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.",
+            "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention.",
+            "'About' numbers are for an average observer. 'At most' numbers are for even perfect eyes (a 6 dB margin on top of the average observer), so a real viewer sees the same or less.",
+            "Sizes in millimetres use your iris as the ruler (about 4% uncertainty), so they carry that uncertainty too.",
+            "Masks and contrasts come from one photo; hair, glasses, make-up, movement and a different angle will change what is seen."
+          ],
+          "input": {
+            "scene": "presenting",
+            "light": "indoor",
+            "viewer": "typical"
+          },
+          "distanceM": 4,
+          "luminanceCdM2": 45,
+          "acuityScale": 1,
+          "concerns": [
+            {
+              "concern": "acne",
+              "targetCount": 40,
+              "typicalShare": 0.125,
+              "typicalCount": 5,
+              "boundShare": 0.125,
+              "boundCount": 5,
+              "soft": false
+            },
+            {
+              "concern": "age_spot",
+              "targetCount": 64,
+              "typicalShare": 0.140625,
+              "typicalCount": 9,
+              "boundShare": 0.359375,
+              "boundCount": 23,
+              "soft": false
+            },
+            {
+              "concern": "pore",
+              "targetCount": 450,
+              "typicalShare": 0,
+              "typicalCount": 0,
+              "boundShare": 0.0022222222222222222,
+              "boundCount": 1,
+              "soft": false
+            },
+            {
+              "concern": "wrinkle",
+              "targetCount": 93,
+              "typicalShare": 0.07526881720430108,
+              "typicalCount": 7,
+              "boundShare": 0.1827956989247312,
+              "boundCount": 17,
+              "soft": false
+            },
+            {
+              "concern": "dark_circle",
+              "targetCount": 2,
+              "typicalShare": 1,
+              "typicalCount": 2,
+              "boundShare": 1,
+              "boundCount": 2,
+              "soft": true
+            },
+            {
+              "concern": "eye_bag",
+              "targetCount": 2,
+              "typicalShare": 1,
+              "typicalCount": 2,
+              "boundShare": 1,
+              "boundCount": 2,
+              "soft": true
+            },
+            {
+              "concern": "redness",
+              "targetCount": 5,
+              "typicalShare": 1,
+              "typicalCount": 5,
+              "boundShare": 1,
+              "boundCount": 5,
+              "soft": true
+            }
+          ]
+        }
+      },
+      "r3.after": {
+        "ref": "r3.after",
+        "quotes": {
+          "distance": "4 m",
+          "light": "indoor light",
+          "viewer": "typical eyes (20/20)",
+          "acne.typical": "about 1 in 8",
+          "acne.typicalCount": "5 of 40",
+          "acne.bound": "at most 1 in 8",
+          "acne.boundCount": "at most 5 of 40",
+          "age_spot.typical": "about 1 in 7",
+          "age_spot.typicalCount": "9 of 64",
+          "age_spot.bound": "at most 4 in 10",
+          "age_spot.boundCount": "at most 23 of 64",
+          "pore.typical": "none",
+          "pore.typicalCount": "0 of 450",
+          "pore.bound": "at most 1 in 100",
+          "pore.boundCount": "at most 1 of 450",
+          "wrinkle.typical": "about 1 in 13",
+          "wrinkle.typicalCount": "7 of 93",
+          "wrinkle.bound": "at most 1 in 5",
+          "wrinkle.boundCount": "at most 17 of 93",
+          "dark_circle.typical": "noticeable",
+          "dark_circle.typicalCount": "2 of 2",
+          "dark_circle.bound": "at most noticeable",
+          "dark_circle.boundCount": "at most 2 of 2",
+          "eye_bag.typical": "noticeable",
+          "eye_bag.typicalCount": "2 of 2",
+          "eye_bag.bound": "at most noticeable",
+          "eye_bag.boundCount": "at most 2 of 2",
+          "redness.typical": "noticeable",
+          "redness.typicalCount": "5 of 5",
+          "redness.bound": "at most noticeable",
+          "redness.boundCount": "at most 5 of 5"
+        },
+        "assumptions": [
+          "Distance: Presenting to a room. Hall (1966): public distance begins at 3.7 m. The model's profiles end at 6 m.",
+          "Light: indoor light. An office or a well-lit room, roughly 400 lux on the face. Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.",
+          "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention.",
+          "'About' numbers are for an average observer. 'At most' numbers are for even perfect eyes (a 6 dB margin on top of the average observer), so a real viewer sees the same or less.",
+          "Sizes in millimetres use your iris as the ruler (about 4% uncertainty), so they carry that uncertainty too.",
+          "Masks and contrasts come from one photo; hair, glasses, make-up, movement and a different angle will change what is seen."
+        ],
+        "input": {
+          "scene": "presenting",
+          "light": "indoor",
+          "viewer": "typical"
+        },
+        "distanceM": 4,
+        "luminanceCdM2": 45,
+        "acuityScale": 1,
+        "concerns": [
+          {
+            "concern": "acne",
+            "targetCount": 40,
+            "typicalShare": 0.125,
+            "typicalCount": 5,
+            "boundShare": 0.125,
+            "boundCount": 5,
+            "soft": false
+          },
+          {
+            "concern": "age_spot",
+            "targetCount": 64,
+            "typicalShare": 0.140625,
+            "typicalCount": 9,
+            "boundShare": 0.359375,
+            "boundCount": 23,
+            "soft": false
+          },
+          {
+            "concern": "pore",
+            "targetCount": 450,
+            "typicalShare": 0,
+            "typicalCount": 0,
+            "boundShare": 0.0022222222222222222,
+            "boundCount": 1,
+            "soft": false
+          },
+          {
+            "concern": "wrinkle",
+            "targetCount": 93,
+            "typicalShare": 0.07526881720430108,
+            "typicalCount": 7,
+            "boundShare": 0.1827956989247312,
+            "boundCount": 17,
+            "soft": false
+          },
+          {
+            "concern": "dark_circle",
+            "targetCount": 2,
+            "typicalShare": 1,
+            "typicalCount": 2,
+            "boundShare": 1,
+            "boundCount": 2,
+            "soft": true
+          },
+          {
+            "concern": "eye_bag",
+            "targetCount": 2,
+            "typicalShare": 1,
+            "typicalCount": 2,
+            "boundShare": 1,
+            "boundCount": 2,
+            "soft": true
+          },
+          {
+            "concern": "redness",
+            "targetCount": 5,
+            "typicalShare": 1,
+            "typicalCount": 5,
+            "boundShare": 1,
+            "boundCount": 5,
+            "soft": true
+          }
+        ]
+      },
+      "r2": {
+        "ref": "r2",
+        "quotes": {
+          "distance": "1 m",
+          "light": "indoor light",
+          "viewer": "typical eyes (20/20)",
+          "acne.typical": "most",
+          "acne.typicalCount": "26 of 40",
+          "acne.bound": "at most nearly all",
+          "acne.boundCount": "at most 37 of 40",
+          "age_spot.typical": "nearly all",
+          "age_spot.typicalCount": "59 of 64",
+          "age_spot.bound": "at most all of them",
+          "age_spot.boundCount": "at most 64 of 64",
+          "pore.typical": "about a third",
+          "pore.typicalCount": "148 of 450",
+          "pore.bound": "at most 7 in 10",
+          "pore.boundCount": "at most 300 of 450",
+          "wrinkle.typical": "most",
+          "wrinkle.typicalCount": "58 of 93",
+          "wrinkle.bound": "at most 9 in 10",
+          "wrinkle.boundCount": "at most 75 of 93",
+          "dark_circle.typical": "noticeable",
+          "dark_circle.typicalCount": "2 of 2",
+          "dark_circle.bound": "at most noticeable",
+          "dark_circle.boundCount": "at most 2 of 2",
+          "eye_bag.typical": "noticeable",
+          "eye_bag.typicalCount": "2 of 2",
+          "eye_bag.bound": "at most noticeable",
+          "eye_bag.boundCount": "at most 2 of 2",
+          "redness.typical": "noticeable",
+          "redness.typicalCount": "5 of 5",
+          "redness.bound": "at most noticeable",
+          "redness.boundCount": "at most 5 of 5"
+        },
+        "assumptions": [
+          "Distance: Standing conversation. Hall (1966): far phase of personal distance, 0.76 to 1.2 m.",
+          "Light: indoor light. An office or a well-lit room, roughly 400 lux on the face. Project assumption: skin is a matte surface that reflects about 35% of the light that falls on it.",
+          "Viewer: a typical person with 20/20 sight, looking right at the mark, with nothing else competing for their attention.",
+          "'About' numbers are for an average observer. 'At most' numbers are for even perfect eyes (a 6 dB margin on top of the average observer), so a real viewer sees the same or less.",
+          "Sizes in millimetres use your iris as the ruler (about 4% uncertainty), so they carry that uncertainty too.",
+          "Masks and contrasts come from one photo; hair, glasses, make-up, movement and a different angle will change what is seen."
+        ],
+        "input": {
+          "scene": "conversation",
+          "light": "indoor",
+          "viewer": "typical"
+        },
+        "distanceM": 1,
+        "luminanceCdM2": 45,
+        "acuityScale": 1,
+        "concerns": [
+          {
+            "concern": "acne",
+            "targetCount": 40,
+            "typicalShare": 0.65,
+            "typicalCount": 26,
+            "boundShare": 0.925,
+            "boundCount": 37,
+            "soft": false
+          },
+          {
+            "concern": "age_spot",
+            "targetCount": 64,
+            "typicalShare": 0.921875,
+            "typicalCount": 59,
+            "boundShare": 1,
+            "boundCount": 64,
+            "soft": false
+          },
+          {
+            "concern": "pore",
+            "targetCount": 450,
+            "typicalShare": 0.3288888888888889,
+            "typicalCount": 148,
+            "boundShare": 0.6666666666666666,
+            "boundCount": 300,
+            "soft": false
+          },
+          {
+            "concern": "wrinkle",
+            "targetCount": 93,
+            "typicalShare": 0.6236559139784946,
+            "typicalCount": 58,
+            "boundShare": 0.8064516129032258,
+            "boundCount": 75,
+            "soft": false
+          },
+          {
+            "concern": "dark_circle",
+            "targetCount": 2,
+            "typicalShare": 1,
+            "typicalCount": 2,
+            "boundShare": 1,
+            "boundCount": 2,
+            "soft": true
+          },
+          {
+            "concern": "eye_bag",
+            "targetCount": 2,
+            "typicalShare": 1,
+            "typicalCount": 2,
+            "boundShare": 1,
+            "boundCount": 2,
+            "soft": true
+          },
+          {
+            "concern": "redness",
+            "targetCount": 5,
+            "typicalShare": 1,
+            "typicalCount": 5,
+            "boundShare": 1,
+            "boundCount": 5,
+            "soft": true
+          }
+        ]
+      },
+      "r7": {
+        "ref": "r7",
+        "concern": "acne",
+        "status": "not_met",
+        "coveragePct": 75,
+        "measuredAtM": 1.5,
+        "baselineShare": 0.6,
+        "afterShare": 0.3,
+        "quotes": {
+          "coverage": "75% coverage",
+          "measuredAt": "measured in indoor light at 1.5 m",
+          "goal": "at most 1 in 10 picked out by perfect eyes",
+          "result": "most of the effect, not all of it",
+          "before": "at most 6 in 10",
+          "after": "at most 3 in 10"
+        },
+        "assumptions": [
+          "Measured in indoor light, at 1.5 m, with a typical viewer looking right at it.",
+          "This is a virtual try-on of foundation, run once on your photo; real makeup, shade and light will differ.",
+          "Coverage is the try-on's own scale from 0 to 100, not a property of any product on a shelf.",
+          "The goal is that even perfect eyes could pick out at most 1 in 10 of them across a table; where makeup cannot reach that, the coverage shown is where most of the effect is reached."
+        ]
+      }
+    },
+    "verified": true,
+    "issues": [],
+    "stats": {
+      "ms": 15294,
+      "turns": 4,
+      "toolCalls": 8,
+      "inputTokens": 44278,
+      "outputTokens": 1590,
+      "repairs": 0
+    }
+  }
+}

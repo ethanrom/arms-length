@@ -19,6 +19,7 @@ import {
 } from "@/lib/integration/live";
 import { AGE_CONFIRMATION, AGE_NOTE, PRIVACY_LINE } from "@/lib/integration/privacy";
 import { buildResultsData } from "@/lib/integration/viewModel";
+import { faceFromBundle } from "@/lib/rehearse";
 
 type Gate = { kind: "checking" } | { kind: "denied"; message: string } | { kind: "ok"; replay: boolean; code: string | null; apiKey: string | null };
 
@@ -34,7 +35,7 @@ export interface DemoFaceLink {
  * /try/live: the access check (an own YouCam key, an access code, or neither on an open deployment), the capture flow, then the live pipeline (lib/integration/live.ts) and its results.
  * Everything runs in this browser tab except the YouCam calls, which go through /api/youcam/*.
  */
-export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
+export function LiveSessionView({ faces, agentEnabled = false }: { faces: DemoFaceLink[]; agentEnabled?: boolean }) {
   const [gate, setGate] = useState<Gate>({ kind: "checking" });
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
   const [adult, setAdult] = useState(false);
@@ -94,6 +95,8 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
   const bundle = snapshot?.bundle ?? null;
   const options = snapshot?.options;
   const data = useMemo(() => (bundle ? buildResultsData(bundle, options) : null), [bundle, options]);
+  // Rehearse your day gets the reading's numbers (measurements, try-on and simulation results), never the photo.
+  const rehearse = useMemo(() => (agentEnabled && bundle ? { requestFace: { live: faceFromBundle(bundle) } } : undefined), [agentEnabled, bundle]);
 
   if (data) {
     return (
@@ -102,6 +105,7 @@ export function LiveSessionView({ faces }: { faces: DemoFaceLink[] }) {
         onRunCoverage={runCoverage}
         back={{ href: "/try", label: "Back to the demo faces" }}
         unitsCharged={snapshot?.unitsCharged}
+        rehearse={rehearse}
       />
     );
   }

@@ -1,0 +1,26 @@
+{
+  "kind": "without",
+  "face": "p1a",
+  "day": "interview",
+  "run": 1,
+  "attempt": 1,
+  "modelId": "global.anthropic.claude-sonnet-5-5",
+  "effort": "low",
+  "at": "2026-10-23T08:59:53.366Z",
+  "imageSha256": "47c0b50e149393bd9be82b5ce833b8d9b8b7294e7b043b683cd4685abaf9695c",
+  "latencyMs": 5084,
+  "cache": true,
+  "httpCalls": 1,
+  "stopReason": "end_turn",
+  "meter": {
+    "input": 68,
+    "output": 399,
+    "cacheRead": 3663,
+    "cacheWrite": 0
+  },
+  "costUsd": 0.00486,
+  "text": "{\"moments\":[{\"title\":\"Job interview in a small office\",\"time\":\"10am\",\"scene\":\"meeting_room\",\"light\":\"indoor\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":false,\"share\":0.05,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.35,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":false,\"share\":0,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}},{\"title\":\"Coffee with a friend\",\"time\":null,\"scene\":\"cafe_table\",\"light\":\"indoor\",\"viewer\":\"typical\",\"concerns\":{\"pore\":{\"noticeable\":true,\"share\":0.25,\"advice\":\"nothing\"},\"age_spot\":null,\"acne\":{\"noticeable\":true,\"share\":0.7,\"advice\":\"cover\"},\"wrinkle\":null,\"dark_circle\":{\"noticeable\":true,\"share\":1,\"advice\":\"nothing\"},\"eye_bag\":null,\"redness\":{\"noticeable\":true,\"share\":1,\"advice\":\"cover\"}}}]}",
+  "blocks": [
+    "text"
+  ]
+}

@@ -1,0 +1,336 @@
+import { describe, expect, it } from "vitest";
+import type { Claim, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
+import { HEADLINE_STYLE_GUIDES } from "./headline";
+import { goodDraft, stubFreeFix, stubObserve, stubTouch, stubWorth } from "./test-helpers";
+import { numbersIn, verifyPlan, type PlanDraft } from "./verify";
+import type { AnyResult } from "./types";
+
+const prefs: RehearsePrefs = { callDevice: "laptop", noMakeup: false };
+
+function resultsOf(...list: AnyResult[]): Record<string, AnyResult> {
+  return Object.fromEntries(list.flatMap((r) => [[r.ref, r], ...("after" in r ? [[`${r.ref}.after`, r.after]] : [])]));
+}
+
+const base = resultsOf(stubObserve("r1"));
+const codes = (issues: VerifierIssue[]) => issues.map((i) => i.code);
+
+/** A draft with the first moment's notice replaced. */
+function withNotice(text: string, refs = ["r1"]): PlanDraft {
+  const d = goodDraft();
+  d.moments[0].notice = [{ text, refs }];
+  return d;
+}
+
+describe("numbersIn", () => {
+  it("reads decimals, percents and ratios, and ignores clock times", () => {
+    expect(numbersIn("about 1 in 12 of 650 at 1.50 m, 75% coverage")).toEqual(["1", "12", "650", "1.5", "75"]);
+    expect(numbersIn("your 9am standup, then 7:30 pm and 14:05")).toEqual([]);
+  });
+});
+
+describe("verifyPlan", () => {
+  it("passes a plan whose numbers are verbatim quotes of the results it cites", () => {
+    expect(verifyPlan(goodDraft(), base, prefs)).toEqual([]);
+  });
+
+  it("accepts numbers from the observation the moment rests on without an explicit ref", () => {
+    expect(verifyPlan(withNotice("At 1.5 m, about 1 in 12 of your pores.", []), base, prefs)).toEqual([]);
+  });
+
+  it("rejects a wrong value", () => {
+    const issues = verifyPlan(withNotice("A typical viewer could pick out about 1 in 20 of your pores."), base, prefs);
+    expect(codes(issues)).toEqual(["stray_number"]);
+    expect(issues[0].detail).toContain("20");
+    expect(issues[0].momentId).toBe("m1");
+  });
+
+  it("rejects a stray number that no cited result has", () => {
+    expect(codes(verifyPlan(withNotice("Across about 3 m your pores fade."), base, prefs))).toContain("stray_number");
+  });
+
+  it("rejects a quantity written in words that no quote contains, and accepts one a quote does", () => {
+    expect(codes(verifyPlan(withNotice("About half of your pores can be seen."), base, prefs))).toEqual(["stray_number"]);
+    const withWords = resultsOf({ ...stubObserve("r1"), quotes: { ...stubObserve("r1").quotes, "pore.typical": "about half" } });
+    expect(verifyPlan(withNotice("A typical viewer could pick out about half of your pores."), withWords, prefs)).toEqual([]);
+  });
+
+  it("needs bound wording for a number only the sharpest-eyes quote has", () => {
+    const bare = verifyPlan(withNotice("Someone could pick out 81 of your pores."), base, prefs);
+    expect(codes(bare)).toEqual(["bound_wording"]);
+    expect(verifyPlan(withNotice("At most 81 of 650 pores could be picked out, and only by the sharpest eyes."), base, prefs)).toEqual([]);
+    expect(verifyPlan(withNotice("Even perfect eyes could pick out at most 1 in 8 of your pores."), base, prefs)).toEqual([]);
+  });
+
+  it("does not ask for bound wording when a typical quote carries the number too", () => {
+    // "1" is in both "about 1 in 12" (typical) and "at most 1 in 8" (bound).
+    expect(verifyPlan(withNotice("About 1 in 12 of your pores."), base, prefs)).toEqual([]);
+  });
+
+  it("counts a free fix's re-observed scene when the fix is cited", () => {
+    const results = resultsOf(stubObserve("r1"), stubFreeFix("r2", true));
+    const d = goodDraft();
+    d.moments[0].action = { kind: "free_fix", ref: "r2", claim: { text: "Sit or stand about 30 cm further away (about 1.8 m apart); about 1 in 40 of your pores remain in sight.", refs: ["r2"] } };
+    expect(verifyPlan(d, results, prefs)).toEqual([]);
+  });
+
+  it("rejects banned words and absolutes anywhere in the text", () => {
+    const d = goodDraft();
+    d.moments[0].outOfSight = [{ text: "This hides every flaw.", refs: ["r1"] }];
+    d.summary = { text: "Nobody will ever notice, I promise.", refs: ["r1"] };
+    d.moments[0].title = "Dinner treatment";
+    const found = codes(verifyPlan(d, base, prefs));
+    expect(found).toContain("banned_word");
+    expect(found).toContain("absolute");
+    const details = verifyPlan(d, base, prefs).map((i) => i.detail).join("|");
+    expect(details).toContain("flaw");
+    expect(details).toContain("treatment");
+    expect(details).toMatch(/nobody|never|promise/i);
+  });
+
+  it("rejects claims no tool result supports, but lets an assumption describe the scene", () => {
+    for (const text of ["Under-eye shadows are very common.", "Most guests will be watching the couple.", "Keep your sunglasses handy.", "Everyone sees the same."]) {
+      expect(verifyPlan(withNotice(text), base, prefs).map((i) => i.code), text).toHaveLength(1);
+    }
+    const d = goodDraft();
+    d.moments[0].assumptions = ["I took the room as normal office light."];
+    expect(verifyPlan(d, base, prefs)).toEqual([]);
+  });
+
+  it("rejects numbers in a title or an assumption, but not a clock time", () => {
+    const d = goodDraft();
+    d.moments[0].title = "Dinner at 7pm";
+    expect(verifyPlan(d, base, prefs)).toEqual([]);
+    d.moments[0].title = "Table for 4";
+    d.moments[0].assumptions = ["I took it as 1.5 m across."];
+    expect(verifyPlan(d, base, prefs).map((i) => i.code)).toEqual(["stray_number", "stray_number"]);
+  });
+
+  it("rejects an unknown ref", () => {
+    const issues = verifyPlan(withNotice("Pores are mostly out of sight.", ["r9"]), base, prefs);
+    expect(codes(issues)).toEqual(["unknown_ref"]);
+    const d = goodDraft();
+    d.moments[0].observeRef = "r7";
+    expect(codes(verifyPlan(d, base, prefs))).toContain("unknown_ref");
+  });
+
+  describe("scenes", () => {
+    it("rejects an observeRef that is not an observation, or that observed another scene, light or viewer", () => {
+      const results = resultsOf(stubObserve("r1"), stubFreeFix("r2", true));
+      const notObserve = goodDraft();
+      notObserve.moments[0].observeRef = "r2";
+      expect(codes(verifyPlan(notObserve, results, prefs))).toContain("bad_scene");
+
+      const other = goodDraft();
+      other.moments[0].scene = { scene: "presenting", light: "indoor", viewer: "typical" };
+      expect(codes(verifyPlan(other, base, prefs))).toEqual(["bad_scene"]);
+
+      const light = goodDraft();
+      light.moments[0].scene = { scene: "dinner_table", light: "daylight" };
+      expect(codes(verifyPlan(light, base, prefs))).toEqual(["bad_scene"]);
+
+      const viewer = goodDraft();
+      viewer.moments[0].scene = { scene: "dinner_table", viewer: "blurry" };
+      expect(codes(verifyPlan(viewer, base, prefs))).toEqual(["bad_scene"]);
+    });
+
+    it("rejects a video call whose geometry differs from the observed one", () => {
+      const observed = stubObserve("r1", "video_call");
+      observed.input = { scene: "video_call", light: "videoCall", viewer: "typical", call: { device: "laptop", cameraDistanceCm: 50, layout: "gallery" } };
+      const d = goodDraft();
+      d.moments[0].scene = { scene: "video_call", call: { device: "laptop", cameraDistanceCm: 60, layout: "gallery" } };
+      expect(codes(verifyPlan(d, resultsOf(observed), prefs))).toEqual(["bad_scene"]);
+      d.moments[0].scene = { scene: "video_call", call: { device: "laptop", cameraDistanceCm: 50, layout: "gallery" } };
+      expect(verifyPlan(d, resultsOf(observed), prefs)).toEqual([]);
+    });
+  });
+
+  describe("actions", () => {
+    const claim: Claim = { text: "Here is the smallest change.", refs: [] };
+    const act = (action: PlanDraft["moments"][number]["action"], results: Record<string, AnyResult>, p = prefs) => {
+      const d = goodDraft();
+      d.moments[0].action = action;
+      return verifyPlan(d, results, p);
+    };
+
+    it("accepts the right kind of result", () => {
+      expect(act({ kind: "free_fix", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubFreeFix("r2", true)))).toEqual([]);
+      expect(act({ kind: "lightest_touch", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubTouch("r2", "met")))).toEqual([]);
+      expect(act({ kind: "lightest_touch", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubTouch("r2", "not_met")))).toEqual([]);
+      expect(act({ kind: "worth_it", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubWorth("r2", true)))).toEqual([]);
+    });
+
+    it("rejects a free fix that is not reachable, is for another scene, or is not a free fix", () => {
+      expect(codes(act({ kind: "free_fix", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubFreeFix("r2", false))))).toEqual(["bad_action"]);
+      expect(codes(act({ kind: "free_fix", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubFreeFix("r2", true, "presenting"))))).toEqual(["bad_action"]);
+      expect(codes(act({ kind: "free_fix", ref: "r1", claim }, base))).toEqual(["bad_action"]);
+    });
+
+    it("rejects a lightest touch with no measured plan, or when the user would rather not wear makeup", () => {
+      expect(codes(act({ kind: "lightest_touch", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubTouch("r2", "no_lever"))))).toEqual(["bad_action"]);
+      expect(codes(act({ kind: "lightest_touch", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubTouch("r2", "not_measured"))))).toEqual(["bad_action"]);
+      expect(codes(act({ kind: "lightest_touch", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubTouch("r2", "met")), { ...prefs, noMakeup: true }))).toEqual(["bad_action"]);
+    });
+
+    it("rejects a worth it that was not simulated, and an action with no ref", () => {
+      expect(codes(act({ kind: "worth_it", ref: "r2", claim }, resultsOf(stubObserve("r1"), stubWorth("r2", false))))).toEqual(["bad_action"]);
+      expect(codes(act({ kind: "worth_it", ref: "", claim }, base))).toEqual(["bad_action"]);
+    });
+
+    it("rejects an action ref that does not exist", () => {
+      expect(codes(act({ kind: "free_fix", ref: "r5", claim }, base))).toEqual(["unknown_ref"]);
+    });
+  });
+
+  describe("shape", () => {
+    it("needs 1 to 8 moments", () => {
+      const none = { ...goodDraft(), moments: [] };
+      expect(codes(verifyPlan(none, base, prefs))).toEqual(["schema"]);
+      const nine = { ...goodDraft(), moments: Array.from({ length: 9 }, () => goodDraft().moments[0]) };
+      expect(codes(verifyPlan(nine, base, prefs))).toContain("schema");
+      const eight = { ...goodDraft(), moments: Array.from({ length: 8 }, () => goodDraft().moments[0]) };
+      expect(verifyPlan(eight, base, prefs)).toEqual([]);
+    });
+
+    it("keeps claims to 200 characters", () => {
+      const long = `${"A typical viewer could pick out about 1 in 12 of your pores. ".repeat(4)}`;
+      expect(long.length).toBeGreaterThan(200);
+      expect(codes(verifyPlan(withNotice(long), base, prefs))).toEqual(["schema"]);
+      expect(codes(verifyPlan(withNotice(""), base, prefs))).toEqual(["schema"]);
+    });
+  });
+});
+
+describe("verifyPlan headlines", () => {
+  const withHeadline = (text: string | null, refs = ["r1"]): PlanDraft => {
+    const d = goodDraft();
+    if (text === null) delete d.moments[0].headline;
+    else d.moments[0].headline = { text, refs };
+    return d;
+  };
+
+  it("needs one in a new plan", () => {
+    const issues = verifyPlan(withHeadline(null), base, prefs);
+    expect(codes(issues)).toEqual(["schema"]);
+    expect(issues[0].detail).toContain("headline");
+    expect(issues[0].momentId).toBe("m1");
+  });
+
+  it("accepts a short warm sentence, with or without a quoted number", () => {
+    expect(verifyPlan(withHeadline("Across the table, your breakouts stay out of sight."), base, prefs)).toEqual([]);
+    expect(verifyPlan(withHeadline("From 1.5 m, only about 1 in 12 of your pores show.", []), base, prefs)).toEqual([]);
+  });
+
+  it("holds the headline to 120 characters, one sentence", () => {
+    const long = "Across the table your breakouts stay out of sight, and the rest is just what they will see from where they sit, nothing more.";
+    expect(long.length).toBeGreaterThan(120);
+    expect(codes(verifyPlan(withHeadline(long), base, prefs))).toEqual(["schema"]);
+    expect(codes(verifyPlan(withHeadline("Across the table, you look relaxed. Nothing shows."), base, prefs))).toEqual(["schema"]);
+    expect(verifyPlan(withHeadline("At 1.5 m, only 54 of 650 pores show."), base, prefs)).toEqual([]);
+  });
+
+  it("checks the headline like every claim: numbers, bounds, banned words, absolutes, unsupported reassurance, refs", () => {
+    expect(codes(verifyPlan(withHeadline("About 1 in 20 of your pores show."), base, prefs))).toEqual(["stray_number"]);
+    expect(codes(verifyPlan(withHeadline("Someone could pick out 81 of your pores."), base, prefs))).toEqual(["bound_wording"]);
+    expect(codes(verifyPlan(withHeadline("Every flaw stays out of sight."), base, prefs))).toContain("banned_word");
+    expect(codes(verifyPlan(withHeadline("Nobody will see a thing."), base, prefs))).toContain("absolute");
+    expect(codes(verifyPlan(withHeadline("This is very common."), base, prefs))).toEqual(["banned_word"]);
+    expect(codes(verifyPlan(withHeadline("Your pores stay out of sight.", ["r9"]), base, prefs))).toEqual(["unknown_ref"]);
+  });
+
+  it("does not let a headline shrink what shows when most marks of several concerns are in sight", () => {
+    const busy = stubObserve("r1");
+    busy.concerns = [
+      { concern: "pore", targetCount: 100, typicalShare: 0.9, typicalCount: 90, boundShare: 1, boundCount: 100, soft: false },
+      { concern: "acne", targetCount: 10, typicalShare: 0.8, typicalCount: 8, boundShare: 1, boundCount: 10, soft: false },
+      { concern: "dark_circle", targetCount: 2, typicalShare: 1, typicalCount: 2, boundShare: 1, boundCount: 2, soft: true },
+    ];
+    const results = resultsOf(busy);
+    expect(codes(verifyPlan(withHeadline("In bright sun, a few marks show up close."), results, prefs))).toEqual(["banned_word"]);
+    expect(codes(verifyPlan(withHeadline("Up close the marks are faint."), results, prefs))).toEqual(["banned_word"]);
+    // Plainly saying what shows is fine, and so is a minimiser where the observation backs it.
+    expect(verifyPlan(withHeadline("In bright sun, up close, most of what we measured shows."), results, prefs)).toEqual([]);
+    expect(verifyPlan(withHeadline("In evening light, only a few marks show."), base, prefs)).toEqual([]);
+    // One concern mostly in sight is not enough to forbid it (soft areas do not count).
+    const one = stubObserve("r1");
+    one.concerns[0] = { ...one.concerns[0], typicalShare: 0.9, typicalCount: 90 };
+    expect(verifyPlan(withHeadline("Across the table, a few marks show."), resultsOf(one), prefs)).toEqual([]);
+  });
+
+  it("keeps jargon, pushes, dead ends and invented positions out of a headline", () => {
+    const bad = [
+      "No free change hides it, so that is what they see.",
+      "Distance is the only lever here.",
+      "That is simply what the measurements say.",
+      "Distance can't change that.",
+      "Makeup is the one option.",
+      "It is the only thing that helps here.",
+      "Nothing can help at this table.",
+      "From the back of the room, your pores stay out of sight.",
+      "In the front row you look relaxed.",
+      "No move you make hides the dark spots.",
+      "The model says your pores are out of sight.",
+      "By the window more of your skin shows, and moving further away would not change that.",
+      "In bright sun your skin shows, and distance alone doesn't change that.",
+    ];
+    for (const text of bad) expect(codes(verifyPlan(withHeadline(text), base, prefs)), text).toContain("banned_word");
+    const good = [
+      "On the call, your pores and fine lines don't make it through the video.",
+      "Across the table in evening light, your breakouts stay out of sight; if you'd like more, there is a tip.",
+      "Up close in bright window light, more of your skin shows.",
+    ];
+    for (const text of good) expect(verifyPlan(withHeadline(text), base, prefs), text).toEqual([]);
+  });
+
+  it("rejects a headline that copies a style guide from the prompt", () => {
+    for (const text of HEADLINE_STYLE_GUIDES) {
+      expect(codes(verifyPlan(withHeadline(text), base, prefs)), text).toContain("banned_word");
+    }
+    expect(codes(verifyPlan(withHeadline("on the call, your pores and fine lines don't come through the video"), base, prefs))).toEqual(["banned_word"]);
+    expect(verifyPlan(withHeadline("On the call, your pores and fine lines fade from the video."), base, prefs)).toEqual([]);
+  });
+});
+
+describe("verifyPlan issues are specific enough to repair from", () => {
+  it("names the sentence, the number and the quotes the claim may use, for the concern it is about", () => {
+    const d = goodDraft();
+    d.moments[0].notice = [{ text: "A typical viewer could pick out about 1 in 20 of your pores.", refs: ["r1"] }];
+    const issues = verifyPlan(d, base, prefs);
+    const text = issues.map((i) => i.detail).join(" | ");
+    expect(text).toContain("notice 1");
+    expect(text).toContain("A typical viewer could pick out about 1 in 20 of your pores.");
+    expect(text).toContain("1 in 20");
+    expect(text).toContain("Quotes with numbers you may copy here, verbatim:");
+    expect(text).toContain('"about 1 in 12" (pore.typical)');
+    expect(text).toContain('"54 of 650" (pore.typicalCount)');
+    expect(text).toContain('"1.5 m" (distance)');
+    // The quotes of a concern the sentence does not mention are left out.
+    expect(text).not.toContain("acne.");
+  });
+
+  it("lists every number quote when the sentence names no concern", () => {
+    const d = goodDraft();
+    d.moments[0].notice = [{ text: "From 3 m you look relaxed.", refs: ["r1"] }];
+    const text = verifyPlan(d, base, prefs).map((i) => i.detail).join(" | ");
+    expect(text).toContain("acne.typicalCount");
+    expect(text).toContain("pore.typicalCount");
+  });
+});
+
+describe("the minimising rule leaves the prompt's own style words alone", () => {
+  it("allows 'a little', 'softens' and 'fade from view' where many marks show, and still stops 'a few' and 'faint'", () => {
+    const busy = stubObserve("r1");
+    busy.concerns = [
+      { concern: "pore", targetCount: 100, typicalShare: 0.9, typicalCount: 90, boundShare: 1, boundCount: 100, soft: false },
+      { concern: "acne", targetCount: 10, typicalShare: 0.8, typicalCount: 8, boundShare: 1, boundCount: 10, soft: false },
+    ];
+    const results = { r1: busy } as Record<string, AnyResult>;
+    const head = (text: string) => {
+      const d = goodDraft();
+      d.moments[0].headline = { text, refs: [] };
+      return verifyPlan(d, results, prefs).map((i) => i.code);
+    };
+    expect(head("Moving the laptop back a little softens them, and pores fade from view.")).toEqual([]);
+    expect(head("A few marks show up close.")).toEqual(["banned_word"]);
+    expect(head("Up close the marks look faint.")).toEqual(["banned_word"]);
+  });
+});

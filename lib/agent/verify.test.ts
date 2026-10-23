@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Claim, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
+import { HEADLINE_STYLE_GUIDES } from "./headline";
 import { goodDraft, stubFreeFix, stubObserve, stubTouch, stubWorth } from "./test-helpers";
 import { numbersIn, verifyPlan, type PlanDraft } from "./verify";
 import type { AnyResult } from "./types";
@@ -253,5 +254,36 @@ describe("verifyPlan headlines", () => {
     const one = stubObserve("r1");
     one.concerns[0] = { ...one.concerns[0], typicalShare: 0.9, typicalCount: 90 };
     expect(verifyPlan(withHeadline("Across the table, a few marks show."), resultsOf(one), prefs)).toEqual([]);
+  });
+
+  it("keeps jargon, pushes, dead ends and invented positions out of a headline", () => {
+    const bad = [
+      "No free change hides it, so that is what they see.",
+      "Distance is the only lever here.",
+      "That is simply what the measurements say.",
+      "Distance can't change that.",
+      "Makeup is the one option.",
+      "It is the only thing that helps here.",
+      "Nothing can help at this table.",
+      "From the back of the room, your pores stay out of sight.",
+      "In the front row you look relaxed.",
+      "No move you make hides the dark spots.",
+      "The model says your pores are out of sight.",
+    ];
+    for (const text of bad) expect(codes(verifyPlan(withHeadline(text), base, prefs)), text).toContain("banned_word");
+    const good = [
+      "On the call, your pores and fine lines don't make it through the video.",
+      "Across the table in evening light, your breakouts stay out of sight; if you'd like more, there is a tip.",
+      "Up close in bright window light, more of your skin shows.",
+    ];
+    for (const text of good) expect(verifyPlan(withHeadline(text), base, prefs), text).toEqual([]);
+  });
+
+  it("rejects a headline that copies a style guide from the prompt", () => {
+    for (const text of HEADLINE_STYLE_GUIDES) {
+      expect(codes(verifyPlan(withHeadline(text), base, prefs)), text).toContain("banned_word");
+    }
+    expect(codes(verifyPlan(withHeadline("on the call, your pores and fine lines don't come through the video"), base, prefs))).toEqual(["banned_word"]);
+    expect(verifyPlan(withHeadline("On the call, your pores and fine lines fade from the video."), base, prefs)).toEqual([]);
   });
 });

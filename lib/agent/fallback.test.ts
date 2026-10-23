@@ -93,9 +93,11 @@ describe("buildFallbackPlan", () => {
     const request: AgentRequest = { day: EXAMPLE_DAYS[1].day, prefs: { callDevice: "laptop", noMakeup: false } };
     const plan = buildFallbackPlan({ request, face: demoFace("p3a"), engine: realEngine, stats });
     const first = plan.moments[0];
-    expect(first.headline?.text).toMatch(/^From the front of the room, your .* out of sight/);
+    expect(first.headline?.text).toMatch(/^While you present, your .* out of sight/);
     // A moment with something showing and a tip points at the tip.
     expect(plan.moments.some((m) => m.action.kind !== "none" && /tip/.test(m.headline?.text ?? ""))).toBe(true);
+    // The two openings alternate, so a day does not read the same way twice.
+    expect(plan.moments[1].headline?.text).not.toMatch(/^[A-Z][a-z]+ [a-z]+ [a-z]+,/);
   });
 
   it("builds a call for the user's device", () => {

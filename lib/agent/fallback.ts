@@ -200,33 +200,41 @@ function videoFloorClaim(obs: ObserveResult): Claim | null {
 }
 
 const SCENE_LEAD: Record<SceneId, string> = {
-  close_talk: "Up close",
-  cafe_table: "Across a small table",
-  conversation: "Standing and chatting",
-  dinner_table: "Across the table",
-  meeting_room: "Across the room",
-  presenting: "From the front of the room",
-  video_call: "On the call",
+  close_talk: "up close",
+  cafe_table: "across a small table",
+  conversation: "while you chat",
+  dinner_table: "across the table",
+  meeting_room: "across the meeting room",
+  presenting: "while you present",
+  video_call: "on the call",
 };
 
 /**
  * The one sentence under a moment's picture, relief first: what a typical viewer does not pick out, then (if something does show)
- * a pointer to the tip. No numbers, so there is nothing to quote wrongly.
+ * a pointer to the tip as an option. No numbers, so there is nothing to quote wrongly, and none of the wording the verifier keeps
+ * out of headlines. The opening alternates with the moment's position, so a day does not read the same way twice.
  */
-function headlineClaim(obs: ObserveResult, outIds: ConcernId[], hasTip: boolean, anySeen: boolean): Claim {
+function headlineClaim(obs: ObserveResult, outIds: ConcernId[], hasTip: boolean, anySeen: boolean, position: number): Claim {
   const lead = SCENE_LEAD[obs.input.scene];
-  const tail = hasTip ? ", and there is a tip for the rest" : anySeen ? ", and the rest is just what they will see" : "";
+  const first = position % 2 === 0;
+  const Lead = lead.charAt(0).toUpperCase() + lead.slice(1);
   const out = (ids: ConcernId[], among: boolean) => {
     const verb = ids.length === 1 && CONCERN_COPY[ids[0]].agreement === "singular" ? "is" : "are";
     return `your ${names(ids)}${among ? ", among others," : ""} ${verb} out of sight`;
   };
   let text: string;
   if (outIds.length === 0) {
-    text = hasTip ? `${lead}, a typical viewer can pick out some of what we measured, and there is a tip.` : `${lead}, they will simply see your skin as it is.`;
+    const tip = hasTip ? "if you'd like, there is a tip below" : "that is what they will see";
+    text = first ? `${Lead}, more of your skin shows; ${tip}.` : `More of your skin shows ${lead}; ${tip}.`;
   } else {
+    const tail = hasTip ? ", and there is a tip if you'd like more" : anySeen ? ", and you can see the rest below" : "";
+    const make = (ids: ConcernId[], among: boolean) => {
+      const o = out(ids, among);
+      return first ? `${Lead}, ${o}${tail}.` : `${o.charAt(0).toUpperCase()}${o.slice(1)} ${lead}${tail}.`;
+    };
     const shown = outIds.slice(0, 3);
-    text = `${lead}, ${out(shown, outIds.length > shown.length)}${tail}.`;
-    if (text.length > MAX_HEADLINE_CHARS) text = `${lead}, ${out(outIds.slice(0, 1), outIds.length > 1)}.`;
+    text = make(shown, outIds.length > shown.length);
+    if (text.length > MAX_HEADLINE_CHARS) text = make(outIds.slice(0, 1), outIds.length > 1);
   }
   if (text.length > MAX_HEADLINE_CHARS) text = "Here is what they will see from there.";
   return { text, refs: [obs.ref] };
@@ -287,7 +295,7 @@ export function buildFallbackPlan(input: FallbackInput): DayPlan {
     const scene = withCall(candidate);
     const title = usableTitle(candidate.title) ?? SCENE_TITLE[scene.scene];
     const seen = observe(title, scene);
-    if (seen) built.push(momentFrom({ ...seen, title, time: usableTime(candidate.time), input, store, step }));
+    if (seen) built.push(momentFrom({ ...seen, title, time: usableTime(candidate.time), position: built.length, input, store, step }));
   };
   candidates.forEach(add);
   if (built.length === 0) add({ title: "Chatting", time: null, scene: { scene: "conversation" } });
@@ -306,8 +314,8 @@ const LIGHT_WORDS: Record<LightId, string> = {
   videoCall: "the glow of a screen",
 };
 
-function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string; time: string | null; input: FallbackInput; store: Store; step: Step }): BuiltMoment {
-  const { obs, scene, title, time, input, store, step } = args;
+function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string; time: string | null; position: number; input: FallbackInput; store: Store; step: Step }): BuiltMoment {
+  const { obs, scene, title, time, position, input, store, step } = args;
   const measured = obs.concerns.filter((c) => c.targetCount > 0);
   const outIds = measured.filter((c) => c.typicalCount === 0).map((c) => c.concern);
   const seen = measured.filter((c) => c.typicalCount > 0).sort((a, b) => b.typicalShare - a.typicalShare);
@@ -330,7 +338,7 @@ function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string
 
   return {
     needsChange: needs.length > 0,
-    moment: { time, title, scene, observeRef: obs.ref, headline: headlineClaim(obs, outIds, action.kind !== "none", seen.length > 0), assumptions, notice: seen.slice(0, 3).map((c) => noticeClaim(obs, c)), outOfSight, action },
+    moment: { time, title, scene, observeRef: obs.ref, headline: headlineClaim(obs, outIds, action.kind !== "none", seen.length > 0, position), assumptions, notice: seen.slice(0, 3).map((c) => noticeClaim(obs, c)), outOfSight, action },
   };
 }
 

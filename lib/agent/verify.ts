@@ -7,6 +7,7 @@
 import type { Claim, ObserveResult, PlannedMoment, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
 import { UI_LISTS } from "@/lib/copy/banned";
 import { lintText } from "@/lib/copy/lint";
+import { copiesStyleGuide, forbiddenInHeadline } from "./headline";
 import { isFreeFix, isLightestTouch, isObserve, isWorthIt, quotesFor } from "./results";
 import { MAX_CLAIM_CHARS, MAX_HEADLINE_CHARS, MAX_MOMENTS } from "./schemas";
 import type { AnyResult } from "./types";
@@ -174,6 +175,11 @@ function checkHeadline(m: DraftMoment, momentId: string, results: Results): Veri
   if (!m.headline) return [{ momentId, code: "schema", detail: "The moment needs a headline: one warm, short sentence for its picture." }];
   const issues = checkClaim(m.headline, momentId, "The headline", [m.observeRef], results, MAX_HEADLINE_CHARS);
   if (ONE_SENTENCE_BREAK.test(m.headline.text)) issues.push({ momentId, code: "schema", detail: "The headline must be one sentence." });
+  const forbidden = forbiddenInHeadline(m.headline.text);
+  if (forbidden) {
+    issues.push({ momentId, code: "banned_word", detail: `The headline says "${forbidden}": jargon, a push, or a position the scene does not give. Say what stays out of sight or what they will see, kindly, and offer a tip as an option ("if you'd like ...").` });
+  }
+  if (copiesStyleGuide(m.headline.text)) issues.push({ momentId, code: "banned_word", detail: "The headline copies a style guide from the instructions. Write your own sentence from this moment's results." });
   const observed = results[m.observeRef];
   const minimised = m.headline.text.match(MINIMISING);
   if (minimised && isObserve(observed) && mostlyInSight(observed) >= 2) {

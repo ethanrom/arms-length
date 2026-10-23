@@ -14,7 +14,7 @@ const root = path.join(process.cwd(), "fixtures", "rehearse");
 const prefs = { callDevice: "laptop" as const, noMakeup: false };
 
 interface Fixture {
-  steps: { tool: ToolName; label: string }[];
+  steps: { tool: ToolName; label: string; moment?: { title: string; scene: string } }[];
   plan: DayPlan;
 }
 
@@ -30,13 +30,20 @@ describe("recorded Rehearse plans (fixtures/rehearse)", () => {
         it("is the checked plan for the example day, and passes today's verifier offline", () => {
           expect(plan.day).toBe(example.day);
           expect(plan.verified).toBe(true);
-          expect(verifyPlan({ moments: plan.moments, summary: plan.summary }, plan.results, prefs)).toEqual([]);
+          const issues = verifyPlan({ moments: plan.moments, summary: plan.summary }, plan.results, prefs);
+          expect(issues).toEqual([]);
           expect(fixture.steps.length).toBeGreaterThan(0);
           expect(fixture.steps.at(-1)?.tool).toBe("final_answer");
+          // Every moment has its one-sentence headline, and the steps that found the moments name them.
+          for (const m of plan.moments) {
+            expect(m.headline?.text.length ?? 0, m.title).toBeGreaterThan(0);
+            expect(m.headline!.text.length).toBeLessThanOrEqual(120);
+            expect(fixture.steps.some((s) => s.moment?.title === m.title), m.title).toBe(true);
+          }
         });
 
         it("is clean copy", () => {
-          const text = [plan.summary.text, ...fixture.steps.map((s) => s.label), ...plan.moments.flatMap((m) => [m.title, ...m.assumptions, ...[...m.notice, ...m.outOfSight, m.action.claim].map((c) => c.text)])];
+          const text = [plan.summary.text, ...fixture.steps.map((s) => s.label), ...plan.moments.flatMap((m) => [m.title, m.headline?.text ?? "", ...m.assumptions, ...[...m.notice, ...m.outOfSight, m.action.claim].map((c) => c.text)])];
           for (const t of text) expect(lintText(t, UI_LISTS), t).toEqual([]);
         });
 

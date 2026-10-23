@@ -1,0 +1,3908 @@
+{
+  "meta": {
+    "model": "global.anthropic.claude-sonnet-5-5",
+    "modelsSeen": 1,
+    "effort": "low",
+    "faces": [
+      "p1a",
+      "p2b",
+      "p3a",
+      "p5a"
+    ],
+    "days": [
+      {
+        "id": "workday",
+        "text": "9am video standup on my laptop, lunch with a client by the window, dinner date at 7",
+        "callDevice": "laptop",
+        "agentPlan": "recorded fixture"
+      },
+      {
+        "id": "presenting",
+        "text": "Presenting to the team at 2pm in the big meeting room, then drinks with colleagues after work",
+        "callDevice": "laptop",
+        "agentPlan": "recorded fixture"
+      },
+      {
+        "id": "wedding",
+        "text": "Wedding guest: outdoor ceremony in the afternoon sun, then dinner and dancing in the evening",
+        "callDevice": "laptop",
+        "agentPlan": "recorded fixture"
+      },
+      {
+        "id": "interview",
+        "text": "Job interview at 10 in a small office, then coffee with a friend at a cafe table",
+        "callDevice": "laptop",
+        "agentPlan": "run here"
+      },
+      {
+        "id": "teaching",
+        "text": "Teaching a class all morning, then parent video calls on my phone in the afternoon",
+        "callDevice": "phone",
+        "agentPlan": "run here"
+      },
+      {
+        "id": "beach",
+        "text": "Beach day with friends in bright sun, then a candle-lit dinner for two",
+        "callDevice": "laptop",
+        "agentPlan": "run here"
+      }
+    ],
+    "truthThreshold": 0.1,
+    "concerns": [
+      "pore",
+      "age_spot",
+      "acne",
+      "wrinkle",
+      "dark_circle",
+      "eye_bag",
+      "redness"
+    ],
+    "targetCounts": {
+      "p1a": {
+        "acne": 40,
+        "age_spot": 64,
+        "pore": 450,
+        "wrinkle": 93,
+        "dark_circle": 2,
+        "eye_bag": 2,
+        "redness": 5
+      },
+      "p2b": {
+        "acne": 18,
+        "age_spot": 89,
+        "pore": 649,
+        "wrinkle": 188,
+        "dark_circle": 2,
+        "eye_bag": 2
+      },
+      "p3a": {
+        "acne": 5,
+        "age_spot": 194,
+        "pore": 221,
+        "wrinkle": 207,
+        "dark_circle": 3,
+        "eye_bag": 2,
+        "redness": 4
+      },
+      "p5a": {
+        "acne": 3,
+        "age_spot": 53,
+        "pore": 250,
+        "wrinkle": 107,
+        "dark_circle": 2,
+        "eye_bag": 2
+      }
+    },
+    "repeatsPerPair": 2,
+    "calls": 68,
+    "agentRunsHere": 12,
+    "unaidedCalls": 56,
+    "cacheRejectionRepeats": 0,
+    "modelRequests": 109,
+    "tokens": {
+      "input": 4026,
+      "output": 59599,
+      "cacheRead": 650263,
+      "cacheWrite": 77298
+    },
+    "estimatedCostUsd": 0.9274,
+    "priceAssumptionUsdPerMillion": {
+      "input": 2,
+      "output": 10,
+      "cacheRead": 0.2,
+      "cacheWrite": 2.5
+    },
+    "caps": {
+      "calls": 70,
+      "usd": 5
+    },
+    "reusedFixtureCostUsd": 0.5259
+  },
+  "headline": {
+    "threshold": 0.1,
+    "without": {
+      "tally": {
+        "claims": 768,
+        "noticeable": 630,
+        "outOfSight": 138,
+        "contradictions": 457,
+        "misses": 457,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 768,
+        "covers": 70,
+        "advisedOutOfSight": 138,
+        "advisedNoticeable": 630,
+        "overCovers": 0,
+        "underWarns": 560,
+        "shareN": 768,
+        "shareAbsErrSum": 379.7622668896311,
+        "shareNHard": 472,
+        "shareAbsErrSumHard": 155.76226688963186
+      },
+      "rates": {
+        "contradiction": 0.5951,
+        "miss": 0.7254,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8889,
+        "meanAbsShareError": 0.4945,
+        "meanAbsShareErrorHard": 0.33,
+        "coverRate": 0.0911
+      }
+    },
+    "withoutJudgedOnly": {
+      "tally": {
+        "claims": 499,
+        "noticeable": 399,
+        "outOfSight": 100,
+        "contradictions": 226,
+        "misses": 226,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 499,
+        "covers": 70,
+        "advisedOutOfSight": 100,
+        "advisedNoticeable": 399,
+        "overCovers": 0,
+        "underWarns": 329,
+        "shareN": 499,
+        "shareAbsErrSum": 192.58422029464964,
+        "shareNHard": 324,
+        "shareAbsErrSumHard": 89.5842202946496
+      },
+      "rates": {
+        "contradiction": 0.4529,
+        "miss": 0.5664,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8246,
+        "meanAbsShareError": 0.3859,
+        "meanAbsShareErrorHard": 0.2765,
+        "coverRate": 0.1403
+      }
+    },
+    "with": {
+      "tally": {
+        "claims": 332,
+        "noticeable": 273,
+        "outOfSight": 59,
+        "contradictions": 14,
+        "misses": 2,
+        "falseAlarms": 12,
+        "edges": 12,
+        "advised": 350,
+        "covers": 26,
+        "advisedOutOfSight": 64,
+        "advisedNoticeable": 286,
+        "overCovers": 0,
+        "underWarns": 260,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0422,
+        "miss": 0.0073,
+        "falseAlarm": 0.2034,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9091,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0743
+      }
+    },
+    "intervals": {
+      "pairs": 24,
+      "contradiction": {
+        "without": [
+          0.5587,
+          0.6319
+        ],
+        "with": [
+          0.0212,
+          0.0658
+        ],
+        "diff": [
+          0.5105,
+          0.5948
+        ]
+      },
+      "miss": {
+        "without": [
+          0.6735,
+          0.7807
+        ],
+        "with": [
+          0,
+          0.0184
+        ],
+        "diff": [
+          0.6679,
+          0.7735
+        ]
+      },
+      "falseAlarm": {
+        "without": [
+          0,
+          0
+        ],
+        "with": [
+          0.102,
+          0.3088
+        ],
+        "diff": [
+          -0.3088,
+          -0.102
+        ]
+      },
+      "overCover": {
+        "without": [
+          0,
+          0
+        ],
+        "with": [
+          0,
+          0
+        ],
+        "diff": [
+          0,
+          0
+        ]
+      },
+      "underWarning": {
+        "without": [
+          0.8319,
+          0.9409
+        ],
+        "with": [
+          0.8856,
+          0.9358
+        ],
+        "diff": [
+          -0.0785,
+          0.0365
+        ]
+      },
+      "meanAbsShareError": {
+        "without": [
+          0.4644,
+          0.522
+        ],
+        "with": null,
+        "diff": null
+      }
+    },
+    "intervalsJudgedOnly": {
+      "pairs": 24,
+      "contradiction": {
+        "without": [
+          0.3725,
+          0.53
+        ],
+        "with": [
+          0.0212,
+          0.0658
+        ],
+        "diff": [
+          0.331,
+          0.4905
+        ]
+      },
+      "miss": {
+        "without": [
+          0.4592,
+          0.6712
+        ],
+        "with": [
+          0,
+          0.0184
+        ],
+        "diff": [
+          0.4526,
+          0.6637
+        ]
+      },
+      "falseAlarm": {
+        "without": [
+          0,
+          0
+        ],
+        "with": [
+          0.102,
+          0.3088
+        ],
+        "diff": [
+          -0.3088,
+          -0.102
+        ]
+      },
+      "overCover": {
+        "without": [
+          0,
+          0
+        ],
+        "with": [
+          0,
+          0
+        ],
+        "diff": [
+          0,
+          0
+        ]
+      },
+      "underWarning": {
+        "without": [
+          0.7214,
+          0.9105
+        ],
+        "with": [
+          0.8856,
+          0.9358
+        ],
+        "diff": [
+          -0.1853,
+          0.0038
+        ]
+      }
+    },
+    "marksOnly": {
+      "without": {
+        "tally": {
+          "claims": 472,
+          "noticeable": 334,
+          "outOfSight": 138,
+          "contradictions": 233,
+          "misses": 233,
+          "falseAlarms": 0,
+          "edges": 0,
+          "advised": 472,
+          "covers": 38,
+          "advisedOutOfSight": 138,
+          "advisedNoticeable": 334,
+          "overCovers": 0,
+          "underWarns": 296,
+          "shareN": 472,
+          "shareAbsErrSum": 155.76226688963186,
+          "shareNHard": 472,
+          "shareAbsErrSumHard": 155.76226688963186
+        },
+        "rates": {
+          "contradiction": 0.4936,
+          "miss": 0.6976,
+          "falseAlarm": 0,
+          "overCover": 0,
+          "overCoverOfAll": 0,
+          "underWarning": 0.8862,
+          "meanAbsShareError": 0.33,
+          "meanAbsShareErrorHard": 0.33,
+          "coverRate": 0.0805
+        }
+      },
+      "withoutJudgedOnly": {
+        "tally": {
+          "claims": 324,
+          "noticeable": 224,
+          "outOfSight": 100,
+          "contradictions": 123,
+          "misses": 123,
+          "falseAlarms": 0,
+          "edges": 0,
+          "advised": 324,
+          "covers": 38,
+          "advisedOutOfSight": 100,
+          "advisedNoticeable": 224,
+          "overCovers": 0,
+          "underWarns": 186,
+          "shareN": 324,
+          "shareAbsErrSum": 89.5842202946496,
+          "shareNHard": 324,
+          "shareAbsErrSumHard": 89.5842202946496
+        },
+        "rates": {
+          "contradiction": 0.3796,
+          "miss": 0.5491,
+          "falseAlarm": 0,
+          "overCover": 0,
+          "overCoverOfAll": 0,
+          "underWarning": 0.8304,
+          "meanAbsShareError": 0.2765,
+          "meanAbsShareErrorHard": 0.2765,
+          "coverRate": 0.1173
+        }
+      },
+      "with": {
+        "tally": {
+          "claims": 204,
+          "noticeable": 145,
+          "outOfSight": 59,
+          "contradictions": 14,
+          "misses": 2,
+          "falseAlarms": 12,
+          "edges": 12,
+          "advised": 216,
+          "covers": 26,
+          "advisedOutOfSight": 64,
+          "advisedNoticeable": 152,
+          "overCovers": 0,
+          "underWarns": 126,
+          "shareN": 0,
+          "shareAbsErrSum": 0,
+          "shareNHard": 0,
+          "shareAbsErrSumHard": 0
+        },
+        "rates": {
+          "contradiction": 0.0686,
+          "miss": 0.0138,
+          "falseAlarm": 0.2034,
+          "overCover": 0,
+          "overCoverOfAll": 0,
+          "underWarning": 0.8289,
+          "meanAbsShareError": null,
+          "meanAbsShareErrorHard": null,
+          "coverRate": 0.1204
+        }
+      },
+      "intervals": {
+        "pairs": 24,
+        "contradiction": {
+          "without": [
+            0.4375,
+            0.553
+          ],
+          "with": [
+            0.0343,
+            0.106
+          ],
+          "diff": [
+            0.3508,
+            0.4947
+          ]
+        },
+        "miss": {
+          "without": [
+            0.6312,
+            0.7651
+          ],
+          "with": [
+            0,
+            0.0342
+          ],
+          "diff": [
+            0.6227,
+            0.7468
+          ]
+        },
+        "falseAlarm": {
+          "without": [
+            0,
+            0
+          ],
+          "with": [
+            0.102,
+            0.3088
+          ],
+          "diff": [
+            -0.3088,
+            -0.102
+          ]
+        },
+        "overCover": {
+          "without": [
+            0,
+            0
+          ],
+          "with": [
+            0,
+            0
+          ],
+          "diff": [
+            0,
+            0
+          ]
+        },
+        "underWarning": {
+          "without": [
+            0.8303,
+            0.9352
+          ],
+          "with": [
+            0.7829,
+            0.8788
+          ],
+          "diff": [
+            -0.0101,
+            0.1238
+          ]
+        },
+        "meanAbsShareError": {
+          "without": [
+            0.2814,
+            0.3718
+          ],
+          "with": null,
+          "diff": null
+        }
+      },
+      "intervalsJudgedOnly": {
+        "pairs": 24,
+        "contradiction": {
+          "without": [
+            0.2785,
+            0.4671
+          ],
+          "with": [
+            0.0343,
+            0.106
+          ],
+          "diff": [
+            0.2015,
+            0.4061
+          ]
+        },
+        "miss": {
+          "without": [
+            0.4099,
+            0.6652
+          ],
+          "with": [
+            0,
+            0.0342
+          ],
+          "diff": [
+            0.4025,
+            0.6465
+          ]
+        },
+        "falseAlarm": {
+          "without": [
+            0,
+            0
+          ],
+          "with": [
+            0.102,
+            0.3088
+          ],
+          "diff": [
+            -0.3088,
+            -0.102
+          ]
+        },
+        "overCover": {
+          "without": [
+            0,
+            0
+          ],
+          "with": [
+            0,
+            0
+          ],
+          "diff": [
+            0,
+            0
+          ]
+        },
+        "underWarning": {
+          "without": [
+            0.7174,
+            0.9091
+          ],
+          "with": [
+            0.7829,
+            0.8788
+          ],
+          "diff": [
+            -0.1088,
+            0.0907
+          ]
+        }
+      }
+    },
+    "shareCorrelation": {
+      "all": 0.4272,
+      "judgedOnly": 0.6196,
+      "n": 472
+    }
+  },
+  "effortCheck": {
+    "pairs": 8,
+    "calls": 8,
+    "low": {
+      "tally": {
+        "claims": 130,
+        "noticeable": 107,
+        "outOfSight": 23,
+        "contradictions": 79,
+        "misses": 79,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 130,
+        "covers": 12,
+        "advisedOutOfSight": 23,
+        "advisedNoticeable": 107,
+        "overCovers": 0,
+        "underWarns": 95,
+        "shareN": 130,
+        "shareAbsErrSum": 68.94399545473067,
+        "shareNHard": 80,
+        "shareAbsErrSumHard": 29.94399545473068
+      },
+      "rates": {
+        "contradiction": 0.6077,
+        "miss": 0.7383,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8879,
+        "meanAbsShareError": 0.5303,
+        "meanAbsShareErrorHard": 0.3743,
+        "coverRate": 0.0923
+      },
+      "judgedOnly": {
+        "tally": {
+          "claims": 82,
+          "noticeable": 65,
+          "outOfSight": 17,
+          "contradictions": 37,
+          "misses": 37,
+          "falseAlarms": 0,
+          "edges": 0,
+          "advised": 82,
+          "covers": 12,
+          "advisedOutOfSight": 17,
+          "advisedNoticeable": 65,
+          "overCovers": 0,
+          "underWarns": 53,
+          "shareN": 82,
+          "shareAbsErrSum": 34.015209612436784,
+          "shareNHard": 55,
+          "shareAbsErrSumHard": 18.01520961243676
+        },
+        "rates": {
+          "contradiction": 0.4512,
+          "miss": 0.5692,
+          "falseAlarm": 0,
+          "overCover": 0,
+          "overCoverOfAll": 0,
+          "underWarning": 0.8154,
+          "meanAbsShareError": 0.4148,
+          "meanAbsShareErrorHard": 0.3275,
+          "coverRate": 0.1463
+        }
+      }
+    },
+    "high": {
+      "tally": {
+        "claims": 130,
+        "noticeable": 107,
+        "outOfSight": 23,
+        "contradictions": 72,
+        "misses": 72,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 130,
+        "covers": 13,
+        "advisedOutOfSight": 23,
+        "advisedNoticeable": 107,
+        "overCovers": 0,
+        "underWarns": 94,
+        "shareN": 130,
+        "shareAbsErrSum": 69.32982244445579,
+        "shareNHard": 80,
+        "shareAbsErrSumHard": 29.379822444455773
+      },
+      "rates": {
+        "contradiction": 0.5538,
+        "miss": 0.6729,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8785,
+        "meanAbsShareError": 0.5333,
+        "meanAbsShareErrorHard": 0.3672,
+        "coverRate": 0.1
+      },
+      "judgedOnly": {
+        "tally": {
+          "claims": 100,
+          "noticeable": 83,
+          "outOfSight": 17,
+          "contradictions": 48,
+          "misses": 48,
+          "falseAlarms": 0,
+          "edges": 0,
+          "advised": 100,
+          "covers": 13,
+          "advisedOutOfSight": 17,
+          "advisedNoticeable": 83,
+          "overCovers": 0,
+          "underWarns": 70,
+          "shareN": 100,
+          "shareAbsErrSum": 52.01214771327299,
+          "shareNHard": 55,
+          "shareAbsErrSumHard": 17.062147713272974
+        },
+        "rates": {
+          "contradiction": 0.48,
+          "miss": 0.5783,
+          "falseAlarm": 0,
+          "overCover": 0,
+          "overCoverOfAll": 0,
+          "underWarning": 0.8434,
+          "meanAbsShareError": 0.5201,
+          "meanAbsShareErrorHard": 0.3102,
+          "coverRate": 0.13
+        }
+      }
+    },
+    "meanOutputTokens": {
+      "low": 511,
+      "high": 1769
+    },
+    "saidAbsentFound": {
+      "low": 48,
+      "high": 30
+    },
+    "covers": {
+      "low": 12,
+      "high": 13
+    },
+    "costUsd": 0.1672
+  },
+  "perMoment": {
+    "without": {
+      "moments": 118,
+      "coversAdvised": 70,
+      "coversPerMoment": 0.59,
+      "needlessCoversPerMoment": 0,
+      "noticeablePerMoment": 5.34
+    },
+    "with": {
+      "moments": 54,
+      "coversAdvised": 26,
+      "coversPerMoment": 0.48,
+      "needlessCoversPerMoment": 0,
+      "noticeablePerMoment": 5.3
+    }
+  },
+  "byConcern": [
+    {
+      "system": "without",
+      "concern": "acne",
+      "kind": "call",
+      "tally": {
+        "claims": 16,
+        "noticeable": 10,
+        "outOfSight": 6,
+        "contradictions": 6,
+        "misses": 6,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 16,
+        "covers": 4,
+        "advisedOutOfSight": 6,
+        "advisedNoticeable": 10,
+        "overCovers": 0,
+        "underWarns": 6,
+        "shareN": 16,
+        "shareAbsErrSum": 2.211111111111111,
+        "shareNHard": 16,
+        "shareAbsErrSumHard": 2.211111111111111
+      },
+      "rates": {
+        "contradiction": 0.375,
+        "miss": 0.6,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.6,
+        "meanAbsShareError": 0.1382,
+        "meanAbsShareErrorHard": 0.1382,
+        "coverRate": 0.25
+      }
+    },
+    {
+      "system": "without",
+      "concern": "age_spot",
+      "kind": "call",
+      "tally": {
+        "claims": 16,
+        "noticeable": 16,
+        "outOfSight": 0,
+        "contradictions": 14,
+        "misses": 14,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 16,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 16,
+        "overCovers": 0,
+        "underWarns": 16,
+        "shareN": 16,
+        "shareAbsErrSum": 11.7174303407941,
+        "shareNHard": 16,
+        "shareAbsErrSumHard": 11.7174303407941
+      },
+      "rates": {
+        "contradiction": 0.875,
+        "miss": 0.875,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.7323,
+        "meanAbsShareErrorHard": 0.7323,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "pore",
+      "kind": "call",
+      "tally": {
+        "claims": 16,
+        "noticeable": 2,
+        "outOfSight": 14,
+        "contradictions": 2,
+        "misses": 2,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 16,
+        "covers": 0,
+        "advisedOutOfSight": 14,
+        "advisedNoticeable": 2,
+        "overCovers": 0,
+        "underWarns": 2,
+        "shareN": 16,
+        "shareAbsErrSum": 0.8081669598818154,
+        "shareNHard": 16,
+        "shareAbsErrSumHard": 0.8081669598818154
+      },
+      "rates": {
+        "contradiction": 0.125,
+        "miss": 1,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.0505,
+        "meanAbsShareErrorHard": 0.0505,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "wrinkle",
+      "kind": "call",
+      "tally": {
+        "claims": 16,
+        "noticeable": 0,
+        "outOfSight": 16,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 16,
+        "covers": 0,
+        "advisedOutOfSight": 16,
+        "advisedNoticeable": 0,
+        "overCovers": 0,
+        "underWarns": 0,
+        "shareN": 16,
+        "shareAbsErrSum": 0.8283332904156673,
+        "shareNHard": 16,
+        "shareAbsErrSumHard": 0.8283332904156673
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": null,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": null,
+        "meanAbsShareError": 0.0518,
+        "meanAbsShareErrorHard": 0.0518,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "dark_circle",
+      "kind": "call",
+      "tally": {
+        "claims": 16,
+        "noticeable": 16,
+        "outOfSight": 0,
+        "contradictions": 15,
+        "misses": 15,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 16,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 16,
+        "overCovers": 0,
+        "underWarns": 16,
+        "shareN": 16,
+        "shareAbsErrSum": 15,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.9375,
+        "miss": 0.9375,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.9375,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "eye_bag",
+      "kind": "call",
+      "tally": {
+        "claims": 16,
+        "noticeable": 16,
+        "outOfSight": 0,
+        "contradictions": 16,
+        "misses": 16,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 16,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 16,
+        "overCovers": 0,
+        "underWarns": 16,
+        "shareN": 16,
+        "shareAbsErrSum": 16,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 1,
+        "miss": 1,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 1,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "redness",
+      "kind": "call",
+      "tally": {
+        "claims": 8,
+        "noticeable": 8,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 8,
+        "covers": 4,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 8,
+        "overCovers": 0,
+        "underWarns": 4,
+        "shareN": 8,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 0.5,
+        "meanAbsShareError": 0,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.5
+      }
+    },
+    {
+      "system": "without",
+      "concern": "acne",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 102,
+        "noticeable": 78,
+        "outOfSight": 24,
+        "contradictions": 54,
+        "misses": 54,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 102,
+        "covers": 22,
+        "advisedOutOfSight": 24,
+        "advisedNoticeable": 78,
+        "overCovers": 0,
+        "underWarns": 56,
+        "shareN": 102,
+        "shareAbsErrSum": 37.456666666666656,
+        "shareNHard": 102,
+        "shareAbsErrSumHard": 37.456666666666656
+      },
+      "rates": {
+        "contradiction": 0.5294,
+        "miss": 0.6923,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.7179,
+        "meanAbsShareError": 0.3672,
+        "meanAbsShareErrorHard": 0.3672,
+        "coverRate": 0.2157
+      }
+    },
+    {
+      "system": "without",
+      "concern": "age_spot",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 102,
+        "noticeable": 98,
+        "outOfSight": 4,
+        "contradictions": 62,
+        "misses": 62,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 102,
+        "covers": 12,
+        "advisedOutOfSight": 4,
+        "advisedNoticeable": 98,
+        "overCovers": 0,
+        "underWarns": 86,
+        "shareN": 102,
+        "shareAbsErrSum": 50.030341384201506,
+        "shareNHard": 102,
+        "shareAbsErrSumHard": 50.030341384201506
+      },
+      "rates": {
+        "contradiction": 0.6078,
+        "miss": 0.6327,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8776,
+        "meanAbsShareError": 0.4905,
+        "meanAbsShareErrorHard": 0.4905,
+        "coverRate": 0.1176
+      }
+    },
+    {
+      "system": "without",
+      "concern": "pore",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 102,
+        "noticeable": 44,
+        "outOfSight": 58,
+        "contradictions": 30,
+        "misses": 30,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 102,
+        "covers": 0,
+        "advisedOutOfSight": 58,
+        "advisedNoticeable": 44,
+        "overCovers": 0,
+        "underWarns": 44,
+        "shareN": 102,
+        "shareAbsErrSum": 20.50311539507352,
+        "shareNHard": 102,
+        "shareAbsErrSumHard": 20.50311539507352
+      },
+      "rates": {
+        "contradiction": 0.2941,
+        "miss": 0.6818,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.201,
+        "meanAbsShareErrorHard": 0.201,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "wrinkle",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 102,
+        "noticeable": 86,
+        "outOfSight": 16,
+        "contradictions": 65,
+        "misses": 65,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 102,
+        "covers": 0,
+        "advisedOutOfSight": 16,
+        "advisedNoticeable": 86,
+        "overCovers": 0,
+        "underWarns": 86,
+        "shareN": 102,
+        "shareAbsErrSum": 32.20710174148736,
+        "shareNHard": 102,
+        "shareAbsErrSumHard": 32.20710174148736
+      },
+      "rates": {
+        "contradiction": 0.6373,
+        "miss": 0.7558,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.3158,
+        "meanAbsShareErrorHard": 0.3158,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "dark_circle",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 102,
+        "noticeable": 102,
+        "outOfSight": 0,
+        "contradictions": 87,
+        "misses": 87,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 102,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 102,
+        "overCovers": 0,
+        "underWarns": 102,
+        "shareN": 102,
+        "shareAbsErrSum": 87,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.8529,
+        "miss": 0.8529,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.8529,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "eye_bag",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 102,
+        "noticeable": 102,
+        "outOfSight": 0,
+        "contradictions": 102,
+        "misses": 102,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 102,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 102,
+        "overCovers": 0,
+        "underWarns": 102,
+        "shareN": 102,
+        "shareAbsErrSum": 102,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 1,
+        "miss": 1,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 1,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "redness",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 52,
+        "noticeable": 52,
+        "outOfSight": 0,
+        "contradictions": 4,
+        "misses": 4,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 52,
+        "covers": 28,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 52,
+        "overCovers": 0,
+        "underWarns": 24,
+        "shareN": 52,
+        "shareAbsErrSum": 4,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0769,
+        "miss": 0.0769,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 0.4615,
+        "meanAbsShareError": 0.0769,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.5385
+      }
+    },
+    {
+      "system": "with",
+      "concern": "acne",
+      "kind": "call",
+      "tally": {
+        "claims": 7,
+        "noticeable": 3,
+        "outOfSight": 4,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 8,
+        "covers": 0,
+        "advisedOutOfSight": 4,
+        "advisedNoticeable": 4,
+        "overCovers": 0,
+        "underWarns": 4,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "age_spot",
+      "kind": "call",
+      "tally": {
+        "claims": 8,
+        "noticeable": 7,
+        "outOfSight": 1,
+        "contradictions": 1,
+        "misses": 0,
+        "falseAlarms": 1,
+        "edges": 1,
+        "advised": 8,
+        "covers": 2,
+        "advisedOutOfSight": 1,
+        "advisedNoticeable": 7,
+        "overCovers": 0,
+        "underWarns": 5,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.125,
+        "miss": 0,
+        "falseAlarm": 1,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.7143,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.25
+      }
+    },
+    {
+      "system": "with",
+      "concern": "pore",
+      "kind": "call",
+      "tally": {
+        "claims": 8,
+        "noticeable": 1,
+        "outOfSight": 7,
+        "contradictions": 1,
+        "misses": 1,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 8,
+        "covers": 0,
+        "advisedOutOfSight": 7,
+        "advisedNoticeable": 1,
+        "overCovers": 0,
+        "underWarns": 1,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.125,
+        "miss": 1,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "wrinkle",
+      "kind": "call",
+      "tally": {
+        "claims": 7,
+        "noticeable": 0,
+        "outOfSight": 7,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 8,
+        "covers": 0,
+        "advisedOutOfSight": 8,
+        "advisedNoticeable": 0,
+        "overCovers": 0,
+        "underWarns": 0,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": null,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": null,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "dark_circle",
+      "kind": "call",
+      "tally": {
+        "claims": 8,
+        "noticeable": 8,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 8,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 8,
+        "overCovers": 0,
+        "underWarns": 8,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "eye_bag",
+      "kind": "call",
+      "tally": {
+        "claims": 8,
+        "noticeable": 8,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 8,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 8,
+        "overCovers": 0,
+        "underWarns": 8,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "redness",
+      "kind": "call",
+      "tally": {
+        "claims": 4,
+        "noticeable": 4,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 4,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 4,
+        "overCovers": 0,
+        "underWarns": 4,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "acne",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 43,
+        "noticeable": 34,
+        "outOfSight": 9,
+        "contradictions": 1,
+        "misses": 1,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 46,
+        "covers": 12,
+        "advisedOutOfSight": 9,
+        "advisedNoticeable": 37,
+        "overCovers": 0,
+        "underWarns": 25,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0233,
+        "miss": 0.0294,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.6757,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.2609
+      }
+    },
+    {
+      "system": "with",
+      "concern": "age_spot",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 45,
+        "noticeable": 43,
+        "outOfSight": 2,
+        "contradictions": 2,
+        "misses": 0,
+        "falseAlarms": 2,
+        "edges": 2,
+        "advised": 46,
+        "covers": 11,
+        "advisedOutOfSight": 2,
+        "advisedNoticeable": 44,
+        "overCovers": 0,
+        "underWarns": 33,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0444,
+        "miss": 0,
+        "falseAlarm": 1,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.75,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.2391
+      }
+    },
+    {
+      "system": "with",
+      "concern": "pore",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 41,
+        "noticeable": 18,
+        "outOfSight": 23,
+        "contradictions": 3,
+        "misses": 0,
+        "falseAlarms": 3,
+        "edges": 3,
+        "advised": 46,
+        "covers": 1,
+        "advisedOutOfSight": 26,
+        "advisedNoticeable": 20,
+        "overCovers": 0,
+        "underWarns": 19,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0732,
+        "miss": 0,
+        "falseAlarm": 0.1304,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.95,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0217
+      }
+    },
+    {
+      "system": "with",
+      "concern": "wrinkle",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 45,
+        "noticeable": 39,
+        "outOfSight": 6,
+        "contradictions": 6,
+        "misses": 0,
+        "falseAlarms": 6,
+        "edges": 6,
+        "advised": 46,
+        "covers": 0,
+        "advisedOutOfSight": 7,
+        "advisedNoticeable": 39,
+        "overCovers": 0,
+        "underWarns": 39,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.1333,
+        "miss": 0,
+        "falseAlarm": 1,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "dark_circle",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 43,
+        "noticeable": 43,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 46,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 46,
+        "overCovers": 0,
+        "underWarns": 46,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "eye_bag",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 43,
+        "noticeable": 43,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 46,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 46,
+        "overCovers": 0,
+        "underWarns": 46,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "redness",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 22,
+        "noticeable": 22,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 22,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 22,
+        "overCovers": 0,
+        "underWarns": 22,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    }
+  ],
+  "byConcernAll": [
+    {
+      "system": "without",
+      "concern": "acne",
+      "tally": {
+        "claims": 118,
+        "noticeable": 88,
+        "outOfSight": 30,
+        "contradictions": 60,
+        "misses": 60,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 118,
+        "covers": 26,
+        "advisedOutOfSight": 30,
+        "advisedNoticeable": 88,
+        "overCovers": 0,
+        "underWarns": 62,
+        "shareN": 118,
+        "shareAbsErrSum": 39.66777777777777,
+        "shareNHard": 118,
+        "shareAbsErrSumHard": 39.66777777777777
+      },
+      "rates": {
+        "contradiction": 0.5085,
+        "miss": 0.6818,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.7045,
+        "meanAbsShareError": 0.3362,
+        "meanAbsShareErrorHard": 0.3362,
+        "coverRate": 0.2203
+      }
+    },
+    {
+      "system": "without",
+      "concern": "age_spot",
+      "tally": {
+        "claims": 118,
+        "noticeable": 114,
+        "outOfSight": 4,
+        "contradictions": 76,
+        "misses": 76,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 118,
+        "covers": 12,
+        "advisedOutOfSight": 4,
+        "advisedNoticeable": 114,
+        "overCovers": 0,
+        "underWarns": 102,
+        "shareN": 118,
+        "shareAbsErrSum": 61.7477717249956,
+        "shareNHard": 118,
+        "shareAbsErrSumHard": 61.7477717249956
+      },
+      "rates": {
+        "contradiction": 0.6441,
+        "miss": 0.6667,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8947,
+        "meanAbsShareError": 0.5233,
+        "meanAbsShareErrorHard": 0.5233,
+        "coverRate": 0.1017
+      }
+    },
+    {
+      "system": "without",
+      "concern": "pore",
+      "tally": {
+        "claims": 118,
+        "noticeable": 46,
+        "outOfSight": 72,
+        "contradictions": 32,
+        "misses": 32,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 118,
+        "covers": 0,
+        "advisedOutOfSight": 72,
+        "advisedNoticeable": 46,
+        "overCovers": 0,
+        "underWarns": 46,
+        "shareN": 118,
+        "shareAbsErrSum": 21.311282354955335,
+        "shareNHard": 118,
+        "shareAbsErrSumHard": 21.311282354955335
+      },
+      "rates": {
+        "contradiction": 0.2712,
+        "miss": 0.6957,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.1806,
+        "meanAbsShareErrorHard": 0.1806,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "wrinkle",
+      "tally": {
+        "claims": 118,
+        "noticeable": 86,
+        "outOfSight": 32,
+        "contradictions": 65,
+        "misses": 65,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 118,
+        "covers": 0,
+        "advisedOutOfSight": 32,
+        "advisedNoticeable": 86,
+        "overCovers": 0,
+        "underWarns": 86,
+        "shareN": 118,
+        "shareAbsErrSum": 33.03543503190303,
+        "shareNHard": 118,
+        "shareAbsErrSumHard": 33.03543503190303
+      },
+      "rates": {
+        "contradiction": 0.5508,
+        "miss": 0.7558,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.28,
+        "meanAbsShareErrorHard": 0.28,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "dark_circle",
+      "tally": {
+        "claims": 118,
+        "noticeable": 118,
+        "outOfSight": 0,
+        "contradictions": 102,
+        "misses": 102,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 118,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 118,
+        "overCovers": 0,
+        "underWarns": 118,
+        "shareN": 118,
+        "shareAbsErrSum": 102,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.8644,
+        "miss": 0.8644,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 0.8644,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "eye_bag",
+      "tally": {
+        "claims": 118,
+        "noticeable": 118,
+        "outOfSight": 0,
+        "contradictions": 118,
+        "misses": 118,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 118,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 118,
+        "overCovers": 0,
+        "underWarns": 118,
+        "shareN": 118,
+        "shareAbsErrSum": 118,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 1,
+        "miss": 1,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": 1,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "without",
+      "concern": "redness",
+      "tally": {
+        "claims": 60,
+        "noticeable": 60,
+        "outOfSight": 0,
+        "contradictions": 4,
+        "misses": 4,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 60,
+        "covers": 32,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 60,
+        "overCovers": 0,
+        "underWarns": 28,
+        "shareN": 60,
+        "shareAbsErrSum": 4,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0667,
+        "miss": 0.0667,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 0.4667,
+        "meanAbsShareError": 0.0667,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.5333
+      }
+    },
+    {
+      "system": "with",
+      "concern": "acne",
+      "tally": {
+        "claims": 50,
+        "noticeable": 37,
+        "outOfSight": 13,
+        "contradictions": 1,
+        "misses": 1,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 54,
+        "covers": 12,
+        "advisedOutOfSight": 13,
+        "advisedNoticeable": 41,
+        "overCovers": 0,
+        "underWarns": 29,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.02,
+        "miss": 0.027,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.7073,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.2222
+      }
+    },
+    {
+      "system": "with",
+      "concern": "age_spot",
+      "tally": {
+        "claims": 53,
+        "noticeable": 50,
+        "outOfSight": 3,
+        "contradictions": 3,
+        "misses": 0,
+        "falseAlarms": 3,
+        "edges": 3,
+        "advised": 54,
+        "covers": 13,
+        "advisedOutOfSight": 3,
+        "advisedNoticeable": 51,
+        "overCovers": 0,
+        "underWarns": 38,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0566,
+        "miss": 0,
+        "falseAlarm": 1,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.7451,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.2407
+      }
+    },
+    {
+      "system": "with",
+      "concern": "pore",
+      "tally": {
+        "claims": 49,
+        "noticeable": 19,
+        "outOfSight": 30,
+        "contradictions": 4,
+        "misses": 1,
+        "falseAlarms": 3,
+        "edges": 3,
+        "advised": 54,
+        "covers": 1,
+        "advisedOutOfSight": 33,
+        "advisedNoticeable": 21,
+        "overCovers": 0,
+        "underWarns": 20,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0816,
+        "miss": 0.0526,
+        "falseAlarm": 0.1,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9524,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0185
+      }
+    },
+    {
+      "system": "with",
+      "concern": "wrinkle",
+      "tally": {
+        "claims": 52,
+        "noticeable": 39,
+        "outOfSight": 13,
+        "contradictions": 6,
+        "misses": 0,
+        "falseAlarms": 6,
+        "edges": 6,
+        "advised": 54,
+        "covers": 0,
+        "advisedOutOfSight": 15,
+        "advisedNoticeable": 39,
+        "overCovers": 0,
+        "underWarns": 39,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.1154,
+        "miss": 0,
+        "falseAlarm": 0.4615,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "dark_circle",
+      "tally": {
+        "claims": 51,
+        "noticeable": 51,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 54,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 54,
+        "overCovers": 0,
+        "underWarns": 54,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "eye_bag",
+      "tally": {
+        "claims": 51,
+        "noticeable": 51,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 54,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 54,
+        "overCovers": 0,
+        "underWarns": 54,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    },
+    {
+      "system": "with",
+      "concern": "redness",
+      "tally": {
+        "claims": 26,
+        "noticeable": 26,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 26,
+        "covers": 0,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 26,
+        "overCovers": 0,
+        "underWarns": 26,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    }
+  ],
+  "byScene": [
+    {
+      "system": "without",
+      "scene": "video_call",
+      "tally": {
+        "claims": 104,
+        "noticeable": 68,
+        "outOfSight": 36,
+        "contradictions": 53,
+        "misses": 53,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 104,
+        "covers": 8,
+        "advisedOutOfSight": 36,
+        "advisedNoticeable": 68,
+        "overCovers": 0,
+        "underWarns": 60,
+        "shareN": 104,
+        "shareAbsErrSum": 46.565041702202684,
+        "shareNHard": 64,
+        "shareAbsErrSumHard": 15.5650417022027
+      },
+      "rates": {
+        "contradiction": 0.5096,
+        "miss": 0.7794,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8824,
+        "meanAbsShareError": 0.4477,
+        "meanAbsShareErrorHard": 0.2432,
+        "coverRate": 0.0769
+      }
+    },
+    {
+      "system": "without",
+      "scene": "cafe_table",
+      "tally": {
+        "claims": 79,
+        "noticeable": 79,
+        "outOfSight": 0,
+        "contradictions": 47,
+        "misses": 47,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 79,
+        "covers": 11,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 79,
+        "overCovers": 0,
+        "underWarns": 68,
+        "shareN": 79,
+        "shareAbsErrSum": 48.623063477306815,
+        "shareNHard": 48,
+        "shareAbsErrSumHard": 28.623063477306804
+      },
+      "rates": {
+        "contradiction": 0.5949,
+        "miss": 0.5949,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8608,
+        "meanAbsShareError": 0.6155,
+        "meanAbsShareErrorHard": 0.5963,
+        "coverRate": 0.1392
+      }
+    },
+    {
+      "system": "without",
+      "scene": "dinner_table",
+      "tally": {
+        "claims": 174,
+        "noticeable": 138,
+        "outOfSight": 36,
+        "contradictions": 115,
+        "misses": 115,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 174,
+        "covers": 9,
+        "advisedOutOfSight": 36,
+        "advisedNoticeable": 138,
+        "overCovers": 0,
+        "underWarns": 129,
+        "shareN": 174,
+        "shareAbsErrSum": 77.33260834139597,
+        "shareNHard": 108,
+        "shareAbsErrSumHard": 23.332608341395932
+      },
+      "rates": {
+        "contradiction": 0.6609,
+        "miss": 0.8333,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9348,
+        "meanAbsShareError": 0.4444,
+        "meanAbsShareErrorHard": 0.216,
+        "coverRate": 0.0517
+      }
+    },
+    {
+      "system": "without",
+      "scene": "presenting",
+      "tally": {
+        "claims": 104,
+        "noticeable": 64,
+        "outOfSight": 40,
+        "contradictions": 53,
+        "misses": 53,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 104,
+        "covers": 4,
+        "advisedOutOfSight": 40,
+        "advisedNoticeable": 64,
+        "overCovers": 0,
+        "underWarns": 60,
+        "shareN": 104,
+        "shareAbsErrSum": 36.270027625138994,
+        "shareNHard": 64,
+        "shareAbsErrSumHard": 3.27002762513898
+      },
+      "rates": {
+        "contradiction": 0.5096,
+        "miss": 0.8281,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9375,
+        "meanAbsShareError": 0.3488,
+        "meanAbsShareErrorHard": 0.0511,
+        "coverRate": 0.0385
+      }
+    },
+    {
+      "system": "without",
+      "scene": "conversation",
+      "tally": {
+        "claims": 169,
+        "noticeable": 163,
+        "outOfSight": 6,
+        "contradictions": 113,
+        "misses": 113,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 169,
+        "covers": 20,
+        "advisedOutOfSight": 6,
+        "advisedNoticeable": 163,
+        "overCovers": 0,
+        "underWarns": 143,
+        "shareN": 169,
+        "shareAbsErrSum": 104.31303947342046,
+        "shareNHard": 104,
+        "shareAbsErrSumHard": 56.31303947342045
+      },
+      "rates": {
+        "contradiction": 0.6686,
+        "miss": 0.6933,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8773,
+        "meanAbsShareError": 0.6172,
+        "meanAbsShareErrorHard": 0.5415,
+        "coverRate": 0.1183
+      }
+    },
+    {
+      "system": "without",
+      "scene": "meeting_room",
+      "tally": {
+        "claims": 86,
+        "noticeable": 66,
+        "outOfSight": 20,
+        "contradictions": 46,
+        "misses": 46,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 86,
+        "covers": 12,
+        "advisedOutOfSight": 20,
+        "advisedNoticeable": 66,
+        "overCovers": 0,
+        "underWarns": 54,
+        "shareN": 86,
+        "shareAbsErrSum": 34.824867103872265,
+        "shareNHard": 52,
+        "shareAbsErrSumHard": 9.824867103872256
+      },
+      "rates": {
+        "contradiction": 0.5349,
+        "miss": 0.697,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8182,
+        "meanAbsShareError": 0.4049,
+        "meanAbsShareErrorHard": 0.1889,
+        "coverRate": 0.1395
+      }
+    },
+    {
+      "system": "without",
+      "scene": "close_talk",
+      "tally": {
+        "claims": 52,
+        "noticeable": 52,
+        "outOfSight": 0,
+        "contradictions": 30,
+        "misses": 30,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 52,
+        "covers": 6,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 52,
+        "overCovers": 0,
+        "underWarns": 46,
+        "shareN": 52,
+        "shareAbsErrSum": 31.8336191662946,
+        "shareNHard": 32,
+        "shareAbsErrSumHard": 18.8336191662946
+      },
+      "rates": {
+        "contradiction": 0.5769,
+        "miss": 0.5769,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8846,
+        "meanAbsShareError": 0.6122,
+        "meanAbsShareErrorHard": 0.5886,
+        "coverRate": 0.1154
+      }
+    },
+    {
+      "system": "with",
+      "scene": "video_call",
+      "tally": {
+        "claims": 50,
+        "noticeable": 31,
+        "outOfSight": 19,
+        "contradictions": 2,
+        "misses": 1,
+        "falseAlarms": 1,
+        "edges": 1,
+        "advised": 52,
+        "covers": 2,
+        "advisedOutOfSight": 20,
+        "advisedNoticeable": 32,
+        "overCovers": 0,
+        "underWarns": 30,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.04,
+        "miss": 0.0323,
+        "falseAlarm": 0.0526,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9375,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0385
+      }
+    },
+    {
+      "system": "with",
+      "scene": "cafe_table",
+      "tally": {
+        "claims": 49,
+        "noticeable": 49,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 52,
+        "covers": 2,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 52,
+        "overCovers": 0,
+        "underWarns": 50,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9615,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0385
+      }
+    },
+    {
+      "system": "with",
+      "scene": "dinner_table",
+      "tally": {
+        "claims": 100,
+        "noticeable": 80,
+        "outOfSight": 20,
+        "contradictions": 6,
+        "misses": 1,
+        "falseAlarms": 5,
+        "edges": 5,
+        "advised": 104,
+        "covers": 10,
+        "advisedOutOfSight": 21,
+        "advisedNoticeable": 83,
+        "overCovers": 0,
+        "underWarns": 73,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.06,
+        "miss": 0.0125,
+        "falseAlarm": 0.25,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8795,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0962
+      }
+    },
+    {
+      "system": "with",
+      "scene": "presenting",
+      "tally": {
+        "claims": 51,
+        "noticeable": 32,
+        "outOfSight": 19,
+        "contradictions": 5,
+        "misses": 0,
+        "falseAlarms": 5,
+        "edges": 5,
+        "advised": 52,
+        "covers": 2,
+        "advisedOutOfSight": 20,
+        "advisedNoticeable": 32,
+        "overCovers": 0,
+        "underWarns": 30,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.098,
+        "miss": 0,
+        "falseAlarm": 0.2632,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9375,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0385
+      }
+    },
+    {
+      "system": "with",
+      "scene": "conversation",
+      "tally": {
+        "claims": 72,
+        "noticeable": 71,
+        "outOfSight": 1,
+        "contradictions": 1,
+        "misses": 0,
+        "falseAlarms": 1,
+        "edges": 1,
+        "advised": 78,
+        "covers": 9,
+        "advisedOutOfSight": 3,
+        "advisedNoticeable": 75,
+        "overCovers": 0,
+        "underWarns": 66,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0139,
+        "miss": 0,
+        "falseAlarm": 1,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.88,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.1154
+      }
+    },
+    {
+      "system": "with",
+      "scene": "close_talk",
+      "tally": {
+        "claims": 10,
+        "noticeable": 10,
+        "outOfSight": 0,
+        "contradictions": 0,
+        "misses": 0,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 12,
+        "covers": 1,
+        "advisedOutOfSight": 0,
+        "advisedNoticeable": 12,
+        "overCovers": 0,
+        "underWarns": 11,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0,
+        "miss": 0,
+        "falseAlarm": null,
+        "overCover": null,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9167,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0833
+      }
+    }
+  ],
+  "byKind": [
+    {
+      "system": "without",
+      "kind": "call",
+      "tally": {
+        "claims": 104,
+        "noticeable": 68,
+        "outOfSight": 36,
+        "contradictions": 53,
+        "misses": 53,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 104,
+        "covers": 8,
+        "advisedOutOfSight": 36,
+        "advisedNoticeable": 68,
+        "overCovers": 0,
+        "underWarns": 60,
+        "shareN": 104,
+        "shareAbsErrSum": 46.565041702202684,
+        "shareNHard": 64,
+        "shareAbsErrSumHard": 15.5650417022027
+      },
+      "rates": {
+        "contradiction": 0.5096,
+        "miss": 0.7794,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8824,
+        "meanAbsShareError": 0.4477,
+        "meanAbsShareErrorHard": 0.2432,
+        "coverRate": 0.0769
+      }
+    },
+    {
+      "system": "without",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 664,
+        "noticeable": 562,
+        "outOfSight": 102,
+        "contradictions": 404,
+        "misses": 404,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 664,
+        "covers": 62,
+        "advisedOutOfSight": 102,
+        "advisedNoticeable": 562,
+        "overCovers": 0,
+        "underWarns": 500,
+        "shareN": 664,
+        "shareAbsErrSum": 333.19722518742856,
+        "shareNHard": 408,
+        "shareAbsErrSumHard": 140.19722518742907
+      },
+      "rates": {
+        "contradiction": 0.6084,
+        "miss": 0.7189,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8897,
+        "meanAbsShareError": 0.5018,
+        "meanAbsShareErrorHard": 0.3436,
+        "coverRate": 0.0934
+      }
+    },
+    {
+      "system": "with",
+      "kind": "call",
+      "tally": {
+        "claims": 50,
+        "noticeable": 31,
+        "outOfSight": 19,
+        "contradictions": 2,
+        "misses": 1,
+        "falseAlarms": 1,
+        "edges": 1,
+        "advised": 52,
+        "covers": 2,
+        "advisedOutOfSight": 20,
+        "advisedNoticeable": 32,
+        "overCovers": 0,
+        "underWarns": 30,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.04,
+        "miss": 0.0323,
+        "falseAlarm": 0.0526,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9375,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0385
+      }
+    },
+    {
+      "system": "with",
+      "kind": "inPerson",
+      "tally": {
+        "claims": 282,
+        "noticeable": 242,
+        "outOfSight": 40,
+        "contradictions": 12,
+        "misses": 1,
+        "falseAlarms": 11,
+        "edges": 11,
+        "advised": 298,
+        "covers": 24,
+        "advisedOutOfSight": 44,
+        "advisedNoticeable": 254,
+        "overCovers": 0,
+        "underWarns": 230,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0426,
+        "miss": 0.0041,
+        "falseAlarm": 0.275,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9055,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0805
+      }
+    }
+  ],
+  "byFace": [
+    {
+      "system": "without",
+      "face": "p1a",
+      "tally": {
+        "claims": 210,
+        "noticeable": 182,
+        "outOfSight": 28,
+        "contradictions": 115,
+        "misses": 115,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 210,
+        "covers": 52,
+        "advisedOutOfSight": 28,
+        "advisedNoticeable": 182,
+        "overCovers": 0,
+        "underWarns": 130,
+        "shareN": 210,
+        "shareAbsErrSum": 101.01804659498204,
+        "shareNHard": 120,
+        "shareAbsErrSumHard": 40.018046594982096
+      },
+      "rates": {
+        "contradiction": 0.5476,
+        "miss": 0.6319,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.7143,
+        "meanAbsShareError": 0.481,
+        "meanAbsShareErrorHard": 0.3335,
+        "coverRate": 0.2476
+      }
+    },
+    {
+      "system": "without",
+      "face": "p2b",
+      "tally": {
+        "claims": 180,
+        "noticeable": 152,
+        "outOfSight": 28,
+        "contradictions": 124,
+        "misses": 124,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 180,
+        "covers": 1,
+        "advisedOutOfSight": 28,
+        "advisedNoticeable": 152,
+        "overCovers": 0,
+        "underWarns": 151,
+        "shareN": 180,
+        "shareAbsErrSum": 93.73596683414988,
+        "shareNHard": 120,
+        "shareAbsErrSumHard": 46.735966834149835
+      },
+      "rates": {
+        "contradiction": 0.6889,
+        "miss": 0.8158,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9934,
+        "meanAbsShareError": 0.5208,
+        "meanAbsShareErrorHard": 0.3895,
+        "coverRate": 0.0056
+      }
+    },
+    {
+      "system": "without",
+      "face": "p3a",
+      "tally": {
+        "claims": 210,
+        "noticeable": 180,
+        "outOfSight": 30,
+        "contradictions": 115,
+        "misses": 115,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 210,
+        "covers": 12,
+        "advisedOutOfSight": 30,
+        "advisedNoticeable": 180,
+        "overCovers": 0,
+        "underWarns": 168,
+        "shareN": 210,
+        "shareAbsErrSum": 93.3068582920992,
+        "shareNHard": 120,
+        "shareAbsErrSumHard": 33.30685829209915
+      },
+      "rates": {
+        "contradiction": 0.5476,
+        "miss": 0.6389,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9333,
+        "meanAbsShareError": 0.4443,
+        "meanAbsShareErrorHard": 0.2776,
+        "coverRate": 0.0571
+      }
+    },
+    {
+      "system": "without",
+      "face": "p5a",
+      "tally": {
+        "claims": 168,
+        "noticeable": 116,
+        "outOfSight": 52,
+        "contradictions": 103,
+        "misses": 103,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 168,
+        "covers": 5,
+        "advisedOutOfSight": 52,
+        "advisedNoticeable": 116,
+        "overCovers": 0,
+        "underWarns": 111,
+        "shareN": 168,
+        "shareAbsErrSum": 91.70139516840062,
+        "shareNHard": 112,
+        "shareAbsErrSumHard": 35.70139516840063
+      },
+      "rates": {
+        "contradiction": 0.6131,
+        "miss": 0.8879,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9569,
+        "meanAbsShareError": 0.5458,
+        "meanAbsShareErrorHard": 0.3188,
+        "coverRate": 0.0298
+      }
+    },
+    {
+      "system": "with",
+      "face": "p1a",
+      "tally": {
+        "claims": 88,
+        "noticeable": 75,
+        "outOfSight": 13,
+        "contradictions": 3,
+        "misses": 0,
+        "falseAlarms": 3,
+        "edges": 3,
+        "advised": 91,
+        "covers": 10,
+        "advisedOutOfSight": 14,
+        "advisedNoticeable": 77,
+        "overCovers": 0,
+        "underWarns": 67,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0341,
+        "miss": 0,
+        "falseAlarm": 0.2308,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8701,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.1099
+      }
+    },
+    {
+      "system": "with",
+      "face": "p2b",
+      "tally": {
+        "claims": 83,
+        "noticeable": 72,
+        "outOfSight": 11,
+        "contradictions": 2,
+        "misses": 1,
+        "falseAlarms": 1,
+        "edges": 1,
+        "advised": 84,
+        "covers": 9,
+        "advisedOutOfSight": 12,
+        "advisedNoticeable": 72,
+        "overCovers": 0,
+        "underWarns": 63,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0241,
+        "miss": 0.0139,
+        "falseAlarm": 0.0909,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.875,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.1071
+      }
+    },
+    {
+      "system": "with",
+      "face": "p3a",
+      "tally": {
+        "claims": 85,
+        "noticeable": 74,
+        "outOfSight": 11,
+        "contradictions": 1,
+        "misses": 1,
+        "falseAlarms": 0,
+        "edges": 0,
+        "advised": 91,
+        "covers": 7,
+        "advisedOutOfSight": 13,
+        "advisedNoticeable": 78,
+        "overCovers": 0,
+        "underWarns": 71,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.0118,
+        "miss": 0.0135,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9103,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0769
+      }
+    },
+    {
+      "system": "with",
+      "face": "p5a",
+      "tally": {
+        "claims": 76,
+        "noticeable": 52,
+        "outOfSight": 24,
+        "contradictions": 8,
+        "misses": 0,
+        "falseAlarms": 8,
+        "edges": 8,
+        "advised": 84,
+        "covers": 0,
+        "advisedOutOfSight": 25,
+        "advisedNoticeable": 59,
+        "overCovers": 0,
+        "underWarns": 59,
+        "shareN": 0,
+        "shareAbsErrSum": 0,
+        "shareNHard": 0,
+        "shareAbsErrSumHard": 0
+      },
+      "rates": {
+        "contradiction": 0.1053,
+        "miss": 0,
+        "falseAlarm": 0.3333,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 1,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0
+      }
+    }
+  ],
+  "sensitivity": [
+    {
+      "threshold": 0.05,
+      "without": {
+        "contradiction": 0.6367,
+        "miss": 0.7387,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8943,
+        "meanAbsShareError": 0.4945,
+        "meanAbsShareErrorHard": 0.33,
+        "coverRate": 0.0911
+      },
+      "withoutJudgedOnly": {
+        "contradiction": 0.497,
+        "miss": 0.5891,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8337,
+        "meanAbsShareError": 0.3859,
+        "meanAbsShareErrorHard": 0.2765,
+        "coverRate": 0.1403
+      },
+      "with": {
+        "contradiction": 0.0301,
+        "miss": 0.0244,
+        "falseAlarm": 0.0667,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9145,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0743
+      }
+    },
+    {
+      "threshold": 0.1,
+      "without": {
+        "contradiction": 0.5951,
+        "miss": 0.7254,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8889,
+        "meanAbsShareError": 0.4945,
+        "meanAbsShareErrorHard": 0.33,
+        "coverRate": 0.0911
+      },
+      "withoutJudgedOnly": {
+        "contradiction": 0.4529,
+        "miss": 0.5664,
+        "falseAlarm": 0,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.8246,
+        "meanAbsShareError": 0.3859,
+        "meanAbsShareErrorHard": 0.2765,
+        "coverRate": 0.1403
+      },
+      "with": {
+        "contradiction": 0.0422,
+        "miss": 0.0073,
+        "falseAlarm": 0.2034,
+        "overCover": 0,
+        "overCoverOfAll": 0,
+        "underWarning": 0.9091,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0743
+      }
+    },
+    {
+      "threshold": 0.25,
+      "without": {
+        "contradiction": 0.5404,
+        "miss": 0.7176,
+        "falseAlarm": 0.0755,
+        "overCover": 0.0566,
+        "overCoverOfAll": 0.0156,
+        "underWarning": 0.8957,
+        "meanAbsShareError": 0.4945,
+        "meanAbsShareErrorHard": 0.33,
+        "coverRate": 0.0911
+      },
+      "withoutJudgedOnly": {
+        "contradiction": 0.4269,
+        "miss": 0.5565,
+        "falseAlarm": 0.1103,
+        "overCover": 0.0828,
+        "overCoverOfAll": 0.024,
+        "underWarning": 0.8362,
+        "meanAbsShareError": 0.3859,
+        "meanAbsShareErrorHard": 0.2765,
+        "coverRate": 0.1403
+      },
+      "with": {
+        "contradiction": 0.1325,
+        "miss": 0,
+        "falseAlarm": 0.4731,
+        "overCover": 0.0408,
+        "overCoverOfAll": 0.0114,
+        "underWarning": 0.9127,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0743
+      }
+    },
+    {
+      "threshold": 0.5,
+      "without": {
+        "contradiction": 0.4857,
+        "miss": 0.7041,
+        "falseAlarm": 0.1007,
+        "overCover": 0.0612,
+        "overCoverOfAll": 0.0221,
+        "underWarning": 0.8918,
+        "meanAbsShareError": 0.4945,
+        "meanAbsShareErrorHard": 0.33,
+        "coverRate": 0.0911
+      },
+      "withoutJudgedOnly": {
+        "contradiction": 0.3888,
+        "miss": 0.5338,
+        "falseAlarm": 0.1489,
+        "overCover": 0.0904,
+        "overCoverOfAll": 0.0341,
+        "underWarning": 0.8296,
+        "meanAbsShareError": 0.3859,
+        "meanAbsShareErrorHard": 0.2765,
+        "coverRate": 0.1403
+      },
+      "with": {
+        "contradiction": 0.2169,
+        "miss": 0,
+        "falseAlarm": 0.595,
+        "overCover": 0.0625,
+        "overCoverOfAll": 0.0229,
+        "underWarning": 0.9189,
+        "meanAbsShareError": null,
+        "meanAbsShareErrorHard": null,
+        "coverRate": 0.0743
+      }
+    }
+  ],
+  "unaided": {
+    "runsReadable": 48,
+    "runsUnreadable": 0,
+    "retriesUsed": 0,
+    "apiErrors": 0,
+    "momentsScored": 118,
+    "momentsPerRun": 2.46,
+    "unscorableMoments": [],
+    "blurryChosen": 0,
+    "sceneChoices": {
+      "video_call": 16,
+      "cafe_table": 12,
+      "dinner_table": 27,
+      "presenting": 16,
+      "conversation": 26,
+      "meeting_room": 13,
+      "close_talk": 8
+    },
+    "saidAbsentButFound": 269,
+    "saidAbsentByConcern": {
+      "age_spot": 30,
+      "wrinkle": 30,
+      "eye_bag": 95,
+      "acne": 88,
+      "dark_circle": 26
+    },
+    "claimedMarksNotOnFace": 0,
+    "consistency": {
+      "pairs": 24,
+      "sameMomentCount": 24,
+      "alignedMoments": 59,
+      "sameChoice": 51,
+      "comparedSame": 331,
+      "disagreeSame": 9,
+      "comparedAll": 384,
+      "disagreeAll": 17,
+      "adviceComparedSame": 331,
+      "adviceDisagreeSame": 5,
+      "shareComparedSame": 331,
+      "shareAbsDiffSame": 6.35,
+      "sameMomentCountRate": 1,
+      "sameChoiceRate": 0.8644,
+      "noticeableDisagreementSameChoice": 0.0272,
+      "noticeableDisagreementAnyChoice": 0.0443,
+      "adviceDisagreementSameChoice": 0.0151,
+      "meanAbsShareDifferenceSameChoice": 0.0192,
+      "byFace": {
+        "p1a": {
+          "pairs": 6,
+          "noticeableDisagreementSameChoice": 0.011,
+          "compared": 91
+        },
+        "p2b": {
+          "pairs": 6,
+          "noticeableDisagreementSameChoice": 0.0385,
+          "compared": 78
+        },
+        "p3a": {
+          "pairs": 6,
+          "noticeableDisagreementSameChoice": 0.0238,
+          "compared": 84
+        },
+        "p5a": {
+          "pairs": 6,
+          "noticeableDisagreementSameChoice": 0.0385,
+          "compared": 78
+        }
+      }
+    },
+    "perf": {
+      "calls": 48,
+      "medianLatencyMs": 6886,
+      "meanOutputTokens": 509,
+      "costUsdTotal": 0.3064,
+      "costUsdMean": 0.0064
+    }
+  },
+  "agent": {
+    "plans": 24,
+    "fixturesReused": 12,
+    "newRuns": 12,
+    "missing": [],
+    "outcomes": {
+      "verified": 21,
+      "repaired": 3,
+      "fallback": 0
+    },
+    "verifier": {
+      "recheckedPlans": 24,
+      "plansWithAnyIssue": 0,
+      "issuesTotal": 0,
+      "unverifiedNumbersShipped": 0,
+      "boundWordingIssues": 0,
+      "otherIssues": 0,
+      "numbersShipped": 402,
+      "claimsShipped": 210,
+      "cachedResultMismatches": 0
+    },
+    "misreadAsNotice": 2,
+    "moments": 54,
+    "momentsPerPlan": 2.25,
+    "actions": {
+      "none": 24,
+      "lightest_touch": 26,
+      "free_fix": 4
+    },
+    "sceneChoices": {
+      "video_call": 8,
+      "cafe_table": 8,
+      "dinner_table": 16,
+      "presenting": 8,
+      "conversation": 12,
+      "close_talk": 2
+    },
+    "concernMomentsSilent": 18,
+    "concernMomentsBoth": 2,
+    "bothMentions": [
+      {
+        "face": "p1a",
+        "day": "teaching",
+        "moment": 2,
+        "concern": "acne",
+        "sentences": [
+          "A typical viewer could still pick out breakouts, about 1 in 3, and dark spots, most, at 1.6 m in video call light.",
+          "The video also cannot carry 26 of 40 breakouts."
+        ]
+      },
+      {
+        "face": "p5a",
+        "day": "presenting",
+        "moment": 2,
+        "concern": "pore",
+        "sentences": [
+          "Breakouts could be seen at about a third, and pores at about 1 in 50.",
+          "Most pores are out of sight for a typical viewer at 1 m in this light."
+        ]
+      }
+    ],
+    "perf": {
+      "runs": 24,
+      "medianMs": 15088.5,
+      "meanMs": 16569,
+      "medianRequests": 4,
+      "meanRequests": 4.42,
+      "medianToolCalls": 9,
+      "promptTokensProcessed": 1089149,
+      "outputTokens": 46225,
+      "costUsdTotal": 0.9797,
+      "costUsdMean": 0.0408,
+      "costUsdMedian": 0.0364
+    },
+    "pairs": [
+      {
+        "face": "p1a",
+        "day": "workday",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 3,
+        "requests": 5,
+        "toolCalls": 11,
+        "ms": 20767,
+        "repairs": 0,
+        "costUsd": 0.056,
+        "issues": 0
+      },
+      {
+        "face": "p1a",
+        "day": "presenting",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 9,
+        "ms": 13746,
+        "repairs": 0,
+        "costUsd": 0.0347,
+        "issues": 0
+      },
+      {
+        "face": "p1a",
+        "day": "wedding",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 10,
+        "ms": 12909,
+        "repairs": 0,
+        "costUsd": 0.0351,
+        "issues": 0
+      },
+      {
+        "face": "p1a",
+        "day": "interview",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 10,
+        "ms": 14356,
+        "repairs": 0,
+        "costUsd": 0.053,
+        "issues": 0
+      },
+      {
+        "face": "p1a",
+        "day": "teaching",
+        "source": "run",
+        "outcome": "repaired",
+        "moments": 2,
+        "requests": 6,
+        "toolCalls": 10,
+        "ms": 21844,
+        "repairs": 1,
+        "costUsd": 0.0551,
+        "issues": 0
+      },
+      {
+        "face": "p1a",
+        "day": "beach",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 10,
+        "ms": 15536,
+        "repairs": 0,
+        "costUsd": 0.0379,
+        "issues": 0
+      },
+      {
+        "face": "p2b",
+        "day": "workday",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 3,
+        "requests": 5,
+        "toolCalls": 12,
+        "ms": 29653,
+        "repairs": 0,
+        "costUsd": 0.0557,
+        "issues": 0
+      },
+      {
+        "face": "p2b",
+        "day": "presenting",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 9,
+        "ms": 13481,
+        "repairs": 0,
+        "costUsd": 0.0324,
+        "issues": 0
+      },
+      {
+        "face": "p2b",
+        "day": "wedding",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 3,
+        "requests": 4,
+        "toolCalls": 11,
+        "ms": 17414,
+        "repairs": 0,
+        "costUsd": 0.0431,
+        "issues": 0
+      },
+      {
+        "face": "p2b",
+        "day": "interview",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 9,
+        "ms": 12255,
+        "repairs": 0,
+        "costUsd": 0.032,
+        "issues": 0
+      },
+      {
+        "face": "p2b",
+        "day": "teaching",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 6,
+        "ms": 17034,
+        "repairs": 0,
+        "costUsd": 0.0306,
+        "issues": 0
+      },
+      {
+        "face": "p2b",
+        "day": "beach",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 9,
+        "ms": 15580,
+        "repairs": 0,
+        "costUsd": 0.0318,
+        "issues": 0
+      },
+      {
+        "face": "p3a",
+        "day": "workday",
+        "source": "fixture",
+        "outcome": "repaired",
+        "moments": 3,
+        "requests": 6,
+        "toolCalls": 12,
+        "ms": 27934,
+        "repairs": 1,
+        "costUsd": 0.0694,
+        "issues": 0
+      },
+      {
+        "face": "p3a",
+        "day": "presenting",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 9,
+        "ms": 16203,
+        "repairs": 0,
+        "costUsd": 0.052,
+        "issues": 0
+      },
+      {
+        "face": "p3a",
+        "day": "wedding",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 7,
+        "ms": 14641,
+        "repairs": 0,
+        "costUsd": 0.0348,
+        "issues": 0
+      },
+      {
+        "face": "p3a",
+        "day": "interview",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 9,
+        "ms": 14089,
+        "repairs": 0,
+        "costUsd": 0.0346,
+        "issues": 0
+      },
+      {
+        "face": "p3a",
+        "day": "teaching",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 5,
+        "toolCalls": 8,
+        "ms": 15832,
+        "repairs": 0,
+        "costUsd": 0.0378,
+        "issues": 0
+      },
+      {
+        "face": "p3a",
+        "day": "beach",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 7,
+        "ms": 12988,
+        "repairs": 0,
+        "costUsd": 0.0324,
+        "issues": 0
+      },
+      {
+        "face": "p5a",
+        "day": "workday",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 3,
+        "requests": 5,
+        "toolCalls": 11,
+        "ms": 21114,
+        "repairs": 0,
+        "costUsd": 0.0443,
+        "issues": 0
+      },
+      {
+        "face": "p5a",
+        "day": "presenting",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 7,
+        "ms": 14289,
+        "repairs": 0,
+        "costUsd": 0.0282,
+        "issues": 0
+      },
+      {
+        "face": "p5a",
+        "day": "wedding",
+        "source": "fixture",
+        "outcome": "verified",
+        "moments": 3,
+        "requests": 4,
+        "toolCalls": 11,
+        "ms": 14507,
+        "repairs": 0,
+        "costUsd": 0.0402,
+        "issues": 0
+      },
+      {
+        "face": "p5a",
+        "day": "interview",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 8,
+        "ms": 10767,
+        "repairs": 0,
+        "costUsd": 0.0294,
+        "issues": 0
+      },
+      {
+        "face": "p5a",
+        "day": "teaching",
+        "source": "run",
+        "outcome": "repaired",
+        "moments": 2,
+        "requests": 6,
+        "toolCalls": 9,
+        "ms": 18607,
+        "repairs": 1,
+        "costUsd": 0.0484,
+        "issues": 0
+      },
+      {
+        "face": "p5a",
+        "day": "beach",
+        "source": "run",
+        "outcome": "verified",
+        "moments": 2,
+        "requests": 4,
+        "toolCalls": 9,
+        "ms": 12102,
+        "repairs": 0,
+        "costUsd": 0.0307,
+        "issues": 0
+      }
+    ],
+    "disagreementKinds": {
+      "fewPickedOut": 12,
+      "outOfSightOverLine": 2
+    },
+    "disagreements": [
+      {
+        "face": "p1a",
+        "day": "presenting",
+        "moment": 1,
+        "scene": "presenting",
+        "concern": "wrinkle",
+        "planSaid": "noticeable",
+        "modelShare": 0.075,
+        "sentences": [
+          "Fine lines (about 1 in 13), redness, under-eye shadows and under-eye puffiness could also be noticeable."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p1a",
+        "day": "presenting",
+        "moment": 2,
+        "scene": "conversation",
+        "concern": "pore",
+        "planSaid": "noticeable",
+        "modelShare": 0.084,
+        "sentences": [
+          "Pores (about 1 in 12), redness, under-eye shadows and under-eye puffiness could also be noticeable."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p1a",
+        "day": "interview",
+        "moment": 1,
+        "scene": "dinner_table",
+        "concern": "pore",
+        "planSaid": "noticeable",
+        "modelShare": 0.082,
+        "sentences": [
+          "Pores are the quietest here, with about 1 in 12 picked out."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p2b",
+        "day": "wedding",
+        "moment": 2,
+        "scene": "dinner_table",
+        "concern": "acne",
+        "planSaid": "out of sight",
+        "modelShare": 0.111,
+        "sentences": [
+          "In evening light at home at 1.5 m, only about 1 in 9 breakouts and about 1 in 30 pores are picked out by a typical viewer."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p2b",
+        "day": "beach",
+        "moment": 2,
+        "scene": "dinner_table",
+        "concern": "pore",
+        "planSaid": "noticeable",
+        "modelShare": 0.034,
+        "sentences": [
+          "Breakouts (about 1 in 9) and pores (about 1 in 30) are mostly out of sight, though under-eye shadows and puffiness could be seen."
+        ],
+        "readAsNoticeButSaysOutOfSight": true
+      },
+      {
+        "face": "p3a",
+        "day": "teaching",
+        "moment": 2,
+        "scene": "video_call",
+        "concern": "pore",
+        "planSaid": "out of sight",
+        "modelShare": 0.113,
+        "sentences": [
+          "143 of 221 pores are also below what the camera can carry."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p5a",
+        "day": "workday",
+        "moment": 1,
+        "scene": "video_call",
+        "concern": "age_spot",
+        "planSaid": "noticeable",
+        "modelShare": 0.094,
+        "sentences": [
+          "Dark spots are mostly lost too, with only about 1 in 11 picked out at 4 m, though under-eye shadows and puffiness could still be noticeable."
+        ],
+        "readAsNoticeButSaysOutOfSight": true
+      },
+      {
+        "face": "p5a",
+        "day": "workday",
+        "moment": 3,
+        "scene": "dinner_table",
+        "concern": "wrinkle",
+        "planSaid": "noticeable",
+        "modelShare": 0.056,
+        "sentences": [
+          "A typical viewer could notice about half of dark spots and about 1 in 18 fine lines, plus under-eye shadows and puffiness."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p5a",
+        "day": "presenting",
+        "moment": 1,
+        "scene": "presenting",
+        "concern": "age_spot",
+        "planSaid": "noticeable",
+        "modelShare": 0.057,
+        "sentences": [
+          "Dark spots are about 1 in 18 and fine lines about 1 in 54 for a typical viewer from there."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p5a",
+        "day": "presenting",
+        "moment": 1,
+        "scene": "presenting",
+        "concern": "wrinkle",
+        "planSaid": "noticeable",
+        "modelShare": 0.019,
+        "sentences": [
+          "Dark spots are about 1 in 18 and fine lines about 1 in 54 for a typical viewer from there."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p5a",
+        "day": "wedding",
+        "moment": 2,
+        "scene": "dinner_table",
+        "concern": "wrinkle",
+        "planSaid": "noticeable",
+        "modelShare": 0.056,
+        "sentences": [
+          "Fine lines are faint, with 6 of 107 in sight."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p5a",
+        "day": "teaching",
+        "moment": 1,
+        "scene": "presenting",
+        "concern": "age_spot",
+        "planSaid": "noticeable",
+        "modelShare": 0.057,
+        "sentences": [
+          "From 4 m, a typical viewer could pick out under-eye shadows and under-eye puffiness, and a few dark spots (3 of 53) and fine lines (2 of 107)."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p5a",
+        "day": "teaching",
+        "moment": 1,
+        "scene": "presenting",
+        "concern": "wrinkle",
+        "planSaid": "noticeable",
+        "modelShare": 0.019,
+        "sentences": [
+          "From 4 m, a typical viewer could pick out under-eye shadows and under-eye puffiness, and a few dark spots (3 of 53) and fine lines (2 of 107)."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      },
+      {
+        "face": "p5a",
+        "day": "beach",
+        "moment": 2,
+        "scene": "dinner_table",
+        "concern": "wrinkle",
+        "planSaid": "noticeable",
+        "modelShare": 0.056,
+        "sentences": [
+          "A typical viewer could pick out dark spots (about half) and fine lines (about 1 in 18) at 1.5 m."
+        ],
+        "readAsNoticeButSaysOutOfSight": false
+      }
+    ]
+  }
+}

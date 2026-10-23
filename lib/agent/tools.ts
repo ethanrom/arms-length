@@ -3,7 +3,7 @@
  * under a per-run ref (r1, r2, ...) and returns the model a compact view: refs, the quotes it must use verbatim for any
  * number, and which concerns are in sight. The model never sees a raw measurement it could be tempted to restate.
  */
-import { SCENES, VIEWER_ACUITY, type CallGeometry, type ConcernId, type RehearseFace, type RehearsePrefs, type SceneInput, type ToolName } from "@/lib/contracts";
+import { SCENES, VIEWER_ACUITY, type CallGeometry, type ConcernId, type RehearseEvent, type RehearseFace, type RehearsePrefs, type SceneInput, type ToolName } from "@/lib/contracts";
 import { CONCERN_COPY } from "@/lib/copy/concerns";
 import { lintText } from "@/lib/copy/lint";
 import {
@@ -20,6 +20,7 @@ import {
   worthItInput,
   finalAnswerInput,
   LIGHT_IDS,
+  SCENE_IDS,
   VIEWER_IDS,
 } from "./schemas";
 import { afterRef, createRunStore, isFreeFix, isObserve } from "./results";
@@ -123,6 +124,21 @@ export function describeStep(tool: ToolName, input: unknown): string {
     case "final_answer":
       return "Checking every number in your day plan";
   }
+}
+
+/**
+ * The step event for a tool call. observe_scene and video_call_frame also name the moment (its clean title and scene id), so the
+ * UI can sketch it as soon as it is found. A title that fails the clean-up is left out rather than shown.
+ */
+export function stepEvent(tool: ToolName, input: unknown): Extract<RehearseEvent, { type: "step" }> {
+  const args = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
+  const event: Extract<RehearseEvent, { type: "step" }> = { type: "step", tool, label: describeStep(tool, input) };
+  if (tool === "observe_scene" || tool === "video_call_frame") {
+    const title = cleanTitle(args.label);
+    const scene = tool === "video_call_frame" ? "video_call" : SCENE_IDS.find((id) => id === args.scene);
+    if (title && scene) event.moment = { title, scene };
+  }
+  return event;
 }
 
 // ---------------------------------------------------------------------------------------------------------------

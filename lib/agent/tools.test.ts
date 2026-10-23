@@ -7,7 +7,7 @@ import { buildSystemPrompt, buildUserMessage } from "./prompt";
 import { realEngine } from "./realEngine";
 import { LIGHT_IDS, SCENE_IDS, VISIBLE_CONCERN_IDS } from "./schemas";
 import { demoFace } from "./test-helpers";
-import { TOOL_NAMES, createToolbox, describeStep, resolveToolName, toolSpecs } from "./tools";
+import { TOOL_NAMES, createToolbox, describeStep, resolveToolName, stepEvent, toolSpecs } from "./tools";
 
 const prefs = { callDevice: "laptop" as const, noMakeup: false };
 const toolbox = (noMakeup = false) => createToolbox({ face: demoFace("p3a"), engine: realEngine, prefs: { ...prefs, noMakeup } });
@@ -47,6 +47,14 @@ describe("tool specs", () => {
     expect(touch.properties.concern.enum).not.toContain("texture");
   });
 
+  it("requires a short headline on every moment of final_answer", () => {
+    const final = specs.find((s) => s.name === "final_answer")!.inputSchema as { properties: { moments: { items: { required: string[]; properties: { headline: { properties: { text: { maxLength: number } }; required: string[] } } } } } };
+    const item = final.properties.moments.items;
+    expect(item.required).toContain("headline");
+    expect(item.properties.headline.required).toEqual(["text", "refs"]);
+    expect(item.properties.headline.properties.text.maxLength).toBe(120);
+  });
+
   it("states the rules in the system prompt, from the same lists the linter uses", () => {
     const prompt = buildSystemPrompt();
     for (const id of SCENE_IDS) expect(prompt).toContain(id);
@@ -54,6 +62,8 @@ describe("tool specs", () => {
     expect(prompt).toContain("final_answer");
     expect(prompt).toContain("character for character");
     expect(prompt).toContain("at most");
+    expect(prompt).toContain("headline");
+    expect(prompt).toContain("120 characters");
     expect(buildSystemPrompt()).toBe(prompt);
   });
 
@@ -174,5 +184,26 @@ describe("describeStep", () => {
         if (tool === "lightest_touch") expect(label).toContain(CONCERN_COPY[concern].plural);
       }
     }
+  });
+});
+
+describe("stepEvent", () => {
+  it("names the moment on observe_scene and video_call_frame only", () => {
+    expect(stepEvent("observe_scene", { label: "Dinner date", scene: "dinner_table" })).toEqual({
+      type: "step",
+      tool: "observe_scene",
+      label: 'Running the vision model for "Dinner date"',
+      moment: { title: "Dinner date", scene: "dinner_table" },
+    });
+    expect(stepEvent("video_call_frame", { label: "Standup", device: "laptop" }).moment).toEqual({ title: "Standup", scene: "video_call" });
+    for (const tool of ["find_free_fix", "lightest_touch", "worth_it", "receipt", "list_scenes", "final_answer"] as const) {
+      expect(stepEvent(tool, { label: "Dinner date", scene: "dinner_table" })).not.toHaveProperty("moment");
+    }
+  });
+
+  it("leaves the moment out rather than show a title that fails the clean-up or a scene that is not one", () => {
+    expect(stepEvent("observe_scene", { label: "a flaw", scene: "dinner_table" })).not.toHaveProperty("moment");
+    expect(stepEvent("observe_scene", { label: "Dinner", scene: "the moon" })).not.toHaveProperty("moment");
+    expect(stepEvent("observe_scene", null)).not.toHaveProperty("moment");
   });
 });

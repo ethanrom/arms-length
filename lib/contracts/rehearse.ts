@@ -328,6 +328,7 @@ export interface RehearseRequest {
 
 /** NDJSON lines from POST /api/rehearse. `step` labels are deterministic templates, not LLM text. */
 export type RehearseEvent =
-  | { type: "step"; tool: ToolName; label: string }
+  /** `moment` is set on observe_scene / video_call_frame steps, so the UI can sketch that moment's scene as it is found. */
+  | { type: "step"; tool: ToolName; label: string; moment?: { title: string; scene: SceneId } }
   | { type: "plan"; plan: DayPlan }
   | { type: "error"; code: "disabled" | "kill_switch" | "rate_limited" | "bad_request" | "too_large" | "unknown_face" | "upstream" | "timeout"; message: string };

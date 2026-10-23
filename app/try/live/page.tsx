@@ -13,5 +13,6 @@ export default function LivePage() {
     const bundle = loadBundle(id);
     return bundle ? [{ id, label: bundle.label }] : [];
   });
-  return <LiveSessionView faces={faces} />;
+  // Read where the page is built, like the demo faces; /api/rehearse checks it again per request.
+  return <LiveSessionView faces={faces} agentEnabled={process.env.AGENT_ENABLED === "1"} />;
 }

@@ -14,6 +14,10 @@ const SHORT = [
   { head: "We ask YouCam to delete it when you leave.", body: "The analysis and try-on pictures are deleted. One picture may stay up to 24 hours." },
   { head: "We don't store your photo.", body: "Not the photo, not the results, and there are no accounts." },
   { head: "Your own photo is for ages 18 and over.", body: "The demo faces are for everyone." },
+  {
+    head: "Rehearse your day sends numbers, never the photo.",
+    body: "The reading's measurements go to our server to plan the day; the AI model that words the plan sees only what you typed and the results. Nothing is stored.",
+  },
 ];
 
 function Block({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -90,8 +94,8 @@ export default function PrivacyPage() {
               ))}
             </ol>
             <p>
-              Only the photo goes to YouCam. The measurements (the iris, the sizes in millimetres, the contrast, the distances) stay in your browser. Face and iris measurements can
-              count as sensitive data in some places, which is one reason ours are not sent anywhere.
+              Only the photo goes to YouCam. The measurements (the iris, the sizes in millimetres, the contrast, the distances) stay in your browser unless you ask to rehearse your day (below).
+              Face and iris measurements can count as sensitive data in some places, which is one reason they stay with you otherwise.
             </p>
           </Block>
 
@@ -117,6 +121,19 @@ export default function PrivacyPage() {
               </a>{" "}
               for the rest.
             </p>
+          </Block>
+
+          <Block id="rehearse" title="Rehearse your day">
+            <p>
+              When you ask to rehearse a day, two things go to our server: what you typed, and your reading&rsquo;s measurements (the sizes in millimetres, the contrast and the scale, as numbers). The
+              photo does not. Our server runs the same visibility model on the numbers for each moment of the day.
+            </p>
+            <p>
+              An AI language model, running on Amazon Bedrock, splits your day into moments, chooses which of those results to show, and words the plan. It sees what you typed and the results (shares,
+              distances, the size and contrast of one mark), not the measurements and not the photo. Every number in the plan is checked against the model&rsquo;s results before you see it. Amazon
+              states that the model&rsquo;s maker has no access to the prompts and replies on Bedrock; Amazon&rsquo;s own terms govern the rest.
+            </p>
+            <p>We keep nothing from a rehearsal: not what you typed, not the numbers and not the plan. The demo faces work the same way, with their recorded numbers.</p>
           </Block>
 
           <Block id="ours" title="What we keep">

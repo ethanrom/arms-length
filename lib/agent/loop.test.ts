@@ -35,7 +35,7 @@ function answerFrom(last: Record<string, unknown>[], overrides: { notice?: strin
       outOfSight: [{ text: `At ${v.quotes.distance}, a typical viewer sees your skin in ${v.quotes.light}.`, refs: [v.ref] }],
       action: { kind: "none", claim: { text: "Nothing needs doing here.", refs: [] } },
     })),
-    summary: { text: "Your day looks relaxed from where people will be.", refs: views.map((v) => v.ref) },
+    summary: { text: "Your day looks relaxed at the distances you described.", refs: views.map((v) => v.ref) },
   });
 }
 

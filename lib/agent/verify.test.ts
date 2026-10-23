@@ -86,6 +86,15 @@ describe("verifyPlan", () => {
     expect(details).toMatch(/nobody|never|promise/i);
   });
 
+  it("rejects claims no tool result supports, but lets an assumption describe the scene", () => {
+    for (const text of ["Under-eye shadows are very common.", "Most guests will be watching the couple.", "Keep your sunglasses handy.", "Everyone sees the same."]) {
+      expect(verifyPlan(withNotice(text), base, prefs).map((i) => i.code), text).toHaveLength(1);
+    }
+    const d = goodDraft();
+    d.moments[0].assumptions = ["I took the room as normal office light."];
+    expect(verifyPlan(d, base, prefs)).toEqual([]);
+  });
+
   it("rejects numbers in a title or an assumption, but not a clock time", () => {
     const d = goodDraft();
     d.moments[0].title = "Dinner at 7pm";

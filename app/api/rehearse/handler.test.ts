@@ -200,3 +200,18 @@ describe("POST /api/rehearse replay", () => {
     expect((noFixture[noFixture.length - 1] as { plan: DayPlan }).plan.verified).toBe(false);
   });
 });
+
+describe("POST /api/rehearse replay of the recorded fixtures", () => {
+  it("serves every recorded example day on every demo face, steps first, then the checked plan", async () => {
+    const d = deps({ AGENT_MODE: "replay", AGENT_REPLAY_DELAY_MS: "0" });
+    for (const demoId of ["p2b", "p3a", "p1a", "p5a"]) {
+      for (const example of EXAMPLE_DAYS) {
+        const list = await events(await handleRehearse(post({ face: { demoId }, day: example.day, prefs }), "8.8.8.8", d));
+        const plan = (list[list.length - 1] as { type: "plan"; plan: DayPlan }).plan;
+        expect(list.slice(0, -1).every((e) => e.type === "step"), `${demoId}/${example.id}`).toBe(true);
+        expect(plan.verified).toBe(true);
+        expect(plan.day).toBe(example.day);
+      }
+    }
+  });
+});

@@ -20,7 +20,12 @@ export interface PlanDraft {
 type Results = Readonly<Record<string, AnyResult>>;
 
 /** Words that are absolutes about people or outcomes. The lists in lib/copy cover medical, shaming and claims words. */
-const ABSOLUTES = /\b(?:nobody|never|promise|promised|promises|guarantee|guaranteed|guarantees|no one)\b/i;
+const ABSOLUTES = /\b(?:nobody|never|promise|promised|promises|guarantee|guaranteed|guarantees|no one|everyone|everybody|always)\b/i;
+/**
+ * Claims no tool result supports: what is common or normal, what other people will do, advice beyond the tools. The plan may
+ * say what the measurements show and from how far, nothing more. Applied to claims, not to the assumptions about the scene.
+ */
+const UNSUPPORTED = /\b(?:ordinary|common|commonly|normal|normally|usual|usually|sunglasses|(?:guests|people|colleagues|others) will)\b/i;
 /** A number matched only by a bound quote must be worded as one. */
 const BOUND_WORDING = /\b(?:at most|up to|sharpest)\b/i;
 const BOUND_KEY = /\.bound(?:Count)?$/;
@@ -64,6 +69,8 @@ function checkClaim(claim: Claim, momentId: string | null, where: string, implic
     if (!(ref in results)) issues.push({ momentId, code: "unknown_ref", detail: `${where} cites ${ref}, which is not a tool result in this run.` });
   }
   issues.push(...wordingIssues(text, momentId, where));
+  const unsupported = text.match(UNSUPPORTED);
+  if (unsupported) issues.push({ momentId, code: "banned_word", detail: `${where} says "${unsupported[0]}", which no tool result supports. State only what the measurements show.` });
 
   const cited = [...new Set([...(claim.refs ?? []), ...implicitRefs])].filter((r) => r in results);
   const pool = cited.flatMap((ref) => Object.entries(quotesFor(results, ref)));

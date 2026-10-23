@@ -76,7 +76,8 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
       return fallback();
     }
     stats.turns++;
-    stats.inputTokens += response.usage.inputTokens;
+    // RunStats counts every prompt token processed, cached or not; the cache split is in the LLM adapter's usage.
+    stats.inputTokens += response.usage.inputTokens + (response.usage.cacheReadTokens ?? 0) + (response.usage.cacheWriteTokens ?? 0);
     stats.outputTokens += response.usage.outputTokens;
     // The whole assistant message goes back as it came, reasoning blocks included.
     messages.push({ role: "assistant", content: response.content });

@@ -73,7 +73,8 @@ export interface LlmResponse {
   content: ContentBlock[];
   /** "tool_use", "end_turn", "max_tokens", or anything else the provider reports (refusal, content filter). */
   stopReason: string;
-  usage: { inputTokens: number; outputTokens: number };
+  /** inputTokens excludes prompt-cache reads and writes, which are counted apart (and priced apart). */
+  usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number; cacheWriteTokens?: number };
 }
 
 export interface LlmClient {

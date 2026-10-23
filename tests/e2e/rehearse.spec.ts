@@ -540,7 +540,10 @@ test.describe("phone", () => {
     const inset = (await page.getByTestId("closer-inset").boundingBox())!;
     expect(inset.y).toBeGreaterThanOrEqual(frame.y + frame.height - 1);
 
-    const farthest = await page.evaluate(() => Math.max(...Array.from(document.querySelectorAll("dialog *")).map((el) => el.getBoundingClientRect().right)));
+    // What is drawn inside a stage is clipped by it (a scene may be wider than the frame), so only the page around the stages counts.
+    const farthest = await page.evaluate(() =>
+      Math.max(...Array.from(document.querySelectorAll("dialog *")).filter((el) => !el.closest(".stage")).map((el) => el.getBoundingClientRect().right)),
+    );
     expect(farthest).toBeLessThanOrEqual(390.5);
     for (const name of ["Hold to see your mirror", "How we know", "Previous moment", "Next moment"]) {
       const box = (await dialog(page).getByRole("button", { name, exact: true }).boundingBox())!;

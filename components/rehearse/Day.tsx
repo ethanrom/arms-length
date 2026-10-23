@@ -245,7 +245,7 @@ export function Day({ plan, photo, onFollowUp, followUpError, onStartOver, onClo
             )}
             <span data-testid="moment-title">{moment.title}</span>
           </p>
-          <button ref={knowButton} type="button" onClick={() => setDrawer(true)} aria-haspopup="dialog" className="inline-flex min-h-8 shrink-0 items-center text-[0.9375rem] text-ink-soft underline decoration-1 underline-offset-4 hover:text-ink">
+          <button ref={knowButton} type="button" onClick={() => setDrawer(true)} aria-haspopup="dialog" className="inline-flex min-h-10 shrink-0 items-center text-[0.9375rem] md:min-h-8 text-ink-soft underline decoration-1 underline-offset-4 hover:text-ink">
             How we know
           </button>
         </div>

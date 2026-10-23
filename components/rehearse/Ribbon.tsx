@@ -77,7 +77,7 @@ export function Ribbon({ moments, positions, current, onPick, size = "compact" }
                   aria-hidden="true"
                   className={`pointer-events-none absolute top-[1.9rem] block text-[0.875rem] leading-tight ${
                     edge === "center" ? "-translate-x-1/2 text-center" : edge === "left" ? "-translate-x-[1.25rem] text-left" : "-translate-x-[calc(100%-1.25rem)] text-right"
-                  } ${on ? "text-ink" : "text-ink-soft"} ${titled ? "" : "whitespace-nowrap"}`}
+                  } ${on ? "text-ink" : "text-ink-soft"} ${titled ? "" : "whitespace-nowrap"} ${titled && !large ? (on ? "max-sm:!w-32" : "max-sm:hidden") : ""}`}
                   style={titled ? { width: labelWidth } : undefined}
                 >
                   {m.time && <span className="num block font-mono">{m.time}</span>}

@@ -262,6 +262,11 @@ export interface PlannedMoment {
   time: string | null;
   /** Short title in the user's words ("Video standup"). */
   title: string;
+  /**
+   * The one sentence the scene shows under the picture (120 characters at most, ideally with no numbers), checked like
+   * every claim. Optional only so plans recorded before it still load; the UI writes a template line when it is missing.
+   */
+  headline?: Claim;
   scene: SceneInput;
   /** The ObserveResult this moment rests on. */
   observeRef: string;

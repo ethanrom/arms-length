@@ -27,3 +27,4 @@ export function faceFromBundle(bundle: ReadingBundle): RehearseFace {
     }),
   };
 }
+export { COVERABLE, noNeedToCover, noNeedToCoverDay, observeOf, type CoverDay } from "./cover";

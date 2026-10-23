@@ -18,6 +18,8 @@ export interface StageProps {
   observe: ObserveResult | null;
   photo: StagePhoto;
   mirror?: boolean;
+  /** Their view enlarged to the mirror's framing, with no scene: for the "as they see it, closer" inset. */
+  closer?: boolean;
   drawn?: number;
   priority?: "now" | "later";
   /** What the stage shows, for assistive tech. */
@@ -25,14 +27,15 @@ export interface StageProps {
   className?: string;
 }
 
-export function Stage({ scene, light, call, observe, photo, mirror = false, drawn = 1, priority = "now", label, className }: StageProps) {
+export function Stage({ scene, light, call, observe, photo, mirror = false, closer = false, drawn = 1, priority = "now", label, className }: StageProps) {
   const layout = sceneLayout(scene, call);
+  const bare = mirror || closer;
   return (
     <div role="img" aria-label={label} className={`stage relative overflow-hidden ${className ?? ""}`} style={{ aspectRatio: "16 / 10" }}>
-      {!mirror && <SceneBack scene={scene} light={light} call={call} drawn={drawn} />}
-      {observe && <PovFace photo={photo} observe={observe} layout={layout} call={call} mirror={mirror} priority={priority} />}
-      {!mirror && <SceneFront scene={scene} light={light} call={call} drawn={drawn} />}
-      {!mirror && <LightTint light={light} scene={scene} />}
+      {!bare && <SceneBack scene={scene} light={light} call={call} drawn={drawn} />}
+      {observe && <PovFace photo={photo} observe={observe} layout={layout} call={call} mirror={mirror} closer={closer} priority={priority} />}
+      {!bare && <SceneFront scene={scene} light={light} call={call} drawn={drawn} />}
+      {!bare && <LightTint light={light} scene={scene} />}
     </div>
   );
 }

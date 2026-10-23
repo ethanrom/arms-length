@@ -42,7 +42,11 @@ export function PovFace(props: PovFaceProps) {
 
   return (
     <div ref={rootRef} aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {mirror ? <MirrorFace {...props} /> : call && layout.tile ? <CallFace {...props} call={call} tile={layout.tile} size={size} reduced={reduced} /> : <InPersonFace {...props} size={size} reduced={reduced} />}
+      {mirror ? (
+        <MirrorFace {...props} />
+      ) : props.closer ? (
+        <CloserFace {...props} size={size} reduced={reduced} />
+      ) : call && layout.tile ? <CallFace {...props} call={call} tile={layout.tile} size={size} reduced={reduced} /> : <InPersonFace {...props} size={size} reduced={reduced} />}
     </div>
   );
 }
@@ -115,6 +119,40 @@ function CallFace({ photo, observe, call, tile, priority = "now", size, reduced 
       />
       {theirs.renderer}
     </div>
+  );
+}
+
+/** Their view enlarged to the mirror's framing: the same frame as theirs (and the same stream on a call), only bigger. */
+function CloserFace({ photo, observe, call, priority = "now", size, reduced }: Sized) {
+  const rect = mirrorRect(photo.frame, photo.focus);
+  const maxSide = size ? maxSideFor(Math.max(rect.w * size.w, rect.h * size.h), size.dpr) : MAX_SIDE_CAP;
+  const view = useTheirView({
+    src: photo.src,
+    scale: photo.scale,
+    distanceM: observe.distanceM,
+    luminanceCdM2: observe.luminanceCdM2,
+    acuityScale: observe.acuityScale,
+    maxSide,
+    priority,
+    enabled: size !== null,
+  });
+  const rows = call ? callView(photoHeightMm(photo.frame, photo.scale), call).streamRows : null;
+
+  return (
+    <>
+      <FacePicture
+        key={`closer|${frameBase(photo.src, observe.distanceM, observe.luminanceCdM2, observe.acuityScale)}`}
+        src={photo.src}
+        frame={view.frame}
+        fresh={view.fresh}
+        box={{ left: rect.x * 100, top: rect.y * 100, width: rect.w * 100, height: rect.h * 100 }}
+        mask={featherMask(rect)}
+        blurPx={placeholderBlur(size, rect)}
+        reduced={reduced}
+        {...(rows !== null ? { stream: { rows, display: size ? { w: rect.w * size.w * size.dpr, h: rect.h * size.h * size.dpr } : null } } : {})}
+      />
+      {view.renderer}
+    </>
   );
 }
 

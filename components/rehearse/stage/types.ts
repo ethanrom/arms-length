@@ -51,6 +51,11 @@ export interface PovFaceProps {
   call?: CallGeometry;
   /** Held "your mirror": the 25 cm view, the face filling the stage. */
   mirror?: boolean;
+  /**
+   * "Closer": their view (the model's frame, and the video stream on a call) enlarged to the mirror's framing, so the
+   * detail they can and can't make out shows on any screen. Ignored when `mirror` is set.
+   */
+  closer?: boolean;
   /** Render order hint: the visible moment first, its neighbours later. */
   priority?: "now" | "later";
 }

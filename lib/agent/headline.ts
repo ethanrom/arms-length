@@ -50,3 +50,40 @@ export function forbiddenInHeadline(text: string): string | null {
 }
 
 export const copiesStyleGuide = (text: string): boolean => GUIDES.has(normalise(text));
+
+// ---------------------------------------------------------------------------------------------------------------
+// Filler polish
+// ---------------------------------------------------------------------------------------------------------------
+
+// "just" is always the adverb here ("just as it is", "just what they will see"); "justice" and "adjust" are other words.
+const FILLER_AT_SENTENCE_START = /(^|[.!?]["')]*\s+)(?:simply|just|really)\b,?\s*([a-z])/gi;
+const FILLER = /\s*\b(?:simply|just|really)\b,?/gi;
+
+/**
+ * Removes the filler words "simply", "just" and "really" from model-written text, then tidies the spaces and punctuation the
+ * removal leaves; a sentence that began with one keeps its capital. Deterministic, and it touches no other word and no digit, so a
+ * quote copied into the text stays verbatim. It runs before the verifier so a filler word does not cost a repair round; the
+ * banned-phrase checks still apply to whatever it leaves. `removed` is how many fillers went.
+ */
+export function polishText(text: string): { text: string; removed: number } {
+  let removed = 0;
+  const count = (m: string) => {
+    removed++;
+    return m;
+  };
+  const out = text
+    .replace(FILLER_AT_SENTENCE_START, (m, lead: string, letter: string) => {
+      count(m);
+      return `${lead}${letter.toUpperCase()}`;
+    })
+    .replace(FILLER, (m) => {
+      count(m);
+      return "";
+    })
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/([,;:])([.!?])/g, "$2")
+    .replace(/^[\s,;:]+/, "")
+    .trim();
+  return removed === 0 ? { text, removed: 0 } : { text: out, removed };
+}

@@ -7,7 +7,7 @@ import type { ContentBlock } from "@aws-sdk/client-bedrock-runtime";
 import type { DayPlan, RunStats, VerifierIssue } from "@/lib/contracts";
 import { buildFallbackPlan, type FallbackMoment } from "./fallback";
 import { NUDGE_MESSAGE, buildSystemPrompt, buildUserMessage, repairMessage } from "./prompt";
-import { assemblePlan } from "./plan";
+import { assemblePlan, polishDraft } from "./plan";
 import { isObserve } from "./results";
 import { describeZodIssue, dropNulls, finalAnswerInput, type FinalAnswerInput } from "./schemas";
 import { TOOL_NAMES, cleanTitle, createToolbox, resolveToolName, stepEvent, toolSpecs } from "./tools";
@@ -135,7 +135,7 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
         : [{ momentId: null, code: "schema", detail: describeZodIssue(parsed.error) }];
       let draft: PlanDraft | null = null;
       if (parsed.success) {
-        draft = toDraft(parsed.data);
+        draft = polishDraft(toDraft(parsed.data)).draft; // filler words never cost a repair round
         lastDraft = draft;
         issues.push(...verifyPlan(draft, Object.fromEntries(toolbox.results), request.prefs));
       }

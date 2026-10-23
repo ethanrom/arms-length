@@ -6,9 +6,10 @@
  */
 import { C, Ink, Layer, W } from "./ink";
 import { eyeLineY } from "./layout";
+import { GarmentBack } from "./garment";
 import { ellipse, line, rect, smooth } from "./shapes";
 
-const EDGE = 486;
+const EDGE = 500;
 /** A darker, glossier top than the dinner table's. */
 const TOP = "color-mix(in srgb, var(--rule-strong) 70%, var(--stage))";
 const VX = 800;
@@ -64,9 +65,12 @@ function Chair({ s = 1 }: { s?: number }) {
   );
 }
 
-export function MeetingBack() {
+export function MeetingBack({ photoHeight }: { photoHeight?: number }) {
   return (
     <>
+      <Layer at={0.3} to={0.7}>
+        <GarmentBack scene="meeting_room" photoHeight={photoHeight} />
+      </Layer>
       <Layer at={0} to={0.4}>
         <Blinds />
       </Layer>
@@ -74,13 +78,13 @@ export function MeetingBack() {
         <Whiteboard />
       </Layer>
       <Layer at={0.35} to={0.7}>
-        <g transform="translate(350 520)">
+        <g transform="translate(350 534)">
           <Chair s={1.05} />
         </g>
-        <g transform="translate(1230 520)">
+        <g transform="translate(1230 534)">
           <Chair s={1.05} />
         </g>
-        <g transform="translate(1500 512)">
+        <g transform="translate(1500 526)">
           <Chair s={0.9} />
         </g>
       </Layer>
@@ -99,20 +103,20 @@ export function MeetingFront() {
         <Ink key={xf} d={line(xf, EDGE + 12, nearX(xf, EDGE, horizon), 1000)} stroke={C.paper} w={W.hair} o={0.22} />
       ))}
       {/* a speaker puck in the middle of the table */}
-      <g transform="translate(800 592)">
+      <g transform="translate(800 606)">
         <Ink d={ellipse(0, 5, 76, 17)} fill={C.inkSoft} w={W.line} />
         <Ink d={ellipse(0, 0, 76, 17)} fill={C.paperDeep} w={W.near} />
         <Ink d={ellipse(0, 0, 52, 11)} stroke={C.ruleStrong} w={W.hair} />
         <Ink d={ellipse(0, 0, 12, 3)} fill={C.ink} fo={0.6} w={0} />
       </g>
       {/* the other side's laptop, its back to us */}
-      <g transform="translate(1086 574)">
+      <g transform="translate(1086 588)">
         <Ink d="M-112 0L-96 -66H96L112 0Z" fill={C.paperDeep} w={W.near} />
         <Ink d={ellipse(0, -33, 10, 10)} stroke={C.ruleStrong} w={W.line} />
         <Ink d="M-120 0H120L128 10H-128Z" fill={C.paper} w={W.near} />
       </g>
       {/* notebook and pen */}
-      <g transform="translate(420 780)">
+      <g transform="translate(420 794)">
         <Ink d="M-150 40L-110 -60H110L150 40Z" fill={C.paper} w={W.near} />
         <Ink d="M0 -60V40" stroke={C.ruleStrong} w={W.line} />
         <Ink d="M-130 20L-100 -42M-100 22L-72 -40M130 20L100 -42M100 22L72 -40" stroke={C.ruleStrong} w={W.hair} o={0.8} />
@@ -120,7 +124,7 @@ export function MeetingFront() {
         <Ink d="M232 -34L246 -52L240 -28Z" fill={C.ink} w={W.hair} />
       </g>
       {/* a glass of water */}
-      <g transform="translate(1180 800)">
+      <g transform="translate(1180 814)">
         <Ink d={ellipse(0, 0, 42, 11)} fill={C.paperDeep} w={W.near} />
         <Ink d="M-42 0L-36 -128H36L42 0" fill={C.paper} fo={0.5} w={W.near} />
         <Ink d={ellipse(0, -128, 36, 9)} stroke={C.ink} w={W.line} />

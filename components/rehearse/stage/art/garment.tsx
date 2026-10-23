@@ -44,3 +44,33 @@ export function Garment({ scene, shade = 30, photoHeight }: { scene: InPersonSce
     </g>
   );
 }
+
+/**
+ * The same top seen from across a table or lectern, drawn behind the face: the face's feather fades the neck into it, and
+ * the table edge in front hides the rest, so only the shoulders show, as a person sitting across from you. It rises to the
+ * neck's sides (above where the photo has faded) and carries on straight across behind the photo's solid neck.
+ */
+export function GarmentBack({ scene, shade = 30, photoHeight, bottom = 1040 }: { scene: InPersonScene; shade?: number; photoHeight?: number; bottom?: number }) {
+  const { cx, top, w, h } = nominalPhotoBox(scene, photoHeight);
+  const nk = 0.3 * w;
+  const mirror = (p: Pt): Pt => [2 * cx - p[0], p[1]];
+  const left: Pt[] = [
+    [cx - 1.02 * w, bottom],
+    [cx - 1.02 * w, Math.min(top + 1.5 * h, bottom - 4)],
+    [cx - 1.0 * w, top + 1.08 * h],
+    [cx - 0.86 * w, top + 0.975 * h],
+    [cx - 0.56 * w, top + 0.865 * h],
+    [cx - nk, top + 0.79 * h],
+  ];
+  const right = left.map(mirror).reverse();
+  const edge = `${smooth(left, false, 0.8)}L${cx + nk} ${top + 0.79 * h}${smooth(right, false, 0.8).replace(/^M[^C]*/, "")}`;
+  const seam = (s: -1 | 1) => smooth([[cx + s * 0.8 * w, top + 1.02 * h], [cx + s * 0.76 * w, top + 1.22 * h], [cx + s * 0.75 * w, top + 1.6 * h]]);
+  return (
+    <g>
+      <Ink d={`${edge}L${cx - 1.02 * w} ${bottom}Z`} fill={tone(shade)} w={0} />
+      <Ink d={edge} stroke={C.ink} w={W.near} />
+      <Ink d={seam(-1)} stroke={C.ink} w={W.line} o={0.5} />
+      <Ink d={seam(1)} stroke={C.ink} w={W.line} o={0.5} />
+    </g>
+  );
+}

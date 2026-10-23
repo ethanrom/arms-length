@@ -3,15 +3,15 @@
  * rebuilt from the same tools with template sentences. Every number in it is a verbatim quote of a result it cites, so it
  * passes verifyPlan by construction (and the tests check that for every example day on every demo face).
  */
-import type { Claim, ConcernAtScene, ConcernId, DayPlan, LightId, ObserveResult, RehearseEvent, RehearseFace, RunStats, SceneId, SceneInput, VerifierIssue } from "@/lib/contracts";
+import type { Claim, ConcernAtScene, ConcernId, DayPlan, LightId, ObserveResult, RehearseEvent, RehearseFace, RunStats, SceneId, SceneInput, ToolName, VerifierIssue } from "@/lib/contracts";
 import { SCENES } from "@/lib/contracts";
 import { UI_LISTS } from "@/lib/copy/banned";
 import { CONCERN_COPY } from "@/lib/copy/concerns";
 import { lintText } from "@/lib/copy/lint";
 import { assemblePlan } from "./plan";
 import { createRunStore } from "./results";
-import { MAX_CLAIM_CHARS, MAX_MOMENTS } from "./schemas";
-import { cleanTitle, describeStep } from "./tools";
+import { MAX_CLAIM_CHARS, MAX_HEADLINE_CHARS, MAX_MOMENTS } from "./schemas";
+import { cleanTitle, stepEvent } from "./tools";
 import { isSceneError, type AgentRequest, type RehearseEngine } from "./types";
 import type { DraftMoment, PlanDraft } from "./verify";
 
@@ -199,6 +199,47 @@ function videoFloorClaim(obs: ObserveResult): Claim | null {
   return { text: `${name} on the call: ${obs.quotes[`${lost.concern}.belowCamera`]} are smaller than the smallest detail the video carries (${floor}).`, refs: [obs.ref] };
 }
 
+const SCENE_LEAD: Record<SceneId, string> = {
+  close_talk: "up close",
+  cafe_table: "across a small table",
+  conversation: "while you chat",
+  dinner_table: "across the table",
+  meeting_room: "across the meeting room",
+  presenting: "while you present",
+  video_call: "on the call",
+};
+
+/**
+ * The one sentence under a moment's picture, relief first: what a typical viewer does not pick out, then (if something does show)
+ * a pointer to the tip as an option. No numbers, so there is nothing to quote wrongly, and none of the wording the verifier keeps
+ * out of headlines. The opening alternates with the moment's position, so a day does not read the same way twice.
+ */
+function headlineClaim(obs: ObserveResult, outIds: ConcernId[], hasTip: boolean, anySeen: boolean, position: number): Claim {
+  const lead = SCENE_LEAD[obs.input.scene];
+  const first = position % 2 === 0;
+  const Lead = lead.charAt(0).toUpperCase() + lead.slice(1);
+  const out = (ids: ConcernId[], among: boolean) => {
+    const verb = ids.length === 1 && CONCERN_COPY[ids[0]].agreement === "singular" ? "is" : "are";
+    return `your ${names(ids)}${among ? ", among others," : ""} ${verb} out of sight`;
+  };
+  let text: string;
+  if (outIds.length === 0) {
+    const tip = hasTip ? "if you'd like, there is a tip below" : "that is what they will see";
+    text = first ? `${Lead}, more of your skin shows; ${tip}.` : `More of your skin shows ${lead}; ${tip}.`;
+  } else {
+    const tail = hasTip ? ", and there is a tip if you'd like more" : anySeen ? ", and you can see the rest below" : "";
+    const make = (ids: ConcernId[], among: boolean) => {
+      const o = out(ids, among);
+      return first ? `${Lead}, ${o}${tail}.` : `${o.charAt(0).toUpperCase()}${o.slice(1)} ${lead}${tail}.`;
+    };
+    const shown = outIds.slice(0, 3);
+    text = make(shown, outIds.length > shown.length);
+    if (text.length > MAX_HEADLINE_CHARS) text = make(outIds.slice(0, 1), outIds.length > 1);
+  }
+  if (text.length > MAX_HEADLINE_CHARS) text = "Here is what they will see from there.";
+  return { text, refs: [obs.ref] };
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Building
 // ---------------------------------------------------------------------------------------------------------------
@@ -207,7 +248,7 @@ function videoFloorClaim(obs: ObserveResult): Claim | null {
 const NEEDS_SHARE = 0.1;
 
 type Store = ReturnType<typeof createRunStore>;
-type Step = (tool: Parameters<typeof describeStep>[0], args: unknown) => void;
+type Step = (tool: ToolName, args: unknown) => void;
 
 interface BuiltMoment {
   moment: DraftMoment;
@@ -218,7 +259,7 @@ interface BuiltMoment {
 export function buildFallbackPlan(input: FallbackInput): DayPlan {
   const { request, face, engine } = input;
   const store = createRunStore();
-  const step: Step = (tool, args) => input.emit?.({ type: "step", tool, label: describeStep(tool, args) });
+  const step: Step = (tool, args) => input.emit?.(stepEvent(tool, args));
 
   const follow = input.moments?.length ? null : followUpMoments(request);
   const candidates: FallbackMoment[] = (input.moments?.length ? input.moments : follow?.moments.length ? follow.moments : parseDayFallback(request.day)).slice(0, MAX_MOMENTS);
@@ -238,7 +279,7 @@ export function buildFallbackPlan(input: FallbackInput): DayPlan {
   const observe = (title: string, scene: SceneInput): { obs: ObserveResult; scene: SceneInput } | null => {
     for (const attempt of [scene, { scene: scene.scene, ...(scene.call ? { call: scene.call } : {}) } as SceneInput]) {
       try {
-        step("observe_scene", { label: title });
+        step("observe_scene", { label: title, scene: attempt.scene });
         const obs = engine.observeScene(face, attempt, store.nextRef());
         store.commit(obs);
         return { obs, scene: attempt };
@@ -254,7 +295,7 @@ export function buildFallbackPlan(input: FallbackInput): DayPlan {
     const scene = withCall(candidate);
     const title = usableTitle(candidate.title) ?? SCENE_TITLE[scene.scene];
     const seen = observe(title, scene);
-    if (seen) built.push(momentFrom({ ...seen, title, time: usableTime(candidate.time), input, store, step }));
+    if (seen) built.push(momentFrom({ ...seen, title, time: usableTime(candidate.time), position: built.length, input, store, step }));
   };
   candidates.forEach(add);
   if (built.length === 0) add({ title: "Chatting", time: null, scene: { scene: "conversation" } });
@@ -273,8 +314,8 @@ const LIGHT_WORDS: Record<LightId, string> = {
   videoCall: "the glow of a screen",
 };
 
-function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string; time: string | null; input: FallbackInput; store: Store; step: Step }): BuiltMoment {
-  const { obs, scene, title, time, input, store, step } = args;
+function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string; time: string | null; position: number; input: FallbackInput; store: Store; step: Step }): BuiltMoment {
+  const { obs, scene, title, time, position, input, store, step } = args;
   const measured = obs.concerns.filter((c) => c.targetCount > 0);
   const outIds = measured.filter((c) => c.typicalCount === 0).map((c) => c.concern);
   const seen = measured.filter((c) => c.typicalCount > 0).sort((a, b) => b.typicalShare - a.typicalShare);
@@ -297,7 +338,7 @@ function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string
 
   return {
     needsChange: needs.length > 0,
-    moment: { time, title, scene, observeRef: obs.ref, assumptions, notice: seen.slice(0, 3).map((c) => noticeClaim(obs, c)), outOfSight, action },
+    moment: { time, title, scene, observeRef: obs.ref, headline: headlineClaim(obs, outIds, action.kind !== "none", seen.length > 0, position), assumptions, notice: seen.slice(0, 3).map((c) => noticeClaim(obs, c)), outOfSight, action },
   };
 }
 

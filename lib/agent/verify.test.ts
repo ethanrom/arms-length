@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Claim, RehearsePrefs, VerifierIssue } from "@/lib/contracts";
+import { HEADLINE_STYLE_GUIDES } from "./headline";
 import { goodDraft, stubFreeFix, stubObserve, stubTouch, stubWorth } from "./test-helpers";
 import { numbersIn, verifyPlan, type PlanDraft } from "./verify";
 import type { AnyResult } from "./types";
@@ -196,5 +197,95 @@ describe("verifyPlan", () => {
       expect(codes(verifyPlan(withNotice(long), base, prefs))).toEqual(["schema"]);
       expect(codes(verifyPlan(withNotice(""), base, prefs))).toEqual(["schema"]);
     });
+  });
+});
+
+describe("verifyPlan headlines", () => {
+  const withHeadline = (text: string | null, refs = ["r1"]): PlanDraft => {
+    const d = goodDraft();
+    if (text === null) delete d.moments[0].headline;
+    else d.moments[0].headline = { text, refs };
+    return d;
+  };
+
+  it("needs one in a new plan", () => {
+    const issues = verifyPlan(withHeadline(null), base, prefs);
+    expect(codes(issues)).toEqual(["schema"]);
+    expect(issues[0].detail).toContain("headline");
+    expect(issues[0].momentId).toBe("m1");
+  });
+
+  it("accepts a short warm sentence, with or without a quoted number", () => {
+    expect(verifyPlan(withHeadline("Across the table, your breakouts stay out of sight."), base, prefs)).toEqual([]);
+    expect(verifyPlan(withHeadline("From 1.5 m, only about 1 in 12 of your pores show.", []), base, prefs)).toEqual([]);
+  });
+
+  it("holds the headline to 120 characters, one sentence", () => {
+    const long = "Across the table your breakouts stay out of sight, and the rest is just what they will see from where they sit, nothing more.";
+    expect(long.length).toBeGreaterThan(120);
+    expect(codes(verifyPlan(withHeadline(long), base, prefs))).toEqual(["schema"]);
+    expect(codes(verifyPlan(withHeadline("Across the table, you look relaxed. Nothing shows."), base, prefs))).toEqual(["schema"]);
+    expect(verifyPlan(withHeadline("At 1.5 m, only 54 of 650 pores show."), base, prefs)).toEqual([]);
+  });
+
+  it("checks the headline like every claim: numbers, bounds, banned words, absolutes, unsupported reassurance, refs", () => {
+    expect(codes(verifyPlan(withHeadline("About 1 in 20 of your pores show."), base, prefs))).toEqual(["stray_number"]);
+    expect(codes(verifyPlan(withHeadline("Someone could pick out 81 of your pores."), base, prefs))).toEqual(["bound_wording"]);
+    expect(codes(verifyPlan(withHeadline("Every flaw stays out of sight."), base, prefs))).toContain("banned_word");
+    expect(codes(verifyPlan(withHeadline("Nobody will see a thing."), base, prefs))).toContain("absolute");
+    expect(codes(verifyPlan(withHeadline("This is very common."), base, prefs))).toEqual(["banned_word"]);
+    expect(codes(verifyPlan(withHeadline("Your pores stay out of sight.", ["r9"]), base, prefs))).toEqual(["unknown_ref"]);
+  });
+
+  it("does not let a headline shrink what shows when most marks of several concerns are in sight", () => {
+    const busy = stubObserve("r1");
+    busy.concerns = [
+      { concern: "pore", targetCount: 100, typicalShare: 0.9, typicalCount: 90, boundShare: 1, boundCount: 100, soft: false },
+      { concern: "acne", targetCount: 10, typicalShare: 0.8, typicalCount: 8, boundShare: 1, boundCount: 10, soft: false },
+      { concern: "dark_circle", targetCount: 2, typicalShare: 1, typicalCount: 2, boundShare: 1, boundCount: 2, soft: true },
+    ];
+    const results = resultsOf(busy);
+    expect(codes(verifyPlan(withHeadline("In bright sun, a few marks show up close."), results, prefs))).toEqual(["banned_word"]);
+    expect(codes(verifyPlan(withHeadline("Up close the marks are faint."), results, prefs))).toEqual(["banned_word"]);
+    // Plainly saying what shows is fine, and so is a minimiser where the observation backs it.
+    expect(verifyPlan(withHeadline("In bright sun, up close, most of what we measured shows."), results, prefs)).toEqual([]);
+    expect(verifyPlan(withHeadline("In evening light, only a few marks show."), base, prefs)).toEqual([]);
+    // One concern mostly in sight is not enough to forbid it (soft areas do not count).
+    const one = stubObserve("r1");
+    one.concerns[0] = { ...one.concerns[0], typicalShare: 0.9, typicalCount: 90 };
+    expect(verifyPlan(withHeadline("Across the table, a few marks show."), resultsOf(one), prefs)).toEqual([]);
+  });
+
+  it("keeps jargon, pushes, dead ends and invented positions out of a headline", () => {
+    const bad = [
+      "No free change hides it, so that is what they see.",
+      "Distance is the only lever here.",
+      "That is simply what the measurements say.",
+      "Distance can't change that.",
+      "Makeup is the one option.",
+      "It is the only thing that helps here.",
+      "Nothing can help at this table.",
+      "From the back of the room, your pores stay out of sight.",
+      "In the front row you look relaxed.",
+      "No move you make hides the dark spots.",
+      "The model says your pores are out of sight.",
+      "By the window more of your skin shows, and moving further away would not change that.",
+      "In bright sun your skin shows, and distance alone doesn't change that.",
+    ];
+    for (const text of bad) expect(codes(verifyPlan(withHeadline(text), base, prefs)), text).toContain("banned_word");
+    const good = [
+      "On the call, your pores and fine lines don't make it through the video.",
+      "Across the table in evening light, your breakouts stay out of sight; if you'd like more, there is a tip.",
+      "Up close in bright window light, more of your skin shows.",
+    ];
+    for (const text of good) expect(verifyPlan(withHeadline(text), base, prefs), text).toEqual([]);
+  });
+
+  it("rejects a headline that copies a style guide from the prompt", () => {
+    for (const text of HEADLINE_STYLE_GUIDES) {
+      expect(codes(verifyPlan(withHeadline(text), base, prefs)), text).toContain("banned_word");
+    }
+    expect(codes(verifyPlan(withHeadline("on the call, your pores and fine lines don't come through the video"), base, prefs))).toEqual(["banned_word"]);
+    expect(verifyPlan(withHeadline("On the call, your pores and fine lines fade from the video."), base, prefs)).toEqual([]);
   });
 });

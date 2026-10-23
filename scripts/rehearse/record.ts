@@ -4,13 +4,15 @@
  * appends every attempt to fixtures/rehearse/usage.json (tokens, estimated cost, latency, verifier outcome).
  *
  * Run: npm run spike -- scripts/rehearse/record.ts [--faces p2b,p3a] [--days workday,presenting] [--force]
- * Budget: at most 20 real runs and $1.50 in total, counted across invocations from usage.json. It stops at either cap.
+ * Budget: each phase has its own caps, counted across invocations from usage.json (attempts without a phase are phase v1).
+ *   v1 (default): at most 20 real runs and $1.50.   --phase headline --max-runs 14 --max-cost 1.0: the headline re-recording.
+ * It stops at either cap. Attempts of earlier phases stay in usage.json.
  * A run that ends in the deterministic fallback is not written as a fixture; its plan goes to the friction folder to read.
  * Never prints credentials or environment values.
  */
 import fs from "node:fs";
 import path from "node:path";
-import { EXAMPLE_DAYS, type DayPlan, type ToolName } from "@/lib/contracts";
+import { EXAMPLE_DAYS, type DayPlan, type SceneId, type ToolName } from "@/lib/contracts";
 import { bedrockConfigured, createBedrockClient } from "@/lib/agent/llm";
 import { runAgent } from "@/lib/agent/loop";
 import { faceFromBundle, realEngine } from "@/lib/agent/realEngine";
@@ -18,8 +20,6 @@ import { DEMO_IDS, loadBundle } from "@/lib/integration/demo";
 import type { LlmClient } from "@/lib/agent/types";
 import { verifyPlan } from "@/lib/agent/verify";
 
-const MAX_RUNS = 20;
-const MAX_COST_USD = 1.5;
 /**
  * Claude Sonnet 5.5 on Bedrock, USD per million tokens: the brief's $2 in and $10 out, and Anthropic's standard prompt-cache
  * multipliers (a read is 0.1x the input price, a write 1.25x). The adapter caches the tools, system prompt and history.
@@ -34,6 +34,8 @@ const usageFile = path.join(fixtureDir, "usage.json");
 const failedDir = "E:/hackathons/youcam-api/internal/friction/rehearse-agent-failed";
 
 interface Attempt {
+  /** Recording phase; attempts from before phases existed have none (v1). */
+  phase?: string;
   at: string;
   demoId: string;
   exampleId: string;
@@ -78,11 +80,12 @@ function readUsage(): Usage {
   }
 }
 
-function summarise(usage: Usage) {
-  const runs = usage.attempts.length;
-  const spent = usage.attempts.reduce((sum, a) => sum + a.costUsd, 0);
-  const verified = usage.attempts.filter((a) => a.verified).length;
-  const ms = usage.attempts.map((a) => a.ms).sort((a, b) => a - b);
+function summarise(usage: Usage, phase?: string) {
+  const attempts = phase ? usage.attempts.filter((a) => (a.phase ?? "v1") === phase) : usage.attempts;
+  const runs = attempts.length;
+  const spent = attempts.reduce((sum, a) => sum + a.costUsd, 0);
+  const verified = attempts.filter((a) => a.verified).length;
+  const ms = attempts.map((a) => a.ms).sort((a, b) => a - b);
   const median = ms.length ? ms[Math.floor((ms.length - 1) / 2)] : 0;
   return { runs, spent: Number(spent.toFixed(4)), verified, fallback: runs - verified, medianMs: median };
 }
@@ -90,6 +93,7 @@ function summarise(usage: Usage) {
 function show(plan: DayPlan): void {
   for (const m of plan.moments) {
     console.log(`  [${m.id}] ${m.time ?? "-"} | ${m.title} | ${m.scene.scene}/${m.scene.light ?? "default"}${m.scene.call ? ` call ${m.scene.call.device} ${m.scene.call.cameraDistanceCm}cm ${m.scene.call.layout}` : ""}`);
+    console.log(`      HEAD ${m.headline ? `${m.headline.text}  <${m.headline.refs.join(",")}> (${m.headline.text.length} chars)` : "(none)"}`);
     for (const a of m.assumptions) console.log(`      assumes: ${a}`);
     for (const c of m.outOfSight) console.log(`      OUT  ${c.text}  <${c.refs.join(",")}>`);
     for (const c of m.notice) console.log(`      SEE  ${c.text}  <${c.refs.join(",")}>`);
@@ -106,6 +110,11 @@ async function main(): Promise<void> {
   const faces = (arg("faces")?.split(",") ?? [...DEMO_IDS]).filter((id) => (DEMO_IDS as readonly string[]).includes(id));
   const days = EXAMPLE_DAYS.filter((d) => !arg("days") || arg("days")?.split(",").includes(d.id));
   const force = process.argv.includes("--force");
+  const phase = arg("phase") ?? "v1";
+  const maxRuns = Number(arg("max-runs") ?? 20);
+  const maxCost = Number(arg("max-cost") ?? 1.5);
+  /** Stop before a run that could take the phase past its cost cap; --margin lowers it when the cap is tight. */
+  const margin = Number(arg("margin") ?? RUN_MARGIN_USD);
   /** --only p5a/wedding,p3a/workday: exactly these combinations. */
   const only = arg("only")?.split(",");
 
@@ -136,13 +145,13 @@ async function main(): Promise<void> {
         console.log(`skip ${demoId}/${example.id}: already recorded (use --force)`);
         continue;
       }
-      const totals = summarise(usage);
-      if (totals.runs >= MAX_RUNS || totals.spent + RUN_MARGIN_USD > MAX_COST_USD) {
+      const totals = summarise(usage, phase);
+      if (totals.runs >= maxRuns || totals.spent + margin > maxCost) {
         console.log(`STOP: cap reached (${totals.runs} runs, $${totals.spent} spent).`);
         return finish(usage);
       }
 
-      const steps: { tool: ToolName; label: string }[] = [];
+      const steps: { tool: ToolName; label: string; moment?: { title: string; scene: SceneId } }[] = [];
       const prefs = { callDevice: "laptop" as const, noMakeup: false };
       Object.assign(meter, { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
       const started = Date.now();
@@ -152,7 +161,7 @@ async function main(): Promise<void> {
         llm,
         engine: realEngine,
         emit: (e) => {
-          if (e.type === "step") steps.push({ tool: e.tool, label: e.label });
+          if (e.type === "step") steps.push({ tool: e.tool, label: e.label, ...(e.moment ? { moment: e.moment } : {}) });
         },
         budgetMs: 55_000,
       });
@@ -175,6 +184,7 @@ async function main(): Promise<void> {
         verified: ok,
         issues: plan.issues.length,
         written: false,
+        ...(phase === "v1" ? {} : { phase }),
       };
 
       console.log(`\n== ${demoId} / ${example.id}: ${ok ? "VERIFIED" : "FALLBACK"} in ${(ms / 1000).toFixed(1)}s, ${attempt.turns} turns, ${attempt.toolCalls} tool calls, repairs ${attempt.repairs}, ${attempt.inputTokens} in (${attempt.cacheReadTokens} cache read, ${attempt.cacheWriteTokens} written) / ${attempt.outputTokens} out, ${attempt.costUsd}`);
@@ -189,13 +199,15 @@ async function main(): Promise<void> {
         fs.writeFileSync(path.join(failedDir, `${demoId}-${example.id}.json`), JSON.stringify({ steps, plan }, null, 2));
       }
       usage.attempts.push(attempt);
-      fs.writeFileSync(usageFile, `${JSON.stringify({ ...usage, totals: summarise(usage), prices: { inputPerMTokUsd: PRICE.input, outputPerMTokUsd: PRICE.output, cacheReadPerMTokUsd: PRICE.cacheRead, cacheWritePerMTokUsd: PRICE.cacheWrite } }, null, 2)}\n`);
+      fs.writeFileSync(usageFile, `${JSON.stringify({ ...usage, totals: summarise(usage), phases: Object.fromEntries([...new Set(usage.attempts.map((a) => a.phase ?? "v1"))].map((p) => [p, summarise(usage, p)])), prices: { inputPerMTokUsd: PRICE.input, outputPerMTokUsd: PRICE.output, cacheReadPerMTokUsd: PRICE.cacheRead, cacheWritePerMTokUsd: PRICE.cacheWrite } }, null, 2)}\n`);
     }
   }
   finish(usage);
 }
 
 function finish(usage: Usage): void {
+  const phase = arg("phase");
+  if (phase) console.log(`Phase ${phase}: ${JSON.stringify(summarise(usage, phase))}`);
   console.log(`\nTotals: ${JSON.stringify(summarise(usage))}`);
 }
 

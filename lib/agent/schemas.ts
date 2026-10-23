@@ -70,10 +70,16 @@ export const receiptInput = z.object({ label, ...sceneShape, concern: concernId 
 
 export const MAX_MOMENTS = 8;
 export const MAX_CLAIM_CHARS = 200;
+export const MAX_HEADLINE_CHARS = 120;
 
 const claim = z.object({
   text: z.string().min(1).max(MAX_CLAIM_CHARS).describe("One sentence. Any number in it must be copied verbatim from a quote of a cited result."),
   refs: z.array(z.string().min(1).max(40)).max(8).describe("The refs (r1, r2, ...) of the tool results this sentence rests on."),
+});
+
+const headline = z.object({
+  text: z.string().min(1).max(MAX_HEADLINE_CHARS).describe("One warm, short sentence for the picture of this moment. Ideally no numbers; any number must be copied verbatim from a quote of a cited result."),
+  refs: z.array(z.string().min(1).max(40)).max(8).describe("The refs of the tool results this sentence rests on (the observe_scene ref when it uses a quote)."),
 });
 
 const action = z
@@ -88,6 +94,7 @@ const moment = z.object({
   time: z.string().max(40).nullable().optional().describe("As the user said it (9am, after work), or null."),
   title: z.string().min(1).max(60),
   scene: sceneInput.describe("The same scene, light, viewer and call you passed to observe_scene."),
+  headline: headline.describe("The one sentence shown big under the picture of what the person there sees. Relief first."),
   observeRef: z.string().min(1).max(40).describe("The ref of this moment's observe_scene result."),
   assumptions: z.array(z.string().min(1).max(160)).max(4).describe("How you mapped the user's words to this scene, in words, with no numbers."),
   notice: z.array(claim).max(4).describe("What a typical viewer could notice here. Empty when nothing."),

@@ -146,6 +146,7 @@ export function goodDraft(): PlanDraft {
         time: "7pm",
         title: "Dinner date",
         scene: { scene: "dinner_table", light: "indoor", viewer: "typical" },
+        headline: { text: "Across the table, your breakouts stay out of sight.", refs: ["r1"] },
         observeRef: "r1",
         assumptions: ["I took dinner as a table across from each other."],
         notice: [{ text: "A typical viewer could pick out about 1 in 12 of your pores.", refs: ["r1"] }],

@@ -362,7 +362,7 @@ Source lines of TypeScript per `lib/` module (physical lines, as `wc -l` counts 
 
 | Module | Source files | Source lines | Test files | Test lines |
 | --- | --- | --- | --- | --- |
-| `lib/agent` | 13 | 2,161 | 7 | 1,330 |
+| `lib/agent` | 16 | 2,569 | 8 | 1,740 |
 | `lib/capture` | 9 | 845 | 3 | 359 |
 | `lib/contracts` | 7 | 784 | 0 | 0 |
 | `lib/copy` | 11 | 1,551 | 1 | 907 |
@@ -376,7 +376,7 @@ Source lines of TypeScript per `lib/` module (physical lines, as `wc -l` counts 
 | `lib/util` | 0 | 0 | 1 | 5 |
 | `lib/vision` | 14 | 1,969 | 8 | 844 |
 | `lib/youcam` | 17 | 2,030 | 8 | 1,475 |
-| **Total** | **134** | **17,033** | **49** | **7,683** |
+| **Total** | **137** | **17,441** | **50** | **8,093** |
 
 Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.test.ts`). Reproduce: `find lib/vision -name '*.ts' ! -name '*.test.ts' | xargs cat | wc -l` for one module, or `npx tsx scripts/docs/numbers.ts --section engineering-lines`.
 
@@ -388,7 +388,7 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 | Number | Value | Source | Reproduce |
 | --- | --- | --- | --- |
-| Unit tests (vitest) | 719 in 60 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
+| Unit tests (vitest) | 750 in 61 files | `numTotalTests` of a full `vitest run` (config: `vitest.config.mts`) | `npx vitest run --reporter=json --outputFile=out.json`, then read `numTotalTests`; or `npm test` |
 | End-to-end tests (Playwright) | 91 in 8 spec files | Playwright's listing of `tests/e2e/*.spec.ts` (loops expanded); not run here | `npx playwright test --list` |
 
 <!-- generated:engineering-tests:end -->
@@ -418,8 +418,8 @@ Source: every `.ts` and `.tsx` file under `lib/` (a test file is one named `*.te
 
 Slow tables (3.2, 3.3 and 6.1) are not recomputed by `npm test`. Instead `lib/vision/numbers.doc.test.ts` checks two hashes:
 
-- inputs: `26192096d6084895`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
-- slow tables: `1bcb225863141725`. The tables above as committed, so a hand edit differs.
+- inputs: `65dd0aca11060500`. Every file under `lib/`, the `eval/` code, the unit tests, the e2e specs, `fixtures/youcam/` and this script. A change to any of them makes it differ.
+- slow tables: `de10ba6d43781948`. The tables above as committed, so a hand edit differs.
 
 When either test fails, run `npx tsx scripts/docs/numbers.ts --write` and commit. `--check` recomputes everything, including the slow tables.
 

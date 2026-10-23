@@ -7,6 +7,7 @@
  */
 import type { CallGeometry, LightId, ObserveResult, SceneId } from "@/lib/contracts/rehearse";
 import { PovFace } from "./PovFace";
+import { inPersonHeightFraction, photoHeightMm } from "./pov";
 import { LightTint, SceneBack, SceneFront, sceneLayout } from "./scenes";
 import type { StagePhoto } from "./types";
 
@@ -30,12 +31,14 @@ export interface StageProps {
 export function Stage({ scene, light, call, observe, photo, mirror = false, closer = false, drawn = 1, priority = "now", label, className }: StageProps) {
   const layout = sceneLayout(scene, call);
   const bare = mirror || closer;
+  // The scene's garment and foreground fit the face's drawn height (in person only; a call draws inside its tile).
+  const photoHeight = observe && !call ? inPersonHeightFraction(photoHeightMm(photo.frame, photo.scale), observe.distanceM) : undefined;
   return (
     <div role="img" aria-label={label} className={`stage relative overflow-hidden ${className ?? ""}`} style={{ aspectRatio: "16 / 10" }}>
-      {!bare && <SceneBack scene={scene} light={light} call={call} drawn={drawn} />}
+      {!bare && <SceneBack scene={scene} light={light} call={call} drawn={drawn} photoHeight={photoHeight} />}
       {observe && <PovFace photo={photo} observe={observe} layout={layout} call={call} mirror={mirror} closer={closer} priority={priority} />}
-      {!bare && <SceneFront scene={scene} light={light} call={call} drawn={drawn} />}
-      {!bare && <LightTint light={light} scene={scene} />}
+      {!bare && <SceneFront scene={scene} light={light} call={call} drawn={drawn} photoHeight={photoHeight} />}
+      {!bare && <LightTint light={light} scene={scene} call={call} />}
     </div>
   );
 }

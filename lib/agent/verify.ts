@@ -26,6 +26,8 @@ const BOUND_WORDING = /\b(?:at most|up to|sharpest)\b/i;
 const BOUND_KEY = /\.bound(?:Count)?$/;
 
 const NUMBER = /\d+(?:\.\d+)?/g;
+/** "1 in 12" and "54 of 650": the pair must be in one quote, not two numbers that each appear somewhere. */
+const PAIR = /\b(\d+(?:\.\d+)?)\s+(in|of)\s+(\d+(?:\.\d+)?)\b/gi;
 /** Clock times are the user's own words ("9am", "7:30"), not model output. */
 const CLOCK = /\b\d{1,2}(?::\d{2})?\s?(?:am|pm|a\.m\.|p\.m\.)(?![a-z])|\b\d{1,2}:\d{2}\b|\bo'clock\b/gi;
 /** Quantities in words. "one" is left out: it is mostly an idiom ("one of the").  */
@@ -38,6 +40,8 @@ const norm = (token: string) => String(Number(token));
 export function numbersIn(text: string): string[] {
   return [...text.replace(CLOCK, " ").matchAll(NUMBER)].map((m) => norm(m[0]));
 }
+
+const pairsIn = (text: string): string[] => [...text.matchAll(PAIR)].map((m) => `${norm(m[1])} ${m[2].toLowerCase()} ${norm(m[3])}`);
 
 const spelledIn = (text: string): string[] => [...text.matchAll(SPELLED)].map((m) => m[0].toLowerCase());
 
@@ -72,6 +76,11 @@ function checkClaim(claim: Claim, momentId: string | null, where: string, implic
       const n = norm(m[0]);
       keysByNumber.set(n, [...(keysByNumber.get(n) ?? []), key]);
     }
+  }
+
+  const quotedPairs = new Set(pool.flatMap(([, quote]) => pairsIn(quote)));
+  for (const pair of new Set(pairsIn(text.replace(CLOCK, " ")))) {
+    if (!quotedPairs.has(pair)) issues.push({ momentId, code: "stray_number", detail: `${where} says "${pair}", which no quote of the cited results says. Copy the quote verbatim.` });
   }
 
   let boundOnly = false;

@@ -3,7 +3,7 @@
  * rebuilt from the same tools with template sentences. Every number in it is a verbatim quote of a result it cites, so it
  * passes verifyPlan by construction (and the tests check that for every example day on every demo face).
  */
-import type { Claim, ConcernAtScene, ConcernId, DayPlan, FreeFixResult, LightId, ObserveResult, RehearseEvent, RehearseFace, RunStats, SceneId, SceneInput, VerifierIssue } from "@/lib/contracts";
+import type { Claim, ConcernAtScene, ConcernId, DayPlan, LightId, ObserveResult, RehearseEvent, RehearseFace, RunStats, SceneId, SceneInput, VerifierIssue } from "@/lib/contracts";
 import { SCENES } from "@/lib/contracts";
 import { UI_LISTS } from "@/lib/copy/banned";
 import { CONCERN_COPY } from "@/lib/copy/concerns";
@@ -188,6 +188,17 @@ function sharpestClaim(obs: ObserveResult, ids: ConcernId[]): Claim | null {
   return null;
 }
 
+/** On a call, marks smaller than the video can carry are lost whatever the other person's eyes: good news, so it leads. */
+function videoFloorClaim(obs: ObserveResult): Claim | null {
+  const floor = obs.quotes.floor;
+  const lost = obs.concerns
+    .filter((c) => (c.belowCameraCount ?? 0) > 0 && obs.quotes[`${c.concern}.belowCamera`])
+    .sort((a, b) => (b.belowCameraCount ?? 0) / b.targetCount - (a.belowCameraCount ?? 0) / a.targetCount)[0];
+  if (!floor || !lost) return null;
+  const name = CONCERN_COPY[lost.concern].title;
+  return { text: `${name} on the call: ${obs.quotes[`${lost.concern}.belowCamera`]} are smaller than the smallest detail the video carries (${floor}).`, refs: [obs.ref] };
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Building
 // ---------------------------------------------------------------------------------------------------------------
@@ -273,6 +284,8 @@ function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string
   if (outIds.length) outOfSight.push(outOfSightClaim(obs, outIds));
   const sharpest = sharpestClaim(obs, outIds);
   if (sharpest) outOfSight.push(sharpest);
+  const floorClaim = scene.call ? videoFloorClaim(obs) : null;
+  if (floorClaim) outOfSight.unshift(floorClaim);
 
   const action = chooseAction({ obs, scene, needs, title, input, store, step });
   const call = scene.call;
@@ -295,8 +308,7 @@ function momentFrom(args: { obs: ObserveResult; scene: SceneInput; title: string
 function chooseAction(args: { obs: ObserveResult; scene: SceneInput; needs: ConcernAtScene[]; title: string; input: FallbackInput; store: Store; step: Step }): DraftMoment["action"] {
   const { obs, scene, needs, title, input, store, step } = args;
   const { face, engine, request } = input;
-  const none = (text: string): DraftMoment["action"] => ({ kind: "none", claim: { text, refs: [obs.ref] } });
-  if (needs.length === 0) return none("Nothing needs doing for this moment.");
+  if (needs.length === 0) return { kind: "none", claim: { text: "Nothing needs doing for this moment.", refs: [obs.ref] } };
 
   const easiestFirst = [...needs].sort((a, b) => a.typicalShare - b.typicalShare).map((c) => c.concern);
   let group: ConcernId[] = [];
@@ -329,13 +341,12 @@ function chooseAction(args: { obs: ObserveResult; scene: SceneInput; needs: Conc
       }
     }
   }
-  const list = names(easiestFirst);
-  return none(
-    fit(
-      `A free change would not bring your ${list} out of sight here, so the list above is what a typical viewer could pick out.`,
-      "A free change would not bring these out of sight here, so the list above is what a typical viewer could pick out.",
-    ),
-  );
+  step("find_free_fix", { label: title });
+  const all = engine.findFreeFix(face, { moment: scene, concerns: easiestFirst }, store.nextRef());
+  store.commit(all);
+  const limit = all.quotes.limit;
+  const generic = "A free change would not bring these fully out of sight here, so the list above is what a typical viewer could pick out.";
+  return { kind: "none", claim: { text: limit ? fit(`${cap(limit)}.`, generic) : generic, refs: [all.ref] } };
 }
 
 function summaryFor(built: BuiltMoment[], followUpNotApplied: boolean): Claim {
@@ -349,5 +360,5 @@ function summaryFor(built: BuiltMoment[], followUpNotApplied: boolean): Claim {
     needing.length * 2 < built.length
       ? `Most of your day needs nothing. ${listed.join(" and ")} ${verb} something a typical viewer could pick out, and the card lists the smallest change.`
       : `${listed.join(", ")} ${verb} something a typical viewer could pick out; each card lists the smallest change.`;
-  return { text: fit(`${lead}${sentence}`, sentence), refs };
+  return { text: fit(`${lead}${sentence}`, `${lead}Each card lists what is in sight and the smallest change.`), refs };
 }

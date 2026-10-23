@@ -38,7 +38,7 @@ Video calls: use the user's device from the settings. Unless they say otherwise 
 ## Steps
 1. Split the day into 1 to ${MAX_MOMENTS} moments in time order. Decide each moment's scene, light and viewer. Where the user did not say, use the defaults and note the assumption in words ("I took lunch by the window as daylight").
 2. In your first turn, call observe_scene for every in-person moment and video_call_frame for every video call, all together. In the next turn call observe_scene for each video call, with the same call geometry.
-3. For each moment where the result's needsAChange list is not empty, call find_free_fix with those concerns (all moments together in one turn).
+3. For each moment where the result's needsAChange list is not empty, call find_free_fix with those concerns (all moments together in one turn). Leave dark_circle and eye_bag (large soft areas) out of that list when other concerns are in it: sitting further away or changing the camera rarely hides them, and one of them makes the whole search come back reachable false. If they are in sight, mention them kindly under notice and offer nothing for them.
 4. Only if find_free_fix returns reachable false for a concern, and the user has not said they would rather not wear makeup, call lightest_touch for that concern. If they would rather not, never call it.
 5. Call worth_it only if the user asks about skincare or a routine. Call receipt only if they ask how we know.
 6. Call final_answer once, alone, after all results are in. Never call it in the same turn as other tools.
@@ -46,6 +46,7 @@ Video calls: use the user's device from the settings. Unless they say otherwise 
 ## Writing the plan
 - Every number you write must be copied character for character from a value in the quotes of a tool result, and that claim's refs must list the result's ref. Do not compute, round, convert, shorten or reword a number. If no quote carries what you want to say, say it without a number. Titles and assumptions have no digits at all.
 - A quote whose key ends in .bound or .boundCount is about the sharpest eyes, not a typical viewer. Keep its wording ("at most") and never present it as what a typical viewer sees.
+- On video calls, the quotes floor and <concern>.belowCamera say what the video itself cannot carry whatever the other person's eyes. That is good news: put it under outOfSight.
 - Use the quote for the scene's distance and light (observe_scene quotes distance and light) whenever you mention them.
 - Per moment: outOfSight first (what stays out of sight, the good news), then notice (what a typical viewer could pick out). Leave notice empty when nothing is in sight.
 - Action: none when nothing needs doing; free_fix (ref of a find_free_fix with reachable true) with a sentence that says the change using its quotes; lightest_touch (ref of a lightest_touch with status met or not_met) only when no free fix works, always together with the distance and light it was measured at; worth_it only when asked.
@@ -84,8 +85,12 @@ export function buildUserMessage(request: AgentRequest): string {
 export const NUDGE_MESSAGE =
   "You have not finished. Call final_answer now with the day plan, using only refs from the tool results above. If a result is missing, call that tool first, in this same turn but not together with final_answer.";
 
+/** The error result for a final_answer that failed the check: the issues as data, and what to do next. */
 export function repairMessage(issues: VerifierIssue[]): string {
-  const shown = issues.slice(0, 12).map((i) => `- ${i.momentId ? `${i.momentId}: ` : ""}[${i.code}] ${i.detail}`);
-  const more = issues.length > shown.length ? `\n(and ${issues.length - shown.length} more of the same kinds)` : "";
-  return `The plan did not pass the check:\n${shown.join("\n")}${more}\nCall final_answer again, once, with these fixed. You may call other tools first if you need a result you do not have, but not in the same turn as final_answer. Where a number has no quote, say it without a number.`;
+  return JSON.stringify({
+    error: "The plan did not pass the check.",
+    issues: issues.slice(0, 12).map((i) => ({ moment: i.momentId, code: i.code, detail: i.detail })),
+    moreIssues: Math.max(0, issues.length - 12),
+    next: "Call final_answer again, once, with these fixed. You may call other tools first if you need a result you do not have, but not in the same turn as final_answer. Where a number has no quote, say it without a number.",
+  });
 }

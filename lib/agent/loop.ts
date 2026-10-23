@@ -99,11 +99,11 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
       stats.toolCalls++;
       const tool = resolveToolName(use.name);
       if (!tool) {
-        results.push(resultBlock(use.toolUseId, `There is no tool called "${use.name}". The tools are: ${TOOL_NAMES.join(", ")}.`, false));
+        results.push(resultBlock(use.toolUseId, JSON.stringify({ error: `There is no tool called "${use.name}". The tools are: ${TOOL_NAMES.join(", ")}.` }), false));
         continue;
       }
       if (stats.toolCalls > MAX_TOOL_CALLS) {
-        results.push(resultBlock(use.toolUseId, "Too many tool calls. Call final_answer now with what you have.", false));
+        results.push(resultBlock(use.toolUseId, JSON.stringify({ error: "Too many tool calls. Call final_answer now with what you have." }), false));
         continue;
       }
       emit({ type: "step", tool, label: describeStep(tool, use.input) });
@@ -125,7 +125,7 @@ export async function runAgent(options: RunAgentOptions): Promise<DayPlan> {
 
       // final_answer
       if (uses.length > 1) {
-        results.push(resultBlock(use.toolUseId, "Call final_answer on its own, after the other tool results are in. Call it again now, alone.", false));
+        results.push(resultBlock(use.toolUseId, JSON.stringify({ error: "Call final_answer on its own, after the other tool results are in. Call it again now, alone." }), false));
         continue;
       }
       const parsed = finalAnswerInput.safeParse(dropNulls(use.input));

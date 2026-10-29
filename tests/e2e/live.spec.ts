@@ -51,17 +51,23 @@ test("Use my photo: gate, upload, results from a replayed analysis, then the lig
   await expect(page.getByText(/Replay mode/).first()).toBeVisible();
   await expect(page.getByRole("region", { name: "Built on YouCam" })).toContainText("Replay of a recording (0 units)");
   await expect(page.getByRole("img", { name: /synthetic stand-in portrait/i })).toBeVisible({ timeout: 60_000 });
-  // An own photo never goes on a share card.
-  await expect(page.locator("#share")).toContainText(/never put on a card/);
-  await expect(page.locator("#share").getByLabel("Include the synthetic face")).toHaveCount(0);
   await expect(page.getByRole("slider", { name: /Step back/ })).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('[data-counter="pore"]')).toContainText(/your pores are out of sight/);
+  // The same tabs as a demo face, with the rows following the slider.
+  await expect(page.getByRole("tablist").getByRole("tab")).toHaveText(["What they see", "Tomorrow", "The lightest touch", "Worth it?", "Share"]);
+
+  // An own photo never goes on a share card.
+  await page.getByRole("tab", { name: "Share" }).click();
+  await expect(page.locator("#share")).toContainText(/never put on a card/);
+  await expect(page.locator("#share").getByLabel("Include the synthetic face")).toHaveCount(0);
 
   // Worth it? fills in from the background simulations.
+  await page.getByRole("tab", { name: "Worth it?" }).click();
   const worth = page.locator("#worth-it");
   await expect(worth.getByRole("radio").first()).toBeVisible({ timeout: 90_000 });
 
   // The lightest touch runs only on request.
+  await page.getByRole("tab", { name: "The lightest touch" }).click();
   const cover = page.locator("#make-it-disappear");
   await expect(cover.getByRole("button", { name: "Find the lightest touch" })).toBeVisible();
   await cover.getByRole("button", { name: "Find the lightest touch" }).click();

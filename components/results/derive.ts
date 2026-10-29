@@ -97,3 +97,26 @@ export function openingView(views: ConcernView[]): ConcernView | null {
   const fading = views.filter((v) => !v.soft).sort((a, b) => statusAt(b, TABLE_M).outOfSight - statusAt(a, TABLE_M).outOfSight);
   return fading[0] ?? views[views.length - 1] ?? null;
 }
+
+export interface ConcernGroup {
+  id: "relief" | "visible";
+  heading: string;
+  /** One line under the heading; absent when the heading says it all. */
+  note?: string;
+  views: ConcernView[];
+}
+
+/**
+ * The rows of "What they see": the concerns that are mostly out of sight first, then the rest. Inside the second group the
+ * concerns whose rows move with the slider lead, and the large soft areas (which carry far on every face and never change with
+ * the tape) come last. Empty groups are dropped.
+ */
+export function groupViews(views: ConcernView[]): ConcernGroup[] {
+  const relief = views.filter((v) => v.relief);
+  const rest = views.filter((v) => !v.relief);
+  const visible = [...rest.filter((v) => !v.soft), ...rest.filter((v) => v.soft)];
+  return [
+    { id: "relief" as const, heading: "Mostly out of sight", note: "Nothing to see from here.", views: relief },
+    { id: "visible" as const, heading: "These carry further", views: visible },
+  ].filter((g) => g.views.length > 0);
+}

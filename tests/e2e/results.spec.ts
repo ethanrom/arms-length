@@ -12,6 +12,10 @@ test.use({ reducedMotion: "reduce" });
 
 const PERSONAS = ["p2b", "p3a", "p1a", "p5a"];
 
+const tab = (page: Page, name: string | RegExp) => page.getByRole("tab", { name });
+/** The row for a concern in "What they see". */
+const row = (page: Page, name: string) => page.getByTestId("concern-rows").getByRole("button", { name: new RegExp(`^${name}`) });
+
 /** The seam only exists once the real renders are ready, so it marks "the hero has finished loading". */
 async function ready(page: Page) {
   await expect(page.getByRole("slider", { name: /Step back/ })).toBeVisible({ timeout: 30_000 });
@@ -26,11 +30,14 @@ for (const persona of PERSONAS) {
     // Labelled synthetic, with the recorded-analysis provenance.
     await expect(page.getByText(/Synthetic face [A-D]/).first()).toBeVisible();
     await expect(page.getByText(/recorded YouCam HD Skin Analysis of a synthetic face/)).toBeVisible();
-    await expect(page.getByRole("heading", { name: "What others see", exact: true, level: 2 })).toBeVisible();
+    // The first tab is open, with a row of words per concern.
+    await expect(tab(page, "What they see")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "At this distance", level: 2 })).toBeVisible();
 
     // Words and distances; no "illustrative" disclaimer, no N/100 score line, the estimate line is up under the face.
-    const cards = page.locator("button[aria-expanded]").filter({ hasText: /\d+(\.\d)? (m|cm)|out of sight|picked out/ });
-    await expect(cards.first()).toBeVisible();
+    const rows = page.getByTestId("concern-rows").getByRole("button");
+    await expect(rows.first()).toBeVisible();
+    await expect(rows.first()).toContainText(/out of sight|picked out/);
     await expect(page.getByText(/illustrative|placeholder|mock/i)).toHaveCount(0);
     await expect(page.getByText(/YouCam rates yours/)).toHaveCount(0);
     await expect(page.getByText(/An estimate from one photo, not a guarantee/)).toBeVisible();
@@ -56,12 +63,22 @@ for (const viewport of [
     expect(slider.y + slider.height).toBeLessThanOrEqual(viewport.height + 1);
     await expect(page.getByRole("button", { name: "Across a table", exact: true })).toBeInViewport();
 
-    // The title, the description and the YouCam detections come after it.
+    // The title sits beside the face on a wide screen and above it on a phone; the tabs follow it.
     const title = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
-    expect(title.y).toBeGreaterThan(face.y + face.height);
+    if (viewport.width >= 1024) {
+      expect(title.x).toBeGreaterThan(face.x + face.width - 1);
+      // Every feature is one tap away, in the first screen: "Tomorrow" is not nine screens down.
+      await expect(tab(page, "Tomorrow")).toBeInViewport();
+      await expect(tab(page, "Share")).toBeInViewport();
+    } else {
+      expect(title.y).toBeLessThan(face.y);
+    }
+
+    // The YouCam detections come after the rows.
+    const lastRow = (await page.getByTestId("concern-rows").getByRole("button").last().boundingBox())!;
     const detected = page.getByRole("button", { name: "Show what YouCam detected" });
     await expect(detected).toHaveAttribute("aria-expanded", "false");
-    expect((await detected.boundingBox())!.y).toBeGreaterThan(face.y + face.height);
+    expect((await detected.boundingBox())!.y).toBeGreaterThan(lastRow.y);
     await expect(page.getByRole("img", { name: /Synthetic portrait/ })).toHaveCount(1);
   });
 }
@@ -200,18 +217,57 @@ test("when the softened view cannot be drawn, the photo, a message and the whole
   await expectNoAxeViolations(page);
 });
 
-test("the explorer opens on good news, never the worst, and a card keeps its mark-safety line", async ({ page }) => {
+test("the rows lead with good news; a pressed row marks the face and offers its details, which keep the mark-safety line", async ({ page }) => {
   await page.goto("/try/p2b");
   await ready(page);
-  const open = page.locator("h4 button[aria-expanded='true']");
-  await expect(open).toHaveCount(1);
-  await expect(open).toContainText(/pores/i);
-  await expect(page.locator("h4 button[aria-expanded]").filter({ hasText: /under-eye shadows/i })).toHaveAttribute("aria-expanded", "false");
-  // The dark-spots card carries the line without being opened, and a data table sits behind the chart.
-  await expect(page.getByText(/ask a doctor or pharmacist/).first()).toBeVisible();
-  await page.getByText("Show the data").first().click();
-  await expect(page.getByRole("table").first()).toBeVisible();
-  // No raw counts of marks on the main surface.
+  const rows = page.getByTestId("concern-rows");
+
+  // The rows that move with the slider lead and the large soft areas, which carry far on every face, come last. (No demo face
+  // has a concern that is mostly out of sight by the page's rule, so the relief group's order is a unit test: derive.test.ts.)
+  await expect(rows.getByRole("heading", { level: 3 })).toHaveText(["These carry further"]);
+  await expect(rows.getByRole("button").first()).toContainText(/^Dark spots/);
+  await expect(rows.getByRole("button").nth(-2)).toContainText(/^Under-eye shadows/);
+  await expect(rows.getByRole("button").last()).toContainText(/^Under-eye puffiness/);
+  await expect(page.getByTestId("concern-marks")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Details/ })).toHaveCount(0);
+
+  // Press a row: its marks are drawn over the Step back face, and "Details" appears. Press it again to clear.
+  const spots = row(page, "Dark spots");
+  await expect(spots).toHaveAttribute("aria-pressed", "false");
+  await spots.click();
+  await expect(spots).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("concern-marks")).toHaveAttribute("data-concern", "age_spot");
+  await row(page, "Fine lines").click();
+  await expect(spots).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId("concern-marks")).toHaveAttribute("data-concern", "wrinkle");
+  await row(page, "Fine lines").click();
+  await expect(page.getByTestId("concern-marks")).toHaveCount(0);
+
+  // The rows follow the slider.
+  const counter = page.locator('[data-counter="age_spot"]');
+  await expect(counter).toHaveText(/out of sight/);
+  const before = await counter.textContent();
+  const slider = page.getByRole("slider", { name: /Step back/ });
+  await slider.focus();
+  await slider.press("End");
+  await expect(counter).not.toHaveText(before!);
+  await expect(counter).toHaveText(/^(Most|Nearly all) of your dark spots are out of sight from here$/);
+
+  // The details open in a sheet: the sentences, the mark-safety line, the chart with its data, and what the number means.
+  await spots.click();
+  await page.getByRole("button", { name: /^Details/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Dark spots", exact: true });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByText(/ask a doctor or pharmacist/)).toBeVisible();
+  await expect(sheet.getByText("What this number means")).toBeVisible();
+  await expect(sheet.getByText("How sure we are")).toBeVisible();
+  await sheet.getByText("Show the data").first().click();
+  await expect(sheet.getByRole("table").first()).toBeVisible();
+  await expectNoAxeViolations(page);
+  await page.keyboard.press("Escape");
+  await expect(sheet).toBeHidden();
+  // Beside the rows, the page itself carries the mark-safety line, and no raw counts of marks.
+  await expect(page.locator("#what-others-see").getByText(/ask a doctor or pharmacist/)).toBeVisible();
   await expect(page.locator("#what-others-see")).not.toContainText(/\b\d+ of (your )?\d+\b/);
 });
 
@@ -219,15 +275,12 @@ test("a receipt shows both thresholds, where the size comes from, and the safety
   await page.goto("/try/p2b");
   await ready(page);
 
-  const card = page.locator("h4 button[aria-expanded]").filter({ hasText: /pores/i }).first();
-  await expect(card).toHaveAttribute("aria-expanded", "true");
-  await card.click();
-  await expect(card).toHaveAttribute("aria-expanded", "false");
-  await card.click();
-  await expect(page.getByText("What this number means").first()).toBeVisible();
+  await row(page, "Pores").click();
+  await page.getByRole("button", { name: /^Details/ }).click();
+  await expect(page.getByRole("dialog", { name: "Pores", exact: true }).getByText("What this number means")).toBeVisible();
 
   await page.getByRole("button", { name: /How we know\s*:\s*Pores/ }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("dialog", { name: /^Pores, at / });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("YouCam found it here.")).toBeVisible();
   await expect(dialog.getByText(/with the iris as the ruler/)).toBeVisible();
@@ -251,17 +304,24 @@ test("a receipt shows both thresholds, where the size comes from, and the safety
   await expectNoAxeViolations(page);
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
+  // The sheet it was opened from is still there; closing it leaves the page as it was.
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Pores", exact: true })).toBeHidden();
 
   // Dark spots: a size drawn by YouCam from the outline, and the safety line on the receipt.
+  await row(page, "Dark spots").click();
+  await page.getByRole("button", { name: /^Details/ }).click();
   await page.getByRole("button", { name: /How we know\s*:\s*Dark spots/ }).click();
-  await expect(dialog.getByText("Measured from the mask outline")).toBeVisible();
-  await expect(dialog.getByText(/ask a doctor or pharmacist/)).toBeVisible();
+  const spots = page.getByRole("dialog", { name: /^Dark spots, at / });
+  await expect(spots.getByText("Measured from the mask outline")).toBeVisible();
+  await expect(spots.getByText(/ask a doctor or pharmacist/)).toBeVisible();
 });
 
 test("Worth it? and The lightest touch show local crops with the label burned in, never a whole-face after", async ({ page }) => {
   await page.goto("/try/p2b");
   await ready(page);
 
+  await tab(page, "Worth it?").click();
   const worth = page.locator("#worth-it");
   await expect(worth.getByRole("heading", { level: 2 })).toContainText("Worth it?");
   await expect(worth.getByRole("radio")).toHaveCount(6);
@@ -269,6 +329,7 @@ test("Worth it? and The lightest touch show local crops with the label burned in
   await expect(worth.locator("img")).toHaveCount(0);
   await expect(worth).not.toContainText(/half strength/i);
 
+  await tab(page, "The lightest touch").click();
   const cover = page.locator("#make-it-disappear");
   await expect(cover.getByRole("radiogroup", { name: "Concern" }).getByRole("radio")).toHaveCount(3);
   await expect(cover.getByText(/Honest answer|Checked on a virtual try-on/).first()).toBeVisible();
@@ -280,11 +341,30 @@ test("a face with no recorded try-ons has no lightest touch and no hook pointing
   await page.goto("/try/p5a");
   await ready(page);
   await expect(page.locator("#make-it-disappear")).toHaveCount(0);
-  await expect(page.getByText(/See the lightest touch/)).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "On this page" })).not.toContainText("lightest touch");
+  await expect(tab(page, /lightest touch/)).toHaveCount(0);
+  await expect(page.getByRole("tab")).toHaveText(["What they see", "Tomorrow", "Worth it?", "Share"]);
+  await row(page, "Dark spots").click();
+  await page.getByRole("button", { name: /^Details/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Dark spots", exact: true });
+  await expect(sheet.getByText("What this number means")).toBeVisible();
+  await expect(sheet.getByText(/See the lightest touch/)).toHaveCount(0);
 });
 
-test("keyboard only: skip link, a persona card, a concern card and the receipt sheet", async ({ page }) => {
+test("where a try-on was recorded, the details point to the lightest touch and following the hook opens that tab", async ({ page }) => {
+  await page.goto("/try/p2b");
+  await ready(page);
+  await row(page, "Dark spots").click();
+  await page.getByRole("button", { name: /^Details/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Dark spots", exact: true });
+  await sheet.getByRole("link", { name: /See the lightest touch/ }).click();
+  await expect(sheet).toBeHidden();
+  await expect(tab(page, "The lightest touch")).toHaveAttribute("aria-selected", "true");
+  await expect(tab(page, "The lightest touch")).toBeFocused();
+  await expect(page.locator("#make-it-disappear")).toBeVisible();
+  await expect(page).toHaveURL(/#make-it-disappear$/);
+});
+
+test("keyboard only: skip link, a persona card, a concern row, its details and the receipt sheet", async ({ page }) => {
   await page.goto("/try");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
@@ -295,25 +375,196 @@ test("keyboard only: skip link, a persona card, a concern card and the receipt s
   await expect(page).toHaveURL(/\/try\/p2b$/);
   await ready(page);
 
-  const card = page.locator("h4 button[aria-expanded]").filter({ hasText: /dark spots/i }).first();
-  await card.focus();
+  const spots = row(page, "Dark spots");
+  await spots.focus();
   await page.keyboard.press("Enter");
-  await expect(card).toHaveAttribute("aria-expanded", "true");
+  await expect(spots).toHaveAttribute("aria-pressed", "true");
+
+  const details = page.getByRole("button", { name: /^Details/ });
+  await page.keyboard.press("Tab");
+  await expect(details).toBeFocused();
+  await page.keyboard.press("Enter");
+  const sheet = page.getByRole("dialog", { name: "Dark spots", exact: true });
+  await expect(sheet).toBeVisible();
 
   const how = page.getByRole("button", { name: /How we know\s*:\s*Dark spots/ });
   await how.focus();
   await page.keyboard.press("Enter");
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
+  const receipt = page.getByRole("dialog", { name: /^Dark spots, at / });
+  await expect(receipt).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(dialog).toBeHidden();
+  await expect(receipt).toBeHidden();
   await expect(how).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toBeHidden();
+  await expect(details).toBeFocused();
 });
 
 test("an unknown persona shows the not-found page", async ({ page }) => {
   await page.goto("/try/not-a-face");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/out of focus/i);
   await expectNoAxeViolations(page);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// The tabs
+// ---------------------------------------------------------------------------------------------------------------
+
+const TAB_IDS = ["what-others-see", "rehearse", "make-it-disappear", "worth-it", "share"];
+
+test("the tabs are a WAI-ARIA tablist with arrow-key navigation, a roving tabindex and a panel each", async ({ page }) => {
+  await page.goto("/try/p1a");
+  await ready(page);
+  const list = page.getByRole("tablist");
+  await expect(list).toBeVisible();
+  const tabs = list.getByRole("tab");
+  await expect(tabs).toHaveText(["What they see", "Tomorrow", "The lightest touch", "Worth it?", "Share"]);
+
+  // The first is open; only it is in the tab order.
+  await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.nth(0)).toHaveAttribute("tabindex", "0");
+  for (const i of [1, 2, 3, 4]) {
+    await expect(tabs.nth(i)).toHaveAttribute("aria-selected", "false");
+    await expect(tabs.nth(i)).toHaveAttribute("tabindex", "-1");
+  }
+  // Each tab names its panel, and the panel names the tab.
+  for (let i = 0; i < TAB_IDS.length; i++) {
+    await expect(tabs.nth(i)).toHaveAttribute("aria-controls", TAB_IDS[i]);
+    await expect(page.locator(`#${TAB_IDS[i]}`)).toHaveAttribute("role", "tabpanel");
+    await expect(page.locator(`#${TAB_IDS[i]}`)).toHaveAttribute("aria-labelledby", `tab-${TAB_IDS[i]}`);
+  }
+  await expect(page.locator("#what-others-see")).toBeVisible();
+  await expect(page.locator("#rehearse")).toBeHidden();
+
+  // Arrow keys move and open; the ends wrap; Home and End jump.
+  await tabs.nth(0).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.nth(1)).toBeFocused();
+  await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.nth(1)).toHaveAttribute("tabindex", "0");
+  await expect(tabs.nth(0)).toHaveAttribute("tabindex", "-1");
+  await expect(page.locator("#rehearse")).toBeVisible();
+  await expect(page.locator("#what-others-see")).toBeHidden();
+  await page.keyboard.press("End");
+  await expect(tabs.nth(4)).toBeFocused();
+  await expect(page.locator("#share")).toBeVisible();
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.nth(0)).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(tabs.nth(4)).toBeFocused();
+  await page.keyboard.press("Home");
+  await expect(tabs.nth(0)).toBeFocused();
+  await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+
+  // Tab leaves the tablist for the open panel instead of stepping through the other tabs.
+  await page.keyboard.press("Tab");
+  await expect(tabs.nth(1)).not.toBeFocused();
+  expect(await page.evaluate(() => !!document.activeElement?.closest("#what-others-see"))).toBe(true);
+});
+
+test("a link with a section's hash opens its tab, and choosing a tab writes the hash back", async ({ page }) => {
+  await page.goto("/try/p1a#worth-it");
+  await ready(page);
+  await expect(tab(page, "Worth it?")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#worth-it")).toBeVisible();
+  await expect(page.locator("#worth-it").getByRole("radio").first()).toBeAttached();
+  await expect(page.locator("#what-others-see")).toBeHidden();
+
+  await tab(page, "Share").click();
+  await expect(page).toHaveURL(/#share$/);
+  await expect(page.locator("#share")).toBeVisible();
+  // A hash that is not a tab is ignored: the open tab stays open.
+  await page.evaluate(() => {
+    window.location.hash = "#nothing-here";
+  });
+  await expect(tab(page, "Share")).toHaveAttribute("aria-selected", "true");
+  // A hash change inside the page (an old link, the browser's address bar) opens the tab too.
+  await page.evaluate(() => {
+    window.location.hash = "#make-it-disappear";
+  });
+  await expect(tab(page, "The lightest touch")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#make-it-disappear")).toBeVisible();
+  // A face that does not offer the section has no such tab: its hash falls back to the first.
+  await page.goto("/try/p5a#make-it-disappear");
+  await expect(tab(page, "What they see")).toHaveAttribute("aria-selected", "true");
+});
+
+test("on a wide screen the face stays in view as the page scrolls and as the tabs change", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/try/p1a");
+  await ready(page);
+  const stage = page.getByTestId("step-back-stage");
+  const slider = page.getByRole("slider", { name: /Step back/ });
+  const inView = async () => {
+    const box = (await stage.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(900);
+    const s = (await slider.boundingBox())!;
+    expect(s.y).toBeGreaterThanOrEqual(0);
+    expect(s.y + s.height).toBeLessThanOrEqual(900);
+  };
+
+  // Down the long first tab the face stays where it is, with its controls.
+  await inView();
+  const top = (await stage.boundingBox())!;
+  await page.mouse.wheel(0, 400);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+  await inView();
+  const pinned = (await stage.boundingBox())!;
+  expect(pinned.height).toBeCloseTo(top.height, 0);
+  expect(pinned.y).toBeLessThanOrEqual(top.y);
+
+  // Switching tabs from down the page starts the new tab at the top, face and all.
+  for (const name of ["Tomorrow", "The lightest touch", "Worth it?", "Share", "What they see"]) {
+    await tab(page, name).click();
+    await expect(tab(page, name)).toHaveAttribute("aria-selected", "true");
+    await inView();
+    expect(await page.evaluate(() => window.scrollY)).toBeLessThan(5);
+    await page.mouse.wheel(0, 600);
+    await page.waitForTimeout(100);
+  }
+  // The tab row is reachable from down the page: "Tomorrow" is one click away and its button is in the first screen.
+  await tab(page, "Tomorrow").click();
+  await expect(page.getByRole("button", { name: "Rehearse my day" })).toBeInViewport();
+});
+
+test("axe finds no violations on any tab", async ({ page }) => {
+  await page.goto("/try/p1a");
+  await ready(page);
+  for (const name of ["What they see", "Tomorrow", "The lightest touch", "Worth it?", "Share"]) {
+    await tab(page, name).click();
+    await expect(tab(page, name)).toHaveAttribute("aria-selected", "true");
+    await page.waitForTimeout(400);
+    await expectNoAxeViolations(page);
+  }
+});
+
+test.describe("phone", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("nothing overflows sideways on any tab, and the tab row sticks under the top edge", async ({ page }) => {
+    await page.goto("/try/p1a");
+    await ready(page);
+    const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    for (const name of ["What they see", "Tomorrow", "The lightest touch", "Worth it?", "Share"]) {
+      await tab(page, name).click();
+      await expect(tab(page, name)).toHaveAttribute("aria-selected", "true");
+      expect(await overflow()).toBeLessThanOrEqual(0);
+    }
+    await tab(page, "What they see").click();
+    await page.evaluate(() => window.scrollTo(0, 1500));
+    await page.waitForTimeout(200);
+    const row = (await page.getByRole("tablist").boundingBox())!;
+    expect(row.y).toBeGreaterThanOrEqual(-1);
+    expect(row.y).toBeLessThan(8);
+    await tab(page, "Share").click();
+    await expect(page.locator("#share")).toBeVisible();
+    // The new tab starts under the tab row, not in the middle of a different, longer panel.
+    const head = (await page.locator("#share").boundingBox())!;
+    expect(head.y).toBeGreaterThanOrEqual(row.y);
+    expect(head.y).toBeLessThan(200);
+  });
 });
 
 test.describe("with motion", () => {

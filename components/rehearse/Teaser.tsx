@@ -19,15 +19,16 @@ export function Teaser({ photo, onOpen, buttonRef }: TeaserProps) {
   const scenes = useMemo(() => PREVIEW_SCENES.map((p) => ({ ...p, observe: previewObserve(p.input, `preview-${p.key}`) })), []);
 
   return (
-    <div>
+    <div className="@container">
+      {/* the first moment large with the other two beside it when the panel is wide enough, otherwise a row to swipe through */}
       <div
         role="group"
         aria-label="Three moments from a day"
         tabIndex={0}
-        className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0"
+        className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 lg:mx-0 lg:px-0 @[30rem]:mx-0 @[30rem]:grid @[30rem]:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @[30rem]:gap-x-4 @[30rem]:gap-y-3 @[30rem]:overflow-visible @[30rem]:px-0 @[30rem]:pb-0"
       >
-        {scenes.map((s) => (
-          <figure key={s.key} className="m-0 w-[78%] shrink-0 snap-center md:w-auto">
+        {scenes.map((s, i) => (
+          <figure key={s.key} className={`m-0 w-[78%] shrink-0 snap-center lg:w-[62%] @[30rem]:w-auto ${i === 0 ? "@[30rem]:row-span-2" : ""}`}>
             <Stage
               scene={s.observe.input.scene}
               light={s.observe.input.light}
@@ -36,12 +37,12 @@ export function Teaser({ photo, onOpen, buttonRef }: TeaserProps) {
               photo={photo}
               label={`${s.label}: your face as the person there sees it`}
             />
-            <figcaption className="mt-3 text-[0.9375rem] leading-snug text-ink-soft">{s.label}</figcaption>
+            <figcaption className="mt-2 text-[0.9375rem] leading-snug text-ink-soft">{s.label}</figcaption>
           </figure>
         ))}
       </div>
 
-      <div className="mt-10 flex flex-col items-start gap-3">
+      <div className="mt-7 flex flex-col items-start gap-3">
         <button ref={buttonRef} type="button" onClick={onOpen} aria-haspopup="dialog" className="btn btn-primary" data-testid="rehearse-open">
           Rehearse my day
           <span className="arrow" aria-hidden="true">

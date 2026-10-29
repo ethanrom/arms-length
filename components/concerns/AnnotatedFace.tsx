@@ -37,16 +37,87 @@ export function cropAround(bounds: Box, frame: { width: number; height: number }
 const isFeature = (t: Feature | RegionMeasure): t is Feature => "shape" in t;
 
 /**
- * The face with one concern's features marked: rings for spots, boxes for lines, a soft spotlight for areas.
- * Every mark has a dark halo under a light stroke so it reads on any skin tone.
+ * One concern's marks as SVG children, in frame px: rings for spots, boxes for lines, a soft spotlight for areas. Every mark
+ * has a dark halo under a light stroke so it reads on any skin tone. Draw it inside an `<svg>` whose viewBox is `box` (the whole
+ * frame, or the crop being shown).
  */
-export function AnnotatedFace({ src, alt, frame, view, crop, sizes = "(min-width: 1024px) 40vw, 90vw", className }: AnnotatedFaceProps) {
+export function ConcernMarks({ view, box }: { view: ConcernView; box: Box }) {
   const uid = useId().replace(/:/g, "");
-  const box: Box = crop ?? { x: 0, y: 0, w: frame.width, h: frame.height };
-  const regions = view?.targets.filter((t) => !isFeature(t)) ?? [];
+  const regions = view.targets.filter((t) => !isFeature(t));
   // Stroke widths are in px thanks to non-scaling strokes; sizes are in frame px.
   const unit = box.w / 700;
-  const dense = (view?.targets.length ?? 0) > 60;
+  const dense = view.targets.length > 60;
+
+  return (
+    <>
+      {regions.length > 0 && (
+        <>
+          <defs>
+            <filter id={`soft${uid}`} x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation={22 * unit} />
+            </filter>
+            <mask id={`dim${uid}`} maskUnits="userSpaceOnUse" x={box.x} y={box.y} width={box.w} height={box.h}>
+              <rect x={box.x} y={box.y} width={box.w} height={box.h} fill="white" />
+              {regions.map((r) => (
+                <ellipse
+                  key={r.id}
+                  cx={r.bbox.x + r.bbox.w / 2}
+                  cy={r.bbox.y + r.bbox.h / 2}
+                  rx={r.bbox.w / 2}
+                  ry={r.bbox.h / 2}
+                  fill="black"
+                  filter={`url(#soft${uid})`}
+                />
+              ))}
+            </mask>
+          </defs>
+          <rect x={box.x} y={box.y} width={box.w} height={box.h} fill="#161513" opacity="0.46" mask={`url(#dim${uid})`} />
+        </>
+      )}
+
+      {view.targets.map((t) => {
+        const top = view.topIds.has(t.id);
+        if (isFeature(t)) {
+          if (t.shape === "line") {
+            return (
+              <g key={t.id} opacity={top ? 1 : 0.7}>
+                <rect x={t.bbox.x} y={t.bbox.y} width={t.bbox.w} height={t.bbox.h} rx={8 * unit} fill="none" stroke="#161513" strokeOpacity="0.55" strokeWidth="4.5" vectorEffect="non-scaling-stroke" />
+                <rect x={t.bbox.x} y={t.bbox.y} width={t.bbox.w} height={t.bbox.h} rx={8 * unit} fill="none" stroke="#f5f3ef" strokeWidth="1.8" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />
+              </g>
+            );
+          }
+          if (dense && !top) {
+            // Hundreds of rings would hide the face; small dots show where they are.
+            return (
+              <g key={t.id}>
+                <circle cx={t.centroid.x} cy={t.centroid.y} r={3.4 * unit} fill="#f5f3ef" fillOpacity="0.85" stroke="#161513" strokeOpacity="0.6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              </g>
+            );
+          }
+          const r = Math.max(t.bbox.w, t.bbox.h) * (top ? 1.5 : 1.15) + 11 * unit;
+          return (
+            <g key={t.id} opacity={top ? 1 : 0.75}>
+              <circle cx={t.centroid.x} cy={t.centroid.y} r={r} fill="none" stroke="#161513" strokeOpacity="0.55" strokeWidth={top ? 5 : 4} vectorEffect="non-scaling-stroke" />
+              <circle cx={t.centroid.x} cy={t.centroid.y} r={r} fill="none" stroke="#f5f3ef" strokeWidth={top ? 2.2 : 1.6} strokeDasharray={top ? undefined : "3 3"} vectorEffect="non-scaling-stroke" />
+            </g>
+          );
+        }
+        const rx = t.bbox.w / 2;
+        const ry = t.bbox.h / 2;
+        return (
+          <g key={t.id}>
+            <ellipse cx={t.bbox.x + rx} cy={t.bbox.y + ry} rx={rx} ry={ry} fill="none" stroke="#161513" strokeOpacity="0.55" strokeWidth="4.5" vectorEffect="non-scaling-stroke" />
+            <ellipse cx={t.bbox.x + rx} cy={t.bbox.y + ry} rx={rx} ry={ry} fill="none" stroke="#f5f3ef" strokeWidth="1.8" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />
+          </g>
+        );
+      })}
+    </>
+  );
+}
+
+/** The face with one concern's marks drawn on it (or the plain face), optionally cropped to a part of the frame. */
+export function AnnotatedFace({ src, alt, frame, view, crop, sizes = "(min-width: 1024px) 40vw, 90vw", className }: AnnotatedFaceProps) {
+  const box: Box = crop ?? { x: 0, y: 0, w: frame.width, h: frame.height };
 
   return (
     <div
@@ -73,67 +144,7 @@ export function AnnotatedFace({ src, alt, frame, view, crop, sizes = "(min-width
         className="absolute inset-0 h-full w-full"
         preserveAspectRatio="none"
       >
-        {view && regions.length > 0 && (
-          <>
-            <defs>
-              <filter id={`soft${uid}`} x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation={22 * unit} />
-              </filter>
-              <mask id={`dim${uid}`} maskUnits="userSpaceOnUse" x={box.x} y={box.y} width={box.w} height={box.h}>
-                <rect x={box.x} y={box.y} width={box.w} height={box.h} fill="white" />
-                {regions.map((r) => (
-                  <ellipse
-                    key={r.id}
-                    cx={r.bbox.x + r.bbox.w / 2}
-                    cy={r.bbox.y + r.bbox.h / 2}
-                    rx={r.bbox.w / 2}
-                    ry={r.bbox.h / 2}
-                    fill="black"
-                    filter={`url(#soft${uid})`}
-                  />
-                ))}
-              </mask>
-            </defs>
-            <rect x={box.x} y={box.y} width={box.w} height={box.h} fill="#161513" opacity="0.46" mask={`url(#dim${uid})`} />
-          </>
-        )}
-
-        {view?.targets.map((t) => {
-          const top = view.topIds.has(t.id);
-          if (isFeature(t)) {
-            if (t.shape === "line") {
-              return (
-                <g key={t.id} opacity={top ? 1 : 0.7}>
-                  <rect x={t.bbox.x} y={t.bbox.y} width={t.bbox.w} height={t.bbox.h} rx={8 * unit} fill="none" stroke="#161513" strokeOpacity="0.55" strokeWidth="4.5" vectorEffect="non-scaling-stroke" />
-                  <rect x={t.bbox.x} y={t.bbox.y} width={t.bbox.w} height={t.bbox.h} rx={8 * unit} fill="none" stroke="#f5f3ef" strokeWidth="1.8" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />
-                </g>
-              );
-            }
-            if (dense && !top) {
-              // Hundreds of rings would hide the face; small dots show where they are.
-              return (
-                <g key={t.id}>
-                  <circle cx={t.centroid.x} cy={t.centroid.y} r={3.4 * unit} fill="#f5f3ef" fillOpacity="0.85" stroke="#161513" strokeOpacity="0.6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                </g>
-              );
-            }
-            const r = Math.max(t.bbox.w, t.bbox.h) * (top ? 1.5 : 1.15) + 11 * unit;
-            return (
-              <g key={t.id} opacity={top ? 1 : 0.75}>
-                <circle cx={t.centroid.x} cy={t.centroid.y} r={r} fill="none" stroke="#161513" strokeOpacity="0.55" strokeWidth={top ? 5 : 4} vectorEffect="non-scaling-stroke" />
-                <circle cx={t.centroid.x} cy={t.centroid.y} r={r} fill="none" stroke="#f5f3ef" strokeWidth={top ? 2.2 : 1.6} strokeDasharray={top ? undefined : "3 3"} vectorEffect="non-scaling-stroke" />
-              </g>
-            );
-          }
-          const rx = t.bbox.w / 2;
-          const ry = t.bbox.h / 2;
-          return (
-            <g key={t.id}>
-              <ellipse cx={t.bbox.x + rx} cy={t.bbox.y + ry} rx={rx} ry={ry} fill="none" stroke="#161513" strokeOpacity="0.55" strokeWidth="4.5" vectorEffect="non-scaling-stroke" />
-              <ellipse cx={t.bbox.x + rx} cy={t.bbox.y + ry} rx={rx} ry={ry} fill="none" stroke="#f5f3ef" strokeWidth="1.8" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />
-            </g>
-          );
-        })}
+        {view && <ConcernMarks view={view} box={box} />}
       </svg>
     </div>
   );

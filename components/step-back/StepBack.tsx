@@ -17,8 +17,8 @@ import {
   toUnit,
 } from "@/app/_lib/axis";
 import type { Box, ScaleEstimate, ViewingConditions } from "@/lib/contracts";
-import { stepBackCounter } from "@/lib/copy";
 import { faceScaleAt } from "@/lib/integration/faceScale";
+import { ConcernMarks } from "@/components/concerns/AnnotatedFace";
 import { statusAt, type ConcernView } from "@/components/results/derive";
 import type { DistanceAnchor } from "@/components/results/types";
 import { DistanceTape } from "./DistanceTape";
@@ -41,15 +41,18 @@ interface StepBackProps {
   concerns: ConcernView[];
   anchors: DistanceAnchor[];
   statusLines: string[];
-  rendererNote: string;
   /** What is and is not drawn, said once under the face. */
   heroLabel: string;
   /** The "An estimate from one photo" line, under the face where the first number is. */
   estimate: string;
-  /** The study the model was checked against, shown beside the first number. */
-  validation: { text: string; href: string };
+  /** "Synthetic (AI-generated) face. No real person's skin is shown." for a demo face; absent for a visitor's own photo. */
+  synthetic?: string | null;
   /** The patch of cheek and nose the loupe magnifies, in frame px. */
   loupe: Box;
+  /** The concern whose marks are drawn over the face, or none. */
+  highlight?: ConcernView | null;
+  /** Called with the viewing distance (metres) whenever it changes, including during the opening glide. */
+  onDistanceChange?: (distanceM: number) => void;
   stops?: readonly number[];
 }
 
@@ -100,11 +103,12 @@ export function StepBack({
   concerns,
   anchors,
   statusLines,
-  rendererNote,
   heroLabel,
   estimate,
-  validation,
+  synthetic,
   loupe,
+  highlight = null,
+  onDistanceChange,
   stops = DEFAULT_STOPS,
 }: StepBackProps) {
   const reduce = useCalm();
@@ -152,6 +156,10 @@ export function StepBack({
     },
     [stopIntro],
   );
+
+  useEffect(() => {
+    onDistanceChange?.(distance);
+  }, [distance, onDistanceChange]);
 
   const opacities = useMemo(() => layerOpacities(stops, distance), [stops, distance]);
   const { near, below, above } = locateAmongAnchors(anchors, distance);
@@ -280,11 +288,12 @@ export function StepBack({
   };
 
   return (
-    <div className="grid gap-x-12 gap-y-3 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-14 lg:gap-y-4">
+    <div className="flex flex-col gap-y-3 lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-start lg:gap-x-6 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_15rem] xl:gap-x-8">
+      {/* On a wide screen: the face beside the number and the loupe, with the named stops, the tape and the fine print across both. On a phone the parts simply run one after another. */}
       {/* the face */}
       <div
         data-testid="step-back-stage"
-        className="stage on-stage relative order-1 flex items-center justify-center overflow-hidden [--stage-h:min(42svh,480px)] lg:col-start-1 lg:row-start-1 lg:[--stage-h:min(58svh,620px)]"
+        className="stage on-stage relative order-1 flex items-center justify-center overflow-hidden [--stage-h:min(36svh,360px)] sm:[--stage-h:min(42svh,440px)] lg:col-start-1 lg:row-start-1 lg:[--stage-h:clamp(260px,calc(100svh-26rem),620px)] xl:[--stage-h:clamp(260px,calc(100svh-22.25rem),620px)]"
         style={{ height: "var(--stage-h)" }}
       >
         <div className="relative" style={{ aspectRatio: `${frame.width} / ${frame.height}`, width: `min(100%, calc(var(--stage-h) * ${aspect}))` }}>
@@ -313,6 +322,19 @@ export function StepBack({
                 ))}
               </div>
             </motion.div>
+            {/* the concern chosen in the list: its marks, drawn over the face (and softened with it) */}
+            {highlight && (
+              <svg
+                data-testid="concern-marks"
+                data-concern={highlight.id}
+                aria-hidden="true"
+                viewBox={`0 0 ${frame.width} ${frame.height}`}
+                preserveAspectRatio="none"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+              >
+                <ConcernMarks view={highlight} box={{ x: 0, y: 0, w: frame.width, h: frame.height }} />
+              </svg>
+            )}
             {/* where the loupe is looking; only the box takes the pointer, the rest of the overlay lets it through */}
             {showSeam && (
               <svg ref={overlayRef} viewBox={`0 0 ${frame.width} ${frame.height}`} preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
@@ -435,47 +457,8 @@ export function StepBack({
         )}
       </div>
 
-      {/* the first number, the study behind it, and the loupe */}
-      <div className="order-2 flex items-start justify-between gap-4 lg:col-start-2 lg:row-start-1 lg:flex-col lg:justify-start lg:gap-0">
-        <div className="min-w-0">
-          <p className="eyebrow !text-[0.875rem]">Seen from</p>
-          <p
-            data-testid="readout"
-            className="serif num mt-1 text-[clamp(3rem,2.2rem+3vw,4rem)] font-light leading-[0.95] tracking-[-0.03em] lg:mt-2 lg:text-[clamp(4.5rem,7vw,6.5rem)]"
-            aria-hidden="true"
-          >
-            {num}
-            <span className="ml-2 text-[0.38em] tracking-normal text-muted">{unit}</span>
-          </p>
-          <p className="serif mt-1 text-[1.25rem] leading-tight lg:mt-2 lg:text-[1.625rem]" style={{ fontWeight: 380 }}>
-            {where}
-          </p>
-          <a
-            href={validation.href}
-            className="mt-3 hidden max-w-[24rem] items-start gap-2 text-[0.875rem] leading-snug text-ink-soft underline-offset-4 hover:text-ink hover:underline lg:inline-flex"
-          >
-            <CheckMark />
-            {validation.text}
-          </a>
-        </div>
-
-        {!failed && (
-          <figure className="w-[9.5rem] shrink-0 sm:w-[12rem] lg:mt-5 lg:w-full lg:max-w-[22rem]">
-            <div className="stage on-stage overflow-hidden border border-ink">
-              <Loupe src={src} frame={frame} patch={patch} frames={frames.frames} opacities={opacities} className="block h-auto w-full" />
-            </div>
-            <figcaption className="mt-1.5 text-[0.875rem] leading-snug text-ink-soft">
-              Magnified so you can see what fades.{" "}
-              {/* the phone keeps the slider above the fold, so its hint is one short line */}
-              <span className="sm:hidden">Drag the box to move it.</span>
-              <span className="hidden sm:inline">Drag the box on the face, or click the face, to look elsewhere.</span>
-            </figcaption>
-          </figure>
-        )}
-      </div>
-
       {/* named stops and the tape */}
-      <div className="order-3 lg:col-start-1 lg:row-start-2">
+      <div className="order-3 lg:col-span-2 lg:row-start-2">
         <NamedDistances anchors={anchors} value={distance} onPick={pick} />
         <div className="mt-3">
           <DistanceTape
@@ -494,66 +477,45 @@ export function StepBack({
         </p>
       </div>
 
+      {/* the first number, and the loupe */}
+      <div className="order-2 flex items-start justify-between gap-4 lg:col-start-2 lg:row-start-1 lg:min-w-0 lg:flex-col lg:justify-start lg:gap-0">
+        <div className="min-w-0">
+          <p className="eyebrow !text-[0.875rem]">Seen from</p>
+          <p
+            data-testid="readout"
+            className="serif num mt-1 text-[clamp(3rem,2.2rem+3vw,4rem)] font-light leading-[0.95] tracking-[-0.03em] lg:mt-2 lg:text-[clamp(3.25rem,5.4vw,5rem)]"
+            aria-hidden="true"
+          >
+            {num}
+            <span className="ml-2 text-[0.38em] tracking-normal text-muted">{unit}</span>
+          </p>
+          <p className="serif mt-1 text-[1.25rem] leading-tight lg:mt-2 lg:text-[1.375rem]" style={{ fontWeight: 380 }}>
+            {where}
+          </p>
+        </div>
+
+        {!failed && (
+          <figure className="w-[9.5rem] shrink-0 sm:w-[12rem] lg:mt-5 lg:w-full lg:max-w-[22rem]">
+            <div className="stage on-stage overflow-hidden border border-ink">
+              <Loupe src={src} frame={frame} patch={patch} frames={frames.frames} opacities={opacities} className="block h-auto w-full" />
+            </div>
+            <figcaption className="mt-1.5 text-[0.875rem] leading-snug text-ink-soft">
+              {/* the phone keeps the controls near the top, so its hint is short */}
+              <span className="sm:hidden">Magnified. Drag the box to move it.</span>
+              <span className="hidden sm:inline">Magnified so you can see what fades. Drag the box on the face, or click the face, to look elsewhere.</span>
+            </figcaption>
+          </figure>
+        )}
+      </div>
+
       {/* what is and is not drawn */}
-      <div className="order-4 lg:col-start-1 lg:row-start-3">
-        <p className="max-w-[40rem] text-[0.875rem] leading-relaxed text-ink-soft">
+      <div className="order-4 lg:col-span-2 lg:row-start-3">
+        <p className="max-w-[44rem] text-[0.875rem] leading-relaxed text-ink-soft">
           {heroLabel} {estimate}
         </p>
-        <a href={validation.href} className="mt-2 inline-flex items-start gap-2 text-[0.875rem] leading-snug text-ink-soft underline-offset-4 hover:text-ink hover:underline lg:hidden">
-          <CheckMark />
-          {validation.text}
-        </a>
-      </div>
-
-      {/* what is visible, in words */}
-      <div className="order-5 lg:col-start-2 lg:row-span-2 lg:row-start-2">
-        <p className="eyebrow !text-[0.875rem]">At this distance</p>
-        <ul aria-label="What can be picked out at this distance" className="mt-3 divide-y divide-rule border-y border-rule">
-          {/* Large soft areas carry far on every face and never change with the tape, so the rows that respond to it lead. */}
-          {[...concerns].sort((a, b) => Number(a.soft) - Number(b.soft)).map((c) => {
-            const st = statusAt(c, distance);
-            const on = st.state !== "none";
-            return (
-              <li key={c.id} className="py-3">
-                <div className="flex items-center gap-3">
-                  <StateDot state={st.state} />
-                  <span className={`serif text-[1.125rem] leading-snug transition-colors duration-300 ${on ? "text-ink" : "text-muted"}`}>{c.copy.title}</span>
-                  <span aria-hidden="true" className="ml-auto block h-1.5 w-16 border border-[#8a867c]">
-                    <span className="block h-full bg-ink forced-colors:bg-[CanvasText]" style={{ width: percent(st.outOfSight * 100) }} />
-                  </span>
-                </div>
-                <p data-counter={c.id} className="num mt-1 pl-[1.375rem] text-[0.875rem] leading-snug text-ink-soft">
-                  {stepBackCounter(c.visibility, distance)}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-4 max-w-sm text-[0.875rem] leading-relaxed text-ink-soft">
-          The bar fills as more of each concern drops out of sight for a typical sharp-eyed person looking right at it. {rendererNote}
-        </p>
+        {synthetic && <p className="mt-1.5 max-w-[44rem] text-[0.875rem] leading-relaxed text-ink-soft">{synthetic}</p>}
       </div>
     </div>
-  );
-}
-
-function CheckMark() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="mt-0.5 shrink-0">
-      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M4.8 8.2l2.2 2.2 4.2-4.6" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  );
-}
-
-/** Solid when most of a concern is still detectable, half when some is, hollow when none: shape, never colour. */
-function StateDot({ state }: { state: "most" | "some" | "none" }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="block h-2.5 w-2.5 shrink-0 rounded-full border border-ink transition-colors duration-300"
-      style={{ background: state === "most" ? "var(--ink)" : state === "some" ? "linear-gradient(90deg, var(--ink) 50%, transparent 50%)" : "transparent" }}
-    />
   );
 }
 

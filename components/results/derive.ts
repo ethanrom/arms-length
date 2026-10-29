@@ -1,7 +1,7 @@
 import type { Box, ConcernVisibility, Feature, Point, RegionMeasure } from "@/lib/contracts";
 import { hasProfile, keyDistanceOf } from "@/lib/integration/copy";
 import type { ProfilePoint } from "@/app/_lib/axis";
-import { stepBackShare, TABLE_M } from "@/lib/copy";
+import { stepBackShare } from "@/lib/copy";
 import type { ConcernCopy, ResultsData } from "./types";
 
 export type Target = Feature | RegionMeasure;
@@ -76,7 +76,7 @@ export function deriveConcernViews(data: ResultsData): ConcernView[] {
 export interface ConcernStatus {
   /** Most of it can still be picked out (all of it, for a single area). */
   state: "most" | "some" | "none";
-  /** The share a typical sharp-eyed person could no longer pick out from here, 0 to 1: the bar next to the words. */
+  /** The share a typical sharp-eyed person could no longer pick out from here, 0 to 1: what the words say; the bar beside them shows the rest. */
   outOfSight: number;
 }
 
@@ -87,13 +87,25 @@ export function statusAt(view: ConcernView, distanceM: number): ConcernStatus {
   return { state: still <= 1e-9 ? "none" : still >= 0.5 ? "most" : "some", outOfSight };
 }
 
+export interface ConcernGroup {
+  id: "relief" | "visible";
+  heading: string;
+  /** One line under the heading; absent when the heading says it all. */
+  note?: string;
+  views: ConcernView[];
+}
+
 /**
- * The card that opens first: good news, never the worst. The first relief concern if there is one; otherwise the concern
- * that fades most across a table (a large soft area states no distance, so it is not a candidate).
+ * The rows of "What they see": the concerns that are mostly out of sight first, then the rest. Inside the second group the
+ * concerns whose rows move with the slider lead, and the large soft areas (which carry far on every face and never change with
+ * the tape) come last. Empty groups are dropped.
  */
-export function openingView(views: ConcernView[]): ConcernView | null {
-  const relief = views.find((v) => v.relief);
-  if (relief) return relief;
-  const fading = views.filter((v) => !v.soft).sort((a, b) => statusAt(b, TABLE_M).outOfSight - statusAt(a, TABLE_M).outOfSight);
-  return fading[0] ?? views[views.length - 1] ?? null;
+export function groupViews(views: ConcernView[]): ConcernGroup[] {
+  const relief = views.filter((v) => v.relief);
+  const rest = views.filter((v) => !v.relief);
+  const visible = [...rest.filter((v) => !v.soft), ...rest.filter((v) => v.soft)];
+  return [
+    { id: "relief" as const, heading: "Mostly out of sight", note: "Nothing to see from here.", views: relief },
+    { id: "visible" as const, heading: "These carry further", views: visible },
+  ].filter((g) => g.views.length > 0);
 }

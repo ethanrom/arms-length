@@ -58,8 +58,9 @@ export function ShareStudio({ share }: ShareStudioProps) {
   };
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-16">
-      <div className="order-2 lg:order-1">
+    <div className="@container">
+    <div className="grid gap-8 @[34rem]:grid-cols-[minmax(0,1fr)_16rem] @[34rem]:items-start @[34rem]:gap-8">
+      <div className="order-2 @[34rem]:order-1">
         <fieldset aria-describedby={`${linesId}-hint`}>
           <legend className="eyebrow !text-[0.875rem]">Lines on the card</legend>
           <p id={`${linesId}-hint`} className="mt-2 max-w-[30rem] text-[0.875rem] leading-relaxed text-ink-soft">
@@ -127,7 +128,7 @@ export function ShareStudio({ share }: ShareStudioProps) {
         </div>
       </div>
 
-      <div className="order-1 mx-auto w-full max-w-[26rem] lg:order-2 lg:max-w-[28rem]">
+      <div className="order-1 mx-auto w-full max-w-[18rem] @[34rem]:order-2 @[34rem]:max-w-none">
         <Image
           key={url}
           src={url}
@@ -139,6 +140,7 @@ export function ShareStudio({ share }: ShareStudioProps) {
           style={{ aspectRatio: `${size.width} / ${size.height}` }}
         />
       </div>
+    </div>
     </div>
   );
 }

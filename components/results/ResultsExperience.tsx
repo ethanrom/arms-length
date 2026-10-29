@@ -161,7 +161,7 @@ export function ResultsExperience({ data, onRunCoverage, back = { href: "/try", 
 
   return (
     <main id="main" tabIndex={-1} className="outline-none" style={{ "--stage": data.stageGrey } as CSSProperties}>
-      <div className="page pb-10 pt-3 lg:pb-10 lg:pt-4">
+      <div className="page pb-10 pt-3 lg:pb-8 lg:pt-4">
         <div className="grid grid-cols-1 gap-x-14 gap-y-3 lg:grid-cols-[minmax(0,55fr)_minmax(0,45fr)] lg:grid-rows-[auto_1fr] lg:items-start">
           <header className="lg:col-start-2 lg:row-start-1">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6">

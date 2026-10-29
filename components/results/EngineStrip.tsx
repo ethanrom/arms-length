@@ -14,14 +14,14 @@ interface EngineStripProps {
  */
 export function EngineStrip({ engine, badge, live }: EngineStripProps) {
   return (
-    <section aria-label={engine.title} className="border border-ink bg-paper-deep/50 px-4 py-3">
+    <section aria-label={engine.title} className="border border-ink bg-paper-deep/50 px-4 py-2.5">
       <p className="serif text-[1.125rem] leading-snug" style={{ fontWeight: 420 }}>
         {engine.title}
         <span aria-hidden="true">: </span>
         <span className="sr-only">: </span>
         <span className="text-ink-soft">{engine.parts.join(" · ")}</span>
       </p>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="num text-[0.875rem] leading-snug text-ink-soft">{engine.units}</p>
         <p
           className={`inline-flex items-center border px-3 py-1.5 text-[0.875rem] leading-none ${live ? "border-ink bg-ink text-paper forced-colors:border-[CanvasText]" : "border-ink"}`}
@@ -29,12 +29,12 @@ export function EngineStrip({ engine, badge, live }: EngineStripProps) {
           {badge}
         </p>
       </div>
-      <p className="serif mt-2 text-[1.0625rem] italic leading-snug text-ink-soft" style={{ fontWeight: 380 }}>
+      <p className="serif mt-1.5 text-[1.0625rem] italic leading-snug text-ink-soft" style={{ fontWeight: 380 }}>
         {engine.tagline}
       </p>
       <a
         href={engine.validation.href}
-        className="mt-2 inline-flex items-start gap-2 text-[0.875rem] leading-snug text-ink-soft underline-offset-4 hover:text-ink hover:underline"
+        className="mt-1.5 inline-flex items-start gap-2 text-[0.875rem] leading-snug text-ink-soft underline-offset-4 hover:text-ink hover:underline"
       >
         <CheckMark />
         {engine.validation.text}

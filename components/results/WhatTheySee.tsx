@@ -50,12 +50,13 @@ export function WhatTheySee({ data, views, distance, selectedId, onSelect, onDet
           {formatDistance(distanceM)}
         </p>
       </div>
-      <p className="mt-0.5 text-[0.875rem] leading-snug text-ink-soft">Press a concern to mark where it sits on the face.</p>
+      <p className="mt-0.5 max-w-[34rem] text-[0.875rem] leading-snug text-ink-soft">
+        Press a concern to mark where it sits on the face. The bar is the share a typical sharp-eyed person looking right at it could still pick out.
+      </p>
       <div className="mt-2">
         <ConcernRows groups={groups} distanceM={distanceM} selectedId={selectedId} onSelect={onSelect} onDetails={onDetails} />
       </div>
-      <p className="mt-3 max-w-[34rem] text-[0.875rem] leading-relaxed text-ink-soft">The bar shows the share a typical sharp-eyed person looking right at it could still pick out.</p>
-      {hasSafety && <p className="mt-3 max-w-[34rem] border-l-2 border-ink pl-3 text-[0.875rem] leading-relaxed text-ink-soft">{data.disclaimers.mark}</p>}
+      {hasSafety && <p className="mt-4 max-w-[34rem] border-l-2 border-ink pl-3 text-[0.875rem] leading-relaxed text-ink-soft">{data.disclaimers.mark}</p>}
 
       {data.outOfScope.length > 0 && (
         <details className="mt-6 border-t border-rule">

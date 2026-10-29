@@ -565,6 +565,14 @@ test.describe("phone", () => {
     expect(head.y).toBeGreaterThanOrEqual(row.y);
     expect(head.y).toBeLessThan(200);
   });
+
+  test("a link to a tab brings its panel up under the tab row, instead of leaving the face on screen", async ({ page }) => {
+    await page.goto("/try/p1a#rehearse");
+    await expect(tab(page, "Tomorrow")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("button", { name: "Rehearse my day" })).toBeInViewport();
+    const row = (await page.getByRole("tablist").boundingBox())!;
+    expect(row.y).toBeLessThan(8);
+  });
 });
 
 test.describe("with motion", () => {

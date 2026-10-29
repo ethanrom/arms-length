@@ -16,15 +16,26 @@ export interface TabSpec {
 export function useTabState(ids: readonly string[], fallback: string) {
   const [active, setActive] = useState(fallback);
   const known = ids.join("|");
+  const arrived = useRef(false);
 
   useEffect(() => {
-    const open = () => {
+    const open = (first: boolean) => {
       const id = decodeURIComponent(window.location.hash.slice(1));
-      if (known.split("|").includes(id)) setActive(id);
+      if (!known.split("|").includes(id)) return;
+      setActive(id);
+      // Following a link to a tab on a phone: the face is on top and the panel under the fold, so bring the tab row up.
+      if (first && !arrived.current && !window.matchMedia("(min-width: 1024px)").matches) {
+        window.setTimeout(() => {
+          const row = document.getElementById(`tab-${id}`)?.parentElement?.parentElement;
+          if (row) window.scrollTo({ top: row.getBoundingClientRect().top + window.scrollY, behavior: "instant" });
+        }, 50);
+      }
     };
-    open();
-    window.addEventListener("hashchange", open);
-    return () => window.removeEventListener("hashchange", open);
+    open(true);
+    arrived.current = true;
+    const onChange = () => open(false);
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
   }, [known]);
 
   const select = useCallback((id: string) => {

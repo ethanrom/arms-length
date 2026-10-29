@@ -293,7 +293,7 @@ export function StepBack({
       {/* the face */}
       <div
         data-testid="step-back-stage"
-        className="stage on-stage relative order-1 flex items-center justify-center overflow-hidden [--stage-h:min(36svh,360px)] sm:[--stage-h:min(42svh,440px)] lg:col-start-1 lg:row-start-1 lg:[--stage-h:clamp(260px,calc(100svh-24.5rem),620px)] xl:[--stage-h:clamp(260px,calc(100svh-19.5rem),620px)]"
+        className="stage on-stage relative order-1 flex items-center justify-center overflow-hidden [--stage-h:min(36svh,360px)] sm:[--stage-h:min(42svh,440px)] lg:col-start-1 lg:row-start-1 lg:[--stage-h:clamp(260px,calc(100svh-26rem),620px)] xl:[--stage-h:clamp(260px,calc(100svh-22.25rem),620px)]"
         style={{ height: "var(--stage-h)" }}
       >
         <div className="relative" style={{ aspectRatio: `${frame.width} / ${frame.height}`, width: `min(100%, calc(var(--stage-h) * ${aspect}))` }}>

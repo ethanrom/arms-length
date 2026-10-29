@@ -1,7 +1,7 @@
 import type { Box, ConcernVisibility, Feature, Point, RegionMeasure } from "@/lib/contracts";
 import { hasProfile, keyDistanceOf } from "@/lib/integration/copy";
 import type { ProfilePoint } from "@/app/_lib/axis";
-import { stepBackShare, TABLE_M } from "@/lib/copy";
+import { stepBackShare } from "@/lib/copy";
 import type { ConcernCopy, ResultsData } from "./types";
 
 export type Target = Feature | RegionMeasure;
@@ -76,7 +76,7 @@ export function deriveConcernViews(data: ResultsData): ConcernView[] {
 export interface ConcernStatus {
   /** Most of it can still be picked out (all of it, for a single area). */
   state: "most" | "some" | "none";
-  /** The share a typical sharp-eyed person could no longer pick out from here, 0 to 1: the bar next to the words. */
+  /** The share a typical sharp-eyed person could no longer pick out from here, 0 to 1: what the words say; the bar beside them shows the rest. */
   outOfSight: number;
 }
 
@@ -85,17 +85,6 @@ export function statusAt(view: ConcernView, distanceM: number): ConcernStatus {
   const outOfSight = stepBackShare(view.visibility, distanceM);
   const still = 1 - outOfSight;
   return { state: still <= 1e-9 ? "none" : still >= 0.5 ? "most" : "some", outOfSight };
-}
-
-/**
- * The card that opens first: good news, never the worst. The first relief concern if there is one; otherwise the concern
- * that fades most across a table (a large soft area states no distance, so it is not a candidate).
- */
-export function openingView(views: ConcernView[]): ConcernView | null {
-  const relief = views.find((v) => v.relief);
-  if (relief) return relief;
-  const fading = views.filter((v) => !v.soft).sort((a, b) => statusAt(b, TABLE_M).outOfSight - statusAt(a, TABLE_M).outOfSight);
-  return fading[0] ?? views[views.length - 1] ?? null;
 }
 
 export interface ConcernGroup {

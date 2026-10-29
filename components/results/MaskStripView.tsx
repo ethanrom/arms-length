@@ -9,7 +9,7 @@ export function MaskStripView({ strip, compact }: { strip: MaskStrip; compact?: 
   const w = compact ? 84 : 92;
   const h = Math.round(w * 1.25);
   return (
-    <section aria-label={strip.title} className="grid gap-x-12 gap-y-5 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-center">
+    <section aria-label={strip.title} className={`grid gap-x-12 gap-y-5 ${compact ? "" : "lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-center"}`}>
       <div>
         <p className="eyebrow !text-[0.875rem]">{strip.title}</p>
         <p className="mt-2 max-w-[26rem] text-[0.875rem] leading-relaxed text-ink-soft">{strip.note}</p>

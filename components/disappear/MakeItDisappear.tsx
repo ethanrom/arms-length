@@ -40,63 +40,61 @@ export function MakeItDisappear({ coverage, src, frame, scale, viewing, onRun }:
   const eyebrow = !plan ? (option.state === "running" ? "Working on it" : "On request") : plan.status === "met" ? "Checked on a virtual try-on" : "Honest answer";
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-      <div>
-        <fieldset>
-          <legend className="eyebrow !text-[0.875rem]">Out of sight from {formatDistance(target)}: choose a concern</legend>
-          <div className="mt-3 inline-flex flex-wrap border border-ink" role="radiogroup" aria-label="Concern">
-            {options.map((o, i) => (
-              <label key={o.concern} className="relative cursor-pointer">
-                <input type="radio" name={groupId} className="peer sr-only" checked={index === i} onChange={() => setIndex(i)} />
-                <span className="flex min-h-12 min-w-[5.25rem] items-center justify-center border-l border-ink px-5 text-[1rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
-                  {o.title}
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+    <div className="@container grid gap-7">
+      <fieldset>
+        <legend className="eyebrow !text-[0.875rem]">Out of sight from {formatDistance(target)}: choose a concern</legend>
+        <div className="mt-3 inline-flex flex-wrap border border-ink" role="radiogroup" aria-label="Concern">
+          {options.map((o, i) => (
+            <label key={o.concern} className="relative cursor-pointer">
+              <input type="radio" name={groupId} className="peer sr-only" checked={index === i} onChange={() => setIndex(i)} />
+              <span className="flex min-h-12 min-w-[5.25rem] items-center justify-center border-l border-ink px-5 text-[1rem] transition-colors first:border-l-0 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
+                {o.title}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
-        <div aria-live="polite" aria-busy={option.state === "running"} className="mt-10">
-          <p className="eyebrow !text-[0.875rem]">{eyebrow}</p>
-          <p className="serif mt-3 text-[clamp(1.75rem,1.3rem+1.6vw,2.5rem)] leading-[1.1]" style={{ fontWeight: 380 }}>
+      <div aria-live="polite" aria-busy={option.state === "running"}>
+        <p className="eyebrow !text-[0.875rem]">{eyebrow}</p>
+        <div className="mt-2 grid items-end gap-x-6 gap-y-3 @md:grid-cols-[minmax(0,1fr)_auto]">
+          <p className="serif text-[clamp(1.5rem,1.25rem+0.9vw,1.875rem)] leading-[1.12]" style={{ fontWeight: 380 }}>
             {option.headline}
           </p>
 
           {lever && option.leverLabel ? (
-            <p className="mt-6 flex items-baseline gap-3 border-t border-rule pt-5">
-              <span className="serif num text-[3.25rem] font-light leading-none tracking-[-0.03em]">{lever.value}%</span>
-              <span className="text-[1rem] text-ink-soft">{option.leverName ?? option.leverLabel}, in the try-on</span>
+            <p className="flex items-baseline gap-2 @md:flex-col @md:items-end @md:gap-0 @md:text-right">
+              <span className="serif num text-[2.75rem] font-light leading-none tracking-[-0.03em]">{lever.value}%</span>
+              <span className="max-w-[9rem] text-[0.875rem] leading-snug text-ink-soft">{option.leverName ?? option.leverLabel}, in the try-on</span>
             </p>
           ) : plan ? (
-            <p className="mt-6 border-t border-rule pt-5 text-[1rem] text-ink-soft">
-              {noLeverNeeded ? "No coverage needed at this distance." : "No coverage level reaches this distance."}
-            </p>
+            <p className="text-[1rem] text-ink-soft">{noLeverNeeded ? "No coverage needed at this distance." : "No coverage level reaches this distance."}</p>
           ) : null}
-
-          <p className="mt-5 max-w-[32rem] text-[1rem] leading-relaxed text-ink-soft">{option.detail}</p>
-
-          {!plan && onRun && (
-            <button
-              type="button"
-              className="btn btn-primary mt-6"
-              onClick={() => onRun(option.concern)}
-              disabled={option.state === "running"}
-              aria-disabled={option.state === "running"}
-            >
-              {option.state === "running" ? "Rendering try-ons…" : option.state === "error" ? "Try again" : "Find the lightest touch"}
-              {option.state !== "running" && (
-                <span className="arrow" aria-hidden="true">
-                  &rarr;
-                </span>
-              )}
-            </button>
-          )}
         </div>
+
+        <p className="mt-3 max-w-[34rem] text-[0.9375rem] leading-relaxed text-ink-soft">{option.detail}</p>
+
+        {!plan && onRun && (
+          <button
+            type="button"
+            className="btn btn-primary mt-5"
+            onClick={() => onRun(option.concern)}
+            disabled={option.state === "running"}
+            aria-disabled={option.state === "running"}
+          >
+            {option.state === "running" ? "Rendering try-ons…" : option.state === "error" ? "Try again" : "Find the lightest touch"}
+            {option.state !== "running" && (
+              <span className="arrow" aria-hidden="true">
+                &rarr;
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       <figure>
         {option.afterImage && (
-          <fieldset className="mb-4">
+          <fieldset className="mb-3">
             <legend className="sr-only">View of the crops</legend>
             <div className="inline-flex border border-ink" role="radiogroup" aria-label="View of the crops">
               {[
@@ -113,14 +111,14 @@ export function MakeItDisappear({ coverage, src, frame, scale, viewing, onRun }:
             </div>
           </fieldset>
         )}
-        <div className={`grid gap-px bg-[#8a867c] ${option.afterImage ? "sm:grid-cols-2" : "sm:max-w-[50%]"}`}>
+        <div className={`grid gap-px bg-[#8a867c] ${option.afterImage ? "grid-cols-2" : "max-w-[50%]"}`}>
           {far ? (
             <FarCrops key={`${option.concern}-${option.afterImage ?? "none"}`} option={option} src={src} frame={frame} scale={scale} viewing={viewing} distanceM={target} />
           ) : (
             <NearCrops option={option} src={src} frame={frame} />
           )}
         </div>
-        <figcaption className="mt-3 text-[0.875rem] leading-relaxed text-ink-soft">
+        <figcaption className="mt-3 max-w-[34rem] text-[0.875rem] leading-relaxed text-ink-soft">
           {far ? `Both seen from ${formatDistance(target)}, by an observer with perfect eyesight. ` : "Both up close, as the photo and the try-on are. "}
           {option.afterImage ? `A close-up of one part of the face, not the whole face. The right-hand picture is a ${TRY_ON.toLowerCase()} of one shade, aligned to the photo.` : ""}
         </figcaption>

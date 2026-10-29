@@ -26,9 +26,11 @@ async function serve(page: Page, ...bodies: string[]): Promise<RehearseRequest[]
   return seen;
 }
 
+/** The results page with the "Tomorrow" tab open. */
 async function openFace(page: Page) {
   await page.goto(FACE);
-  await page.locator("#rehearse").scrollIntoViewIfNeeded();
+  await page.getByRole("tab", { name: "Tomorrow" }).click();
+  await expect(page.locator("#rehearse")).toBeVisible();
 }
 
 const dialog = (page: Page) => page.getByRole("dialog");
@@ -62,7 +64,7 @@ test("the results page teases the day with three scenes and one button", async (
   await openFace(page);
   const section = page.locator("#rehearse");
   await expect(section.getByRole("heading", { level: 2, name: "Tomorrow, from their side" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link", { name: "Tomorrow, from their side" })).toBeVisible();
+  await expect(page.getByRole("tablist").getByRole("tab", { name: "Tomorrow" })).toHaveAttribute("aria-selected", "true");
   await expect(section.getByRole("img")).toHaveCount(3);
   await expect(section.getByRole("img").first()).toHaveAccessibleName(/laptop call/i);
   await expect(section.getByRole("button")).toHaveCount(1);
@@ -521,6 +523,22 @@ test("the whole results page still has no axe violations with the section in", a
   await expectNoAxeViolations(page, "main");
 });
 
+test("a link to #rehearse opens the tab, and the day keeps going when you look at another tab and come back", async ({ page }) => {
+  await serve(page, ndjson(VERIFIED_PLAN));
+  await page.goto(`${FACE}#rehearse`);
+  await expect(page.getByRole("tab", { name: "Tomorrow" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("button", { name: "Rehearse my day" })).toBeVisible();
+  await askWorkday(page);
+  await expect(page.getByTestId("rehearse-day")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
+  // Another tab and back: the plan is still there, so the button picks up the day where it was.
+  await page.getByRole("tab", { name: "Share" }).click();
+  await page.getByRole("tab", { name: "Tomorrow" }).click();
+  await page.getByRole("button", { name: "Rehearse my day" }).click();
+  await expect(page.getByTestId("rehearse-day")).toBeVisible();
+});
+
 test.describe("phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
@@ -529,6 +547,7 @@ test.describe("phone", () => {
     await openFace(page);
     const scenes = page.locator("#rehearse").getByRole("group", { name: "Three moments from a day" });
     await expect(scenes).toBeVisible();
+    await page.getByRole("button", { name: "Rehearse my day" }).scrollIntoViewIfNeeded();
     await expect(page.getByRole("button", { name: "Rehearse my day" })).toBeInViewport();
 
     await askWorkday(page);

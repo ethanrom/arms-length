@@ -45,52 +45,49 @@ export function WorthItReveal({ worthIt, src, frame, anchors, disclaimer }: Wort
   }
 
   const title = selected.title.toLowerCase();
+  const d = selected.typicalM;
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-16">
-      <div className="order-2 lg:order-1">
-        <p className="max-w-[34rem] text-[1rem] leading-relaxed text-ink-soft">{worthIt.lede}</p>
+    <div className="grid gap-6">
+      <p className="max-w-[34rem] text-[0.9375rem] leading-relaxed text-ink-soft">{worthIt.lede}</p>
 
-        <div className="mt-8 hidden border-t border-rule pt-5 sm:block">
-          <DistanceAxisHeader anchors={anchors} />
-        </div>
-        <div role="radiogroup" aria-label="Concern to compare" className="mt-1 sm:mt-0">
-          {items.map((item) => {
-            const active = item.concern === selected.concern;
-            const d = item.typicalM;
-            return (
-              <label key={item.concern} className="relative block cursor-pointer border-t border-rule first:border-t-0 sm:first:border-t">
-                <input type="radio" name={groupId} className="peer sr-only" checked={active} onChange={() => setPicked(item.concern)} />
-                <span className="block py-5 transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-ink">
-                  <span className="flex items-center gap-3">
-                    <span aria-hidden="true" className={`block h-2.5 w-2.5 shrink-0 rounded-full border border-ink ${active ? "bg-ink forced-colors:bg-[CanvasText]" : "bg-transparent"}`} />
-                    <span className="eyebrow !text-[0.875rem] !text-ink-soft">{item.title}</span>
-                    <span className="eyebrow ml-auto !text-[0.875rem]">{active ? "Comparing" : "Compare"}</span>
-                  </span>
-                  <span className="serif mt-3 block text-[clamp(1.25rem,1.05rem+0.8vw,1.625rem)] leading-[1.2]" style={{ fontWeight: 400 }}>
-                    {item.headline}
-                  </span>
-                  {/* A large soft area states no distance. */}
-                  {!item.soft && (
-                    <span className="mt-1 block">
-                      <DistanceBar
-                        maxM={d}
-                        intervalM={[d, d]}
-                        relief={d <= 1.5}
-                        tickM={tickM}
-                        description={`${item.title}: a typical sharp-eyed person could tell the difference up to ${Math.round(d * 10) / 10} metres.`}
-                      />
-                    </span>
-                  )}
-                  {active && <span className="mt-2 block max-w-[34rem] text-[1rem] leading-relaxed text-ink-soft">{item.detail}</span>}
-                </span>
-              </label>
-            );
-          })}
-        </div>
+      {/* one concern at a time: a picker, then the line and the picture for the one chosen */}
+      <div role="radiogroup" aria-label="Concern to compare" className="flex flex-wrap gap-2">
+        {items.map((item) => {
+          const active = item.concern === selected.concern;
+          return (
+            <label key={item.concern} className="relative cursor-pointer">
+              <input type="radio" name={groupId} className="peer sr-only" checked={active} onChange={() => setPicked(item.concern)} />
+              <span className="flex min-h-10 items-center gap-2 border border-ink px-3.5 text-[0.875rem] leading-none transition-colors hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-paper peer-checked:hover:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ink forced-colors:peer-checked:border-4 forced-colors:peer-checked:font-semibold forced-colors:peer-checked:underline">
+                {item.title}
+                <span className="sr-only">{active ? ": comparing" : ": compare"}</span>
+              </span>
+            </label>
+          );
+        })}
       </div>
 
-      <figure className="order-1 lg:order-2">
-        <div className="grid gap-px bg-[#8a867c] sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+      <div aria-live="polite">
+        <p className="serif text-[clamp(1.375rem,1.15rem+0.8vw,1.75rem)] leading-[1.2]" style={{ fontWeight: 400 }}>
+          {selected.headline}
+        </p>
+        {/* A large soft area states no distance. */}
+        {!selected.soft && (
+          <div className="mt-3">
+            <DistanceAxisHeader anchors={anchors} />
+            <DistanceBar
+              maxM={d}
+              intervalM={[d, d]}
+              relief={d <= 1.5}
+              tickM={tickM}
+              description={`${selected.title}: a typical sharp-eyed person could tell the difference up to ${Math.round(d * 10) / 10} metres.`}
+            />
+          </div>
+        )}
+        <p className="mt-2 max-w-[34rem] text-[0.9375rem] leading-relaxed text-ink-soft">{selected.detail}</p>
+      </div>
+
+      <figure>
+        <div className="grid grid-cols-2 gap-px bg-[#8a867c]">
           <div className="bg-paper">
             <CropCanvas image={before} frame={frame} crop={selected.crop} ariaLabel={`Close-up of the photo around the ${title}, as it is today.`} />
             <p className="px-3 py-2.5 text-[0.875rem] leading-snug">{worthIt.beforeLabel}</p>
@@ -106,7 +103,7 @@ export function WorthItReveal({ worthIt, src, frame, anchors, disclaimer }: Wort
             <p className="px-3 py-2.5 text-[0.875rem] leading-snug">{worthIt.afterLabel}</p>
           </div>
         </div>
-        <figcaption className="mt-3 text-[0.875rem] leading-relaxed text-ink-soft">
+        <figcaption className="mt-3 max-w-[34rem] text-[0.875rem] leading-relaxed text-ink-soft">
           YouCam Skin Simulation. A close-up of one part of the face, not the whole face. {disclaimer}
         </figcaption>
       </figure>

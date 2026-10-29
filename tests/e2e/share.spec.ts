@@ -54,6 +54,7 @@ test("the shared page previews the card, has a link preview image and no axe vio
 
 test("the share studio picks up to three relief lines, switches size and offers the download", async ({ page }) => {
   await page.goto("/try/p5a");
+  await page.getByRole("tab", { name: "Share" }).click();
   const studio = page.locator("#share");
   const lines = studio.getByRole("checkbox");
   await expect(lines.first()).toBeVisible();

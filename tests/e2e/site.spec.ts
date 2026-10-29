@@ -121,6 +121,82 @@ test("/try: an 18+ tick made the moment the page appears survives hydration", as
   await expect(adult).toBeChecked();
 });
 
+// /try is one calm choice, not a long page: the four faces in a row on a desktop, a 2x2 grid on a phone, then the own-photo card.
+test.describe("/try layout, desktop", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("the four faces sit in one row, the own-photo card is on the first screen, and the page is about a screen and a third", async ({ page }) => {
+    await page.goto("/try");
+    const tops = await page.locator("#faces li").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    expect(tops).toHaveLength(4);
+    expect(new Set(tops).size).toBe(1);
+    await expect(page.getByRole("button", { name: "Use my photo" })).toBeInViewport({ ratio: 1 });
+    await expect(page.getByRole("checkbox", { name: /I am 18 or over/ })).toBeInViewport({ ratio: 1 });
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    expect(height).toBeLessThanOrEqual(900 * 1.5);
+  });
+
+  test("the landing's Use my photo link lands on the card", async ({ page }) => {
+    await page.goto("/try#camera");
+    await expect(page.locator("#camera")).toBeInViewport();
+    await expect(page.locator("#camera-section")).toBeAttached();
+  });
+});
+
+test.describe("/try layout, phone", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("the faces are a 2x2 grid, nothing runs off the page, and the page stays under three screens", async ({ page }) => {
+    await page.goto("/try");
+    const boxes = await page.locator("#faces li").evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect();
+        return { top: Math.round(r.top), left: Math.round(r.left), right: Math.round(r.right) };
+      }),
+    );
+    expect(boxes).toHaveLength(4);
+    expect(boxes[0].top).toBe(boxes[1].top);
+    expect(boxes[2].top).toBe(boxes[3].top);
+    expect(boxes[2].top).toBeGreaterThan(boxes[0].top);
+    expect(boxes[1].left).toBeGreaterThan(boxes[0].left);
+    for (const b of boxes) expect(b.right).toBeLessThanOrEqual(390);
+    const { width, height } = await page.evaluate(() => ({ width: document.documentElement.scrollWidth - window.innerWidth, height: document.documentElement.scrollHeight }));
+    expect(width).toBeLessThanOrEqual(1);
+    expect(height).toBeLessThanOrEqual(844 * 3);
+  });
+});
+
+test("/try: the keyboard reaches each face, the 18+ box, the key disclosure and the submit button, in that order", async ({ page }) => {
+  await page.goto("/try");
+  const seen: string[] = [];
+  for (let i = 0; i < 40 && !seen.includes("button:Use my photo"); i++) {
+    await page.keyboard.press("Tab");
+    seen.push(
+      await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        if (!el) return "";
+        if (el instanceof HTMLAnchorElement) return `link:${el.getAttribute("href")}`;
+        if (el instanceof HTMLInputElement) return `${el.type}:${el.name}`;
+        if (el.tagName === "SUMMARY") return "summary";
+        return `${el.tagName.toLowerCase()}:${(el.textContent ?? "").trim().replace(/\s*→$/, "")}`;
+      }),
+    );
+  }
+  const order = ["link:/try/p1a", "link:/try/p2b", "link:/try/p3a", "link:/try/p5a", "checkbox:adult", "button:Use my photo", "summary"];
+  let at = -1;
+  for (const stop of order.slice(0, -1)) {
+    const next = seen.indexOf(stop, at + 1);
+    expect(next, `${stop} in ${seen.join(" > ")}`).toBeGreaterThan(at);
+    at = next;
+  }
+  // The disclosure is a real, focusable summary: Enter opens it and the two fields appear.
+  await page.keyboard.press("Tab");
+  await expect(page.locator("summary")).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByLabel(/Access code/)).toBeVisible();
+  await expect(page.getByLabel(/YouCam API key/)).toBeVisible();
+});
+
 test("/privacy says where a photo goes, what is deleted, and what is kept", async ({ page }) => {
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/in plain words/);

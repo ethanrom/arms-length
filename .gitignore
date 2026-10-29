@@ -45,3 +45,5 @@ next-env.d.ts
 CLAUDE.md
 AGENTS.md
 .mcp.json
+
+.claude/

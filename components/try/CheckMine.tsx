@@ -66,17 +66,15 @@ export function CheckMine() {
   }
 
   return (
-    <div id="camera" className="scroll-mt-6 grid gap-10 border border-rule bg-paper-deep/40 p-6 sm:p-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-16">
+    <div id="camera" className="scroll-mt-6 grid gap-5 border border-rule bg-paper-deep/40 p-5 sm:p-6 md:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] md:gap-8 lg:gap-12">
       <div>
-        <p className="eyebrow">Before you start</p>
-        <p className="serif mt-3 text-[clamp(1.5rem,1.2rem+1.2vw,2.25rem)] leading-tight" style={{ fontWeight: 380 }}>
-          Two things to know
+        <h2 id="camera-title" className="title text-[clamp(1.5rem,1.3rem+0.8vw,1.875rem)]">
+          Use my photo
+        </h2>
+        <p className="mt-2 max-w-[36rem] text-[0.9375rem] leading-relaxed text-ink-soft">
+          Analysed live by YouCam, within a small daily allowance of our credits. If those run out, you can use your own YouCam API key.
         </p>
-        <p className="mt-4 max-w-[28rem] text-[1rem] leading-relaxed text-ink-soft">
-          Your own photo is analysed live by YouCam. Live analysis is open while the contest runs, within a small daily allowance of our YouCam credits. If those run out, you can use your own
-          YouCam API key. The demo faces above show everything it does, with no photo at all.
-        </p>
-        <p className="mt-4 max-w-[28rem] text-[0.9375rem] leading-relaxed text-muted">
+        <p className="mt-3 max-w-[36rem] text-[0.875rem] leading-relaxed text-muted">
           {DISCLAIMERS.privacy} {DISCLAIMERS.retention} {DISCLAIMERS.simulationRetention}{" "}
           <Link href="/privacy" className="link text-ink">
             Read the privacy notice
@@ -92,7 +90,7 @@ export function CheckMine() {
             id={adultId}
             name="adult"
             type="checkbox"
-            className="mt-1 h-6 w-6 shrink-0 cursor-pointer accent-[#161513]"
+            className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer accent-[#161513]"
             aria-describedby={noteId}
           />
           <label htmlFor={adultId} className="cursor-pointer text-[1rem] leading-relaxed text-ink">
@@ -103,10 +101,24 @@ export function CheckMine() {
             .
           </label>
         </div>
+        <p id={noteId} className="mt-2 pl-9 text-[0.875rem] leading-relaxed text-muted">
+          {DISCLAIMERS.adults}
+        </p>
 
-        <details ref={disclosure} className="mt-8 max-w-sm">
-          <summary className="flex min-h-12 cursor-pointer items-center text-[1rem] text-ink underline underline-offset-4">Have a YouCam API key? Use your own</summary>
-          <label htmlFor={keyId} className="eyebrow mt-4 block">
+        <div className="mt-4">
+          <button type="submit" className="btn btn-primary" disabled={busy} aria-disabled={busy}>
+            {busy ? "Checking…" : "Use my photo"}
+            {!busy && (
+              <span className="arrow" aria-hidden="true">
+                &rarr;
+              </span>
+            )}
+          </button>
+        </div>
+
+        <details ref={disclosure} className="mt-1 max-w-sm">
+          <summary className="flex min-h-11 cursor-pointer items-center text-[0.9375rem] text-ink underline underline-offset-4">Have a YouCam API key? Use your own</summary>
+          <label htmlFor={keyId} className="eyebrow mt-3 block">
             YouCam API key (optional)
           </label>
           <input
@@ -118,12 +130,12 @@ export function CheckMine() {
             spellCheck={false}
             ref={key}
             aria-describedby={keyNoteId}
-            className="mt-3 h-12 w-full border border-ink bg-transparent px-4 text-[1.0625rem]"
+            className="mt-2 h-12 w-full border border-ink bg-transparent px-4 text-[1.0625rem]"
           />
           <p id={keyNoteId} className="mt-2 text-[0.875rem] leading-relaxed text-muted">
             Used only for this tab&rsquo;s calls to YouCam, and never stored on our server. It is forgotten when you close the tab. You can delete the key from your YouCam account after judging.
           </p>
-          <label htmlFor={codeId} className="eyebrow mt-6 block">
+          <label htmlFor={codeId} className="eyebrow mt-4 block">
             Access code (optional)
           </label>
           <input
@@ -134,23 +146,10 @@ export function CheckMine() {
             autoCapitalize="off"
             spellCheck={false}
             ref={code}
-            className="mt-3 h-12 w-full border border-ink bg-transparent px-4 text-[1.0625rem]"
+            className="mt-2 h-12 w-full border border-ink bg-transparent px-4 text-[1.0625rem]"
           />
         </details>
-        <p id={noteId} className="mt-6 max-w-sm text-[0.875rem] leading-relaxed text-muted">
-          {DISCLAIMERS.adults}
-        </p>
-        <div className="mt-6">
-          <button type="submit" className="btn btn-primary" disabled={busy} aria-disabled={busy}>
-            {busy ? "Checking…" : "Use my photo"}
-            {!busy && (
-              <span className="arrow" aria-hidden="true">
-                &rarr;
-              </span>
-            )}
-          </button>
-        </div>
-        <div role="status" aria-live="polite" className="mt-5 min-h-6 max-w-sm text-[0.9375rem] leading-relaxed">
+        <div role="status" aria-live="polite" className={`max-w-sm text-[0.9375rem] leading-relaxed ${message ? "mt-4" : ""}`}>
           {message}
         </div>
       </form>

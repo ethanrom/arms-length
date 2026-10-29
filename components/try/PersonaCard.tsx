@@ -7,8 +7,6 @@ interface PersonaCardProps {
   frame: { width: number; height: number };
   /** Where to centre the crop, as CSS object-position. */
   position?: string;
-  /** One line of what the reading will show; supplied with the persona data. */
-  teaser?: string;
 }
 
 /** "Light olive skin, about 30. A few breakouts…" splits into a title and the rest. */
@@ -17,39 +15,36 @@ function splitDescription(description: string): { title: string; rest: string } 
   return at === -1 ? { title: description.replace(/\.$/, ""), rest: "" } : { title: description.slice(0, at), rest: description.slice(at + 2) };
 }
 
-export function PersonaCard({ persona, frame, position = "50% 35%", teaser }: PersonaCardProps) {
+/** A compact card for the chooser row: the face, who it is, one short line. The whole card is the link. */
+export function PersonaCard({ persona, frame, position = "50% 35%" }: PersonaCardProps) {
   const { title, rest } = splitDescription(persona.description);
   return (
     <Link
       href={`/try/${persona.id}`}
       className="group flex h-full flex-col border border-rule bg-paper transition-colors duration-300 hover:border-ink"
     >
-      <div className="stage on-stage relative aspect-[4/5] overflow-hidden">
+      <div className="stage on-stage relative aspect-square overflow-hidden lg:aspect-[7/6]">
         <Image
           src={persona.image}
           alt=""
           width={frame.width}
           height={frame.height}
-          sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 92vw"
+          sizes="(min-width: 1024px) 22vw, (min-width: 768px) 24vw, 46vw"
           className="h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-calm)] group-hover:scale-[1.03]"
           style={{ objectPosition: position }}
         />
-        <span className="absolute left-3 top-3 border border-ink/15 bg-paper px-2.5 py-1.5 text-[0.875rem] font-medium leading-none">Synthetic face (AI-generated)</span>
+        <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] border border-ink/15 bg-paper px-2 py-1 text-[0.875rem] font-medium leading-tight">
+          <span className="block lg:inline">Synthetic face</span> <span className="block lg:inline">(AI-generated)</span>
+        </span>
       </div>
-      <div className="flex flex-1 flex-col p-5">
-        <h2 className="title text-[1.5rem]">
+      <div className="flex flex-1 flex-col p-3 lg:p-4">
+        <h3 className="title flex items-start justify-between gap-2 text-[1.0625rem] lg:text-[1.25rem]">
           {title}
-        </h2>
-        <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted">
-          {rest}
-          {teaser && <span className="mt-3 block text-ink-soft">{teaser}</span>}
-        </p>
-        <span className="mt-auto flex items-center justify-between gap-3 border-t border-rule pt-4 text-[0.9375rem] font-medium">
-          See what others see
-          <span className="arrow transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">
+          <span className="arrow mt-0.5 shrink-0 text-[1rem] transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">
             &rarr;
           </span>
-        </span>
+        </h3>
+        {rest && <p className="mt-1.5 line-clamp-4 text-[0.875rem] leading-snug text-muted lg:text-[0.9375rem]">{rest}</p>}
       </div>
     </Link>
   );
